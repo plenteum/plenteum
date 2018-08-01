@@ -91,7 +91,7 @@ Run `./src/Plenteumd` to connect to the network and let it sync (it may take a w
 - If all went well, it will complete successfully, and you will find all your binaries in the '..\build\src\Release' directory.
 - Additionally, a `.sln` file will have been created in the `build` directory. If you wish to open the project in Visual Studio with this, you can.
 
-##Support
+### Support
 
 Join our discord [here](https://discord.gg/EdE5jcC) or email us on support AT plenteum.com
 
