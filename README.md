@@ -1,7 +1,5 @@
 ![logo_small_flat](https://user-images.githubusercontent.com/38456463/43392866-43c69cf4-93f5-11e8-81e2-3e3f81b6ca1d.png)
 
-### NOTE - This coin is still in BETA - release date to be announced
-
 ### What is Plenteum
 
 Plenteum is a cryptonote based coin that aims to solve (at least) two significant problems in current implementations. 
