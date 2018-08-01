@@ -9,7 +9,7 @@ Plenteum is a cryptonote based coin that aims to solve (at least) two significan
   2. Dust bloat in the blockchain and user wallets
 
 How do we do this? By removing fees from the blockchain, and accumulating a "DustFund" from transaction dust, instead of fees, we sustain the future viability of mining rewards, and lighten the chain for current transactions. 
-See [!link](www.plenteum.com) for further information.
+See [!here](www.plenteum.com) for further information.
 
 ### How To Compile
 
