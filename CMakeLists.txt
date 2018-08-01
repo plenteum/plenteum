@@ -6,8 +6,8 @@ enable_language(CXX)
 find_package(Threads)
 
 set(VERSION "0.1")
-# Packaged from commit 72fbfe67d6f10ec18ed294cbd9a79c156ceed969
-set(COMMIT 72fbfe67)
+
+set(COMMIT 3e9edc8)
 set(REFS " (HEAD -> development)")
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
