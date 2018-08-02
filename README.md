@@ -50,6 +50,8 @@ sudo apt-get install librocksdb-dev
 - `cmake ..`
 - `make`
 
+If you're receiving a permission denied error running `cmake ..` on ubuntu, then you need to give execute permission to the version.sh file in rocksdb by running `sudo chmod +x external/rocksdb/build_tools/version.sh`
+
 #### Apple
 
 ##### Prerequisites
@@ -67,8 +69,6 @@ sudo apt-get install librocksdb-dev
 - `cmake ..` or `cmake -DBOOST_ROOT=<path_to_boost_install> ..` when building
   from a specific boost install. If you used brew to install boost, your path is most likely `/usr/local/include/boost.`
 - `make`
-
-If you're receiving a permission denied error running cmake .., then you need to give execute permission to the version.sh file in rocksdb by running `sudo chmod +x external/rocksdb/build_tools/version.sh`
 
 The binaries will be in `./src` after compilation is complete.
 
