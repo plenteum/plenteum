@@ -59,6 +59,7 @@ public:
   size_t numberOfDecimalPlaces() const { return m_numberOfDecimalPlaces; }
   size_t numberOfDisplayDecimalPlaces() const { return m_numberOfDisplayDecimalPlaces; }
   uint64_t coin() const { return m_coin; }
+  uint64_t coinDisplay() const { return m_coinDisplay; }
 
   uint64_t minimumFee() const { return m_mininumFee; }
   uint64_t defaultDustThreshold(uint32_t height) const {
@@ -179,6 +180,7 @@ private:
   size_t m_numberOfDecimalPlaces;
   size_t m_numberOfDisplayDecimalPlaces;
   uint64_t m_coin;
+  uint64_t m_coinDisplay;
 
   uint64_t m_mininumFee;
   uint64_t m_defaultDustThreshold;

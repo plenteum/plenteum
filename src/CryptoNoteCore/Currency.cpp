@@ -759,7 +759,9 @@ m_blockGrantedFullRewardZone(currency.m_blockGrantedFullRewardZone),
 m_isBlockexplorer(currency.m_isBlockexplorer),
 m_minerTxBlobReservedSize(currency.m_minerTxBlobReservedSize),
 m_numberOfDecimalPlaces(currency.m_numberOfDecimalPlaces),
+m_numberOfDisplayDecimalPlaces(currency.m_numberOfDisplayDecimalPlaces),
 m_coin(currency.m_coin),
+m_coinDisplay(currency.m_coinDisplay),
 m_mininumFee(currency.m_mininumFee),
 m_defaultDustThreshold(currency.m_defaultDustThreshold),
 m_difficultyTarget(currency.m_difficultyTarget),
@@ -921,9 +923,9 @@ CurrencyBuilder& CurrencyBuilder::numberOfDecimalPlaces(size_t val) {
 
 CurrencyBuilder& CurrencyBuilder::numberOfDisplayDecimalPlaces(size_t val) {
   m_currency.m_numberOfDisplayDecimalPlaces = val;
-  m_currency.m_coin = 1;
+  m_currency.m_coinDisplay = 1;
   for (size_t i = 0; i < m_currency.m_numberOfDisplayDecimalPlaces; ++i) {
-    m_currency.m_coin *= 10;
+    m_currency.m_coinDisplay *= 10;
   }
 
   return *this;
