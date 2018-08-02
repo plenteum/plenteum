@@ -593,8 +593,28 @@ bool CryptoNoteProtocolHandler::on_connection_synchronized() {
       logger(INFO, BRIGHT_MAGENTA) << "===================================================" << ENDL << ENDL ;
 
       logger(INFO, BRIGHT_GREEN) <<
-
-      "PLENTEUM" << ENDL;
+            "\n                                   \n"
+      "          _________________________  \n"
+      "         / _____________________  /| \n"
+      "        / / ___________________/ / | \n"
+      "       / / /| |               / /  | \n"
+      "      / / / | |              / / . | \n"
+      "     / / /| | |             / / /| | \n"
+      "    / / / | | |            / / / | | \n"
+      "   / / /  | | |           / / /| | | \n"
+      "  / /_/__________________/ / / | | | \n"
+      " /________________________/ /  | | | \n"
+      " | | |    | | |_________| | |__| | | \n"
+      " | | |    | |___________| | |____| | \n"
+      " | | |   / / ___________| | |_  / /  \n"
+      " | | |  / / /           | | |/ / /  \n"
+      " | | | / / / Plenteum   | | | / / \n"
+      " | | |/ / /  Daemon     | | |/ / \n"
+      " | | | / /   Started    | | ' / \n"
+      " | | |/_/_______________| |  / \n"
+      " | |____________________| | / \n"
+      " |________________________|/ \n"
+       << ENDL; 
 
     m_observerManager.notify(&ICryptoNoteProtocolObserver::blockchainSynchronized, m_core.getTopBlockIndex());
   }
