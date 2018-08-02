@@ -44,7 +44,7 @@ sudo apt-get install librocksdb-dev
 
 ##### Building
 
-- `git clone -b master https://github.com/plenteum/plenteum`
+- `git clone -b development https://github.com/plenteum/plenteum`
 - `cd plenteum`
 - `mkdir build && cd $_`
 - `cmake ..`
