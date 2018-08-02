@@ -92,6 +92,9 @@ Run `./src/Plenteumd` to connect to the network and let it sync (it may take a w
 - `MSBuild Plenteum.sln /p:Configuration=Release /m`
 - If all went well, it will complete successfully, and you will find all your binaries in the '..\build\src\Release' directory.
 - Additionally, a `.sln` file will have been created in the `build` directory. If you wish to open the project in Visual Studio with this, you can.
+### Mining
+
+Read the guide by [@Charlie](https://virtopia.ca/how-to-mine-plenteum/)
 
 ### Support
 
