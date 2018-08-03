@@ -347,12 +347,14 @@ bool Currency::parseAccountAddressString(const std::string& str, AccountPublicAd
 }
 
 std::string Currency::formatAmount(uint64_t amount) const {
+  //first, format it to the full value of DUST decimals
   std::string s = std::to_string(amount);
-  if (s.size() < m_numberOfDisplayDecimalPlaces + 1) {
-    s.insert(0, m_numberOfDisplayDecimalPlaces + 1 - s.size(), '0');
+  if (s.size() < m_numberOfDecimalPlaces + 1) {
+    s.insert(0, m_numberOfDecimalPlaces + 1 - s.size(), '0');
   }
-  s.insert(s.size() - m_numberOfDisplayDecimalPlaces, ".");
-  return s;
+  s.insert(s.size() - m_numberOfDecimalPlaces, ".");
+  
+  return s.substr(0, s.size() - (m_numberOfDecimalPlaces - m_numberOfDisplayDecimalPlaces)); //remove the dust
 }
 
 std::string Currency::formatAmount(int64_t amount) const {
