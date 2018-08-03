@@ -1,0 +1,44 @@
+sudo: true
+language: cpp
+compiler: gcc
+env:
+- CXXFLAGS="-std=gnu++11"
+matrix:
+  include:
+  - os: linux
+    addons:
+      apt:
+        sources:
+        - ubuntu-toolchain-r-test
+        packages:
+        - g++-4.9
+        - libboost1.55-all-dev
+    env:
+    - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9
+  - os: osx
+before_install:
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository ppa:ethcore/ethcore
+  -y    ; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -q                            ;
+  fi
+install:
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install librocksdb-dev
+  -y            ; fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install readline; brew link --force readline; fi
+script:
+- mkdir build && cd build
+- cmake -DCMAKE_BUILD_TYPE=Release -DSTATIC=true .. && make
+before_deploy:
+- cd src
+- mkdir plenteum-${TRAVIS_TAG}
+- mv Plenteumd miner zedwallet service poolwallet plenteum-${TRAVIS_TAG}/
+- cp ../../LICENSE plenteum-${TRAVIS_TAG}/
+- tar cvfz plenteum-${TRAVIS_TAG}-${TRAVIS_OS_NAME}.tar.gz plenteum-${TRAVIS_TAG}/
+deploy:
+  provider: releases
+  file:
+    - plenteum-${TRAVIS_TAG}-${TRAVIS_OS_NAME}.tar.gz
+  skip_cleanup: true
+  on:
+    repo: plenteum/plenteum
+    tags: true
