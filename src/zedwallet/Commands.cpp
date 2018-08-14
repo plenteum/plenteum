@@ -83,10 +83,6 @@ bool dispatchCommand(std::shared_ptr<WalletInfo> &walletInfo,
     {
         listCommands(available, true);
     }
-    else if (command == "status")
-    {
-        status(node);
-    }
     else if (command == "balance")
     {
         balance(node, walletInfo->wallet, walletInfo->viewWallet);
@@ -111,9 +107,9 @@ bool dispatchCommand(std::shared_ptr<WalletInfo> &walletInfo,
     {
         save(walletInfo->wallet);
     }
-    else if (command == "bc_height")
+    else if (command == "status")
     {
-        blockchainHeight(node, walletInfo->wallet);
+        status(node, walletInfo->wallet);
     }
     else if (command == "reset")
     {
@@ -155,7 +151,7 @@ bool dispatchCommand(std::shared_ptr<WalletInfo> &walletInfo,
     {
         changePassword(walletInfo);
     }
-    else if (command == "create_integrated_address")
+    else if (command == "make_integrated_address")
     {
         createIntegratedAddress();
     }
@@ -258,10 +254,9 @@ std::vector<Command> allCommands()
         {"ab_send", "Send " + WalletConfig::ticker + 
                     " to someone in your address book", false, true},
 
-        {"bc_height", "Show the blockchain height", true, true},
         {"change_password", "Change your wallet password", true, true},
 
-        {"create_integrated_address", "Create an integrated address from an "
+        {"make_integrated_address", "Make an integrated address from an "
                                     "address + payment ID", true, true},
 
         {"incoming_transfers", "Show incoming transfers", true, true},
@@ -272,7 +267,7 @@ std::vector<Command> allCommands()
         {"save", "Save your wallet state", true, true},
         {"save_csv", "Save all wallet transactions to a CSV file", true, true},
         {"send_all", "Send all your balance to someone", false, true},
-        {"status", "Show the daemon status", true, true}
+        {"status", "Display sync status and network hashrate", true, true}
     };
 
     /* Pop em in alphabetical order */

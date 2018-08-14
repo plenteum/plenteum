@@ -457,6 +457,11 @@ Difficulty Currency::nextDifficultyV3(std::vector<std::uint64_t> timestamps, std
     return static_cast<uint64_t>(next_D);
 }
 
+template <typename T>
+T clamp(const T& n, const T& lower, const T& upper) {
+  return std::max(lower, std::min(n, upper));
+}
+
 // LWMA-2 difficulty algorithm 
 // Copyright (c) 2017-2018 Zawy, MIT License
 // https://github.com/zawy12/difficulty-algorithms/issues/3
@@ -464,7 +469,6 @@ Difficulty Currency::nextDifficultyV4(std::vector<std::uint64_t> timestamps, std
 {
     int64_t T = CryptoNote::parameters::DIFFICULTY_TARGET;
     int64_t N = CryptoNote::parameters::DIFFICULTY_WINDOW;
-    int64_t FTL = CryptoNote::parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT;
     int64_t L(0), ST, sum_3_ST(0), next_D, prev_D;
 
     if (timestamps.size() <= static_cast<uint64_t>(N))
@@ -474,7 +478,7 @@ Difficulty Currency::nextDifficultyV4(std::vector<std::uint64_t> timestamps, std
 
     for (int64_t i = 1; i <= N; i++)
     {  
-        ST = std::max(-FTL, std::min(static_cast<int64_t>(timestamps[i]) - static_cast<int64_t>(timestamps[i-1]), 6 * T));
+        ST = clamp(-6 * T, static_cast<int64_t>(timestamps[i]) - static_cast<int64_t>(timestamps[i-1]), 6 * T);
 
         L +=  ST * i; 
 

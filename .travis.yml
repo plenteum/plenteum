@@ -31,7 +31,7 @@ script:
 before_deploy:
 - cd src
 - mkdir plenteum-${TRAVIS_TAG}
-- mv Plenteumd miner zedwallet service poolwallet plenteum-${TRAVIS_TAG}/
+- mv Plenteumd miner zedwallet wallet-service plenteum-${TRAVIS_TAG}/
 - cp ../../LICENSE plenteum-${TRAVIS_TAG}/
 - tar cvfz plenteum-${TRAVIS_TAG}-${TRAVIS_OS_NAME}.tar.gz plenteum-${TRAVIS_TAG}/
 deploy:
