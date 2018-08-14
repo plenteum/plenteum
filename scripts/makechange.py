@@ -75,7 +75,7 @@ def sendTransaction(host, port, rpcPassword, **kwargs):
 def sendTXs(host, port, rpcPassword, sender, receiver):
     def loop():
         n = 1
-        while(n < 100000000):
+        while(n < 10000):
             yield n
             n *= 10
 
@@ -87,8 +87,8 @@ def sendTXs(host, port, rpcPassword, sender, receiver):
             amount = random.randint(i, i+1000000)
 
             params = {'transfers': [{'address': receiver, 'amount': amount}],
-                      'fee': 50000000,
-                      'anonymity': 5,
+                      'fee': 30000000,
+                      'anonymity': 2,
                       'changeAddress': sender}
 
             if not sendTransaction(host, port, rpcPassword, **params):
