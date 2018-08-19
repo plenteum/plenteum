@@ -189,9 +189,13 @@ const static boost::uuids::uuid CRYPTONOTE_NETWORK =
 };
 
 const char* const SEED_NODES[] = {
-  //add unix and windows nodes as seeds
+  //add seed nodes
   "197.81.192.73:44015", //WhassupZA
-  "miner.care:44015", //Exp-Turtle.Land Pool-Turtle.Casa
-  "192.99.244.16:44015" //Charlie
+  "85.216.148.43:44015", //miner.care
+  "192.99.244.16:44015", //Charlie
+  "85.90.244.194:44015", //DeadSet
+  "18.222.7.255:44015", //AWS Seed1
+  "142.93.132.203:44015", //DO Seed3
+  "206.189.124.145:44015" //DO Seed2
 };
 } // CryptoNote
