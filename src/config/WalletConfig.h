@@ -40,8 +40,11 @@ namespace WalletConfig
 
 
     /* The number of decimals your coin has */
-    const int numDecimalPlaces = CryptoNote::parameters
-                                           ::CRYPTONOTE_DISPLAY_DECIMAL_POINT;
+	const int numDecimalPlaces = CryptoNote::parameters
+		::CRYPTONOTE_DUST_DECIMAL_POINT;
+
+	const int numDisplayDecimalPlaces = CryptoNote::parameters
+		::CRYPTONOTE_DISPLAY_DECIMAL_POINT;
 
 
     /* The length of a standard address for your coin */

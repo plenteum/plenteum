@@ -112,12 +112,12 @@ std::string formatDollars(const uint64_t amount)
 
 /* Pad to the amount of decimal spaces, e.g. with 2 decimal spaces 5 becomes
    05, 50 remains 50 */
-std::string formatCents(const uint64_t amount)
+std::string formatCents(uint64_t amount)
 {
-    std::stringstream stream;
-    stream << std::setfill('0') << std::setw(WalletConfig::numDecimalPlaces)
-           << amount;
-    return stream.str();
+	std::stringstream stream;
+	stream << std::setfill('0') << std::setw(WalletConfig::numDecimalPlaces)
+		<< amount;
+	return stream.str().substr(0, WalletConfig::numDisplayDecimalPlaces); //only return the digits we want to display
 }
 
 bool confirm(const std::string &msg)
