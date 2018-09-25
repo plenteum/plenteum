@@ -1,4 +1,3 @@
-// Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
@@ -7,18 +6,18 @@
 #include <zedwallet/AddressBook.h>
 //////////////////////////////////
 
-#include <boost/algorithm/string.hpp>
-
 #ifndef MSVC
 #include <fstream>
 #endif
 
 #include <Serialization/SerializationTools.h>
 
+#include <Wallet/WalletUtils.h>
+
 #include <zedwallet/ColouredMsg.h>
 #include <zedwallet/Tools.h>
 #include <zedwallet/Transfer.h>
-#include <zedwallet/WalletConfig.h>
+#include <config/WalletConfig.h>
 
 const std::string getAddressBookName(AddressBook addressBook)
 {
@@ -30,7 +29,7 @@ const std::string getAddressBookName(AddressBook addressBook)
                   << InformationMsg("give this address book entry?: ");
 
         std::getline(std::cin, friendlyName);
-        boost::algorithm::trim(friendlyName);
+        trim(friendlyName);
 
         const auto it = std::find(addressBook.begin(), addressBook.end(),
                             AddressBookEntry(friendlyName));
@@ -86,18 +85,9 @@ void addToAddressBook()
     }
 
     std::string address = maybeAddress.x.second;
-    std::string paymentID;
+    std::string paymentID = "";
 
     bool integratedAddress = maybeAddress.x.first == IntegratedAddress;
-
-    /* It's an integrated address, so lets extract out the true address and
-       payment ID from the pair */
-    if (integratedAddress)
-    {
-        auto addrPaymentIDPair = extractIntegratedAddress(maybeAddress.x.second);
-        address = addrPaymentIDPair.x.first;
-        paymentID = addrPaymentIDPair.x.second;
-    }
 
     if (!integratedAddress)
     {
@@ -136,7 +126,7 @@ const Maybe<const AddressBookEntry> getAddressBookEntry(AddressBook addressBook)
                   << InformationMsg("address book?: ");
 
         std::getline(std::cin, friendlyName);
-        boost::algorithm::trim(friendlyName);
+        trim(friendlyName);
 
         if (friendlyName == "cancel")
         {
@@ -169,8 +159,9 @@ const Maybe<const AddressBookEntry> getAddressBookEntry(AddressBook addressBook)
     }
 }
 
-void sendFromAddressBook(std::shared_ptr<WalletInfo> &walletInfo,
-                         uint32_t height)
+void sendFromAddressBook(std::shared_ptr<WalletInfo> walletInfo,
+                         uint32_t height, std::string feeAddress,
+                         uint32_t feeAmount)
 {
     auto addressBook = getAddressBook();
 
@@ -192,6 +183,8 @@ void sendFromAddressBook(std::shared_ptr<WalletInfo> &walletInfo,
         return;
     }
 
+    auto addressBookEntry = maybeAddressBookEntry.x;
+
     auto maybeAmount = getTransferAmount();
 
     if (!maybeAmount.isJust)
@@ -200,13 +193,25 @@ void sendFromAddressBook(std::shared_ptr<WalletInfo> &walletInfo,
         return;
     }
 
-    auto address = maybeAddressBookEntry.x.address;
+    /* Originally entered address, so we can preserve the correct integrated
+       address for confirmation screen */
+    auto originalAddress = addressBookEntry.address;
+    auto address = originalAddress;
     auto amount = maybeAmount.x;
     auto fee = WalletConfig::defaultFee;
-    auto extra = getExtraFromPaymentID(maybeAddressBookEntry.x.paymentID);
-    auto integrated = maybeAddressBookEntry.x.integratedAddress;
+    auto extra = getExtraFromPaymentID(addressBookEntry.paymentID);
+    auto mixin = CryptoNote::getDefaultMixinByHeight(height);
+    auto integrated = addressBookEntry.integratedAddress;
 
-    doTransfer(address, amount, fee, extra, walletInfo, height, integrated);
+    if (integrated)
+    {
+        auto addrPaymentIDPair = extractIntegratedAddress(address);
+        address = addrPaymentIDPair.x.first;
+        extra = getExtraFromPaymentID(addrPaymentIDPair.x.second);
+    }
+
+    doTransfer(address, amount, fee, extra, walletInfo, height, integrated,
+               mixin, feeAddress, feeAmount, originalAddress);
 }
 
 bool isAddressBookEmpty(AddressBook addressBook)
@@ -245,7 +250,7 @@ void deleteFromAddressBook()
                   << InformationMsg("delete?: ");
 
         std::getline(std::cin, friendlyName);
-        boost::algorithm::trim(friendlyName);
+        trim(friendlyName);
 
         if (friendlyName == "cancel")
         {
@@ -314,28 +319,23 @@ void listAddressBook()
                   << std::endl
                   << std::endl
                   << InformationMsg("Address: ")
+                  << std::endl
+                  << SuccessMsg(i.address)
+                  << std::endl
                   << std::endl;
 
-        if (!i.integratedAddress)
+        if (i.paymentID != "")
         {
-            std::cout << SuccessMsg(i.address)
+            std::cout << InformationMsg("Payment ID: ")
+                      << std::endl
+                      << SuccessMsg(i.paymentID)
+                      << std::endl
                       << std::endl
                       << std::endl;
-
-            if (i.paymentID != "")
-            {
-                std::cout << InformationMsg("Payment ID: ")
-                          << std::endl
-                          << SuccessMsg(i.paymentID)
-                          << std::endl
-                          << std::endl
-                          << std::endl;
-            }
         }
         else
         {
-            std::string addr = createIntegratedAddress(i.address, i.paymentID);
-            std::cout << SuccessMsg(addr) << std::endl << std::endl;
+            std::cout << std::endl;
         }
 
         index++;
@@ -344,7 +344,7 @@ void listAddressBook()
 
 AddressBook getAddressBook()
 {
-    AddressBook addressBook = boost::value_initialized<decltype(addressBook)>();
+    AddressBook addressBook;
 
     std::ifstream input(WalletConfig::addressBookFilename);
 

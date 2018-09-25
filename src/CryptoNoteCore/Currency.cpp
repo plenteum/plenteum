@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero Project
-// Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
@@ -14,9 +13,11 @@
 #include "../Common/StringTools.h"
 
 #include "Account.h"
+#include "CheckDifficulty.h"
 #include "CryptoNoteBasicImpl.h"
 #include "CryptoNoteFormatUtils.h"
 #include "CryptoNoteTools.h"
+#include "Difficulty.h"
 #include "TransactionExtra.h"
 #include "UpgradeDetector.h"
 
@@ -102,29 +103,53 @@ bool Currency::generateGenesisBlock() {
 }
 
 size_t Currency::difficultyWindowByBlockVersion(uint8_t blockMajorVersion) const {
+  if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
     return m_difficultyWindow;
+  } else if (blockMajorVersion == BLOCK_MAJOR_VERSION_2) {
+    return CryptoNote::parameters::DIFFICULTY_WINDOW_V2;
+  } else {
+    return CryptoNote::parameters::DIFFICULTY_WINDOW_V1;
+  }
 }
 
 size_t Currency::difficultyLagByBlockVersion(uint8_t blockMajorVersion) const {
+  if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
     return m_difficultyLag;
+  } else if (blockMajorVersion == BLOCK_MAJOR_VERSION_2) {
+    return CryptoNote::parameters::DIFFICULTY_LAG_V2;
+  } else {
+    return CryptoNote::parameters::DIFFICULTY_LAG_V1;
+  }
 }
 
 size_t Currency::difficultyCutByBlockVersion(uint8_t blockMajorVersion) const {
+  if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
     return m_difficultyCut;
+  } else if (blockMajorVersion == BLOCK_MAJOR_VERSION_2) {
+    return CryptoNote::parameters::DIFFICULTY_CUT_V2;
+  } else {
+    return CryptoNote::parameters::DIFFICULTY_CUT_V1;
+  }
 }
 
 size_t Currency::difficultyBlocksCountByBlockVersion(uint8_t blockMajorVersion, uint32_t height) const
 {
-    //if (height >= CryptoNote::parameters::LWMA_2_DIFFICULTY_BLOCK_INDEX)
-    //{
-    //    return CryptoNote::parameters::DIFFICULTY_BLOCKS_COUNT;
-    //}
+    if (height >= CryptoNote::parameters::LWMA_2_DIFFICULTY_BLOCK_INDEX_V3)
+    {
+        return CryptoNote::parameters::DIFFICULTY_BLOCKS_COUNT_V3;
+    }
 
     return difficultyWindowByBlockVersion(blockMajorVersion) + difficultyLagByBlockVersion(blockMajorVersion);
 }
 
 size_t Currency::blockGrantedFullRewardZoneByBlockVersion(uint8_t blockMajorVersion) const {
+  if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
     return m_blockGrantedFullRewardZone;
+  } else if (blockMajorVersion == BLOCK_MAJOR_VERSION_2) {
+    return CryptoNote::parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_V2;
+  } else {
+    return CryptoNote::parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_V1;
+  }
 }
 
 uint32_t Currency::upgradeHeight(uint8_t majorVersion) const {
@@ -140,30 +165,30 @@ uint32_t Currency::upgradeHeight(uint8_t majorVersion) const {
 }
 
 bool Currency::getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins,
-  uint64_t fee, uint64_t& reward, int64_t& emissionChange) const {
-  assert(alreadyGeneratedCoins <= m_moneySupply);
-  assert(m_emissionSpeedFactor > 0 && m_emissionSpeedFactor <= 8 * sizeof(uint64_t));
+	uint64_t fee, uint64_t& reward, int64_t& emissionChange) const {
+	assert(alreadyGeneratedCoins <= m_moneySupply);
+	assert(m_emissionSpeedFactor > 0 && m_emissionSpeedFactor <= 8 * sizeof(uint64_t));
 
-  uint64_t baseReward = (m_moneySupply - alreadyGeneratedCoins) >> m_emissionSpeedFactor;
-  if (alreadyGeneratedCoins == 0 && m_genesisBlockReward != 0) {
-    baseReward = m_genesisBlockReward;
-    //std::cout << "Genesis block reward: " << baseReward << std::endl;
-  }
+	uint64_t baseReward = (m_moneySupply - alreadyGeneratedCoins) >> m_emissionSpeedFactor;
+	if (alreadyGeneratedCoins == 0 && m_genesisBlockReward != 0) {
+		baseReward = m_genesisBlockReward;
+		//std::cout << "Genesis block reward: " << baseReward << std::endl;
+	}
 
-  size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
-  medianSize = std::max(medianSize, blockGrantedFullRewardZone);
-  if (currentBlockSize > UINT64_C(2) * medianSize) {
-    logger(TRACE) << "Block cumulative size is too big: " << currentBlockSize << ", expected less than " << 2 * medianSize;
-    return false;
-  }
+	size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
+	medianSize = std::max(medianSize, blockGrantedFullRewardZone);
+	if (currentBlockSize > UINT64_C(2) * medianSize) {
+		logger(TRACE) << "Block cumulative size is too big: " << currentBlockSize << ", expected less than " << 2 * medianSize;
+		return false;
+	}
 
-  uint64_t penalizedBaseReward = getPenalizedAmount(baseReward, medianSize, currentBlockSize);
-  uint64_t penalizedFee = blockMajorVersion >= BLOCK_MAJOR_VERSION_1 ? getPenalizedAmount(fee, medianSize, currentBlockSize) : fee;
+	uint64_t penalizedBaseReward = getPenalizedAmount(baseReward, medianSize, currentBlockSize);
+	uint64_t penalizedFee = blockMajorVersion >= BLOCK_MAJOR_VERSION_1 ? getPenalizedAmount(fee, medianSize, currentBlockSize) : fee;
 
-  emissionChange = penalizedBaseReward - (fee - penalizedFee);
-  reward = penalizedBaseReward + penalizedFee;
+	emissionChange = penalizedBaseReward - (fee - penalizedFee);
+	reward = penalizedBaseReward + penalizedFee;
 
-  return true;
+	return true;
 }
 
 size_t Currency::maxBlockCumulativeSize(uint64_t height) const {
@@ -347,13 +372,11 @@ bool Currency::parseAccountAddressString(const std::string& str, AccountPublicAd
 }
 
 std::string Currency::formatAmount(uint64_t amount) const {
-  //first, format it to the full value of DUST decimals
   std::string s = std::to_string(amount);
   if (s.size() < m_numberOfDecimalPlaces + 1) {
     s.insert(0, m_numberOfDecimalPlaces + 1 - s.size(), '0');
   }
   s.insert(s.size() - m_numberOfDecimalPlaces, ".");
-  
   return s.substr(0, s.size() - (m_numberOfDecimalPlaces - m_numberOfDisplayDecimalPlaces)); //remove the dust
 }
 
@@ -366,7 +389,7 @@ std::string Currency::formatAmount(int64_t amount) const {
 
   return s;
 }
-//todo: find out where this is used and ensure the decimal point changes are not affecting it
+
 bool Currency::parseAmount(const std::string& str, uint64_t& amount) const {
   std::string strAmount = str;
   boost::algorithm::trim(strAmount);
@@ -402,154 +425,28 @@ bool Currency::parseAmount(const std::string& str, uint64_t& amount) const {
   return Common::fromString(strAmount, amount);
 }
 
-Difficulty Currency::getNextDifficulty(uint8_t version, uint32_t blockIndex, std::vector<uint64_t> timestamps, std::vector<Difficulty> cumulativeDifficulties) const
+uint64_t Currency::getNextDifficulty(uint8_t version, uint32_t blockIndex, std::vector<uint64_t> timestamps, std::vector<uint64_t> cumulativeDifficulties) const
 {
-    if (blockIndex < CryptoNote::parameters::LWMA_2_DIFFICULTY_BLOCK_INDEX)
+    if (blockIndex >= CryptoNote::parameters::LWMA_2_DIFFICULTY_BLOCK_INDEX_V3)
     {
-        return nextDifficulty(version, blockIndex, timestamps, cumulativeDifficulties);
+        return nextDifficultyV5(timestamps, cumulativeDifficulties);
     }
-    else if (blockIndex < CryptoNote::parameters::LWMA_2_DIFFICULTY_BLOCK_INDEX_V2)
+    else if (blockIndex >= CryptoNote::parameters::LWMA_2_DIFFICULTY_BLOCK_INDEX_V2)
+    {
+        return nextDifficultyV4(timestamps, cumulativeDifficulties);
+    }
+    else if (blockIndex >= CryptoNote::parameters::LWMA_2_DIFFICULTY_BLOCK_INDEX)
     {
         return nextDifficultyV3(timestamps, cumulativeDifficulties);
     }
-
-    return nextDifficultyV4(timestamps, cumulativeDifficulties);
-}
-
-// LWMA-2 difficulty algorithm 
-// Copyright (c) 2017-2018 Zawy, MIT License
-// https://github.com/zawy12/difficulty-algorithms/issues/3
-Difficulty Currency::nextDifficultyV3(std::vector<std::uint64_t> timestamps, std::vector<Difficulty> cumulativeDifficulties) const
-{
-    int64_t T = CryptoNote::parameters::DIFFICULTY_TARGET;
-    int64_t N = CryptoNote::parameters::DIFFICULTY_WINDOW;
-    int64_t FTL = CryptoNote::parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT;
-    int64_t L(0), ST, sum_3_ST(0), next_D, prev_D;
-
-    if (timestamps.size() <= static_cast<uint64_t>(N))
+    else
     {
-        return 1000;
+        return nextDifficulty(version, blockIndex, timestamps, cumulativeDifficulties);
     }
-
-    for (int64_t i = 1; i <= N; i++)
-    {  
-        ST = std::max(-FTL, std::min(static_cast<int64_t>(timestamps[i]) - static_cast<int64_t>(timestamps[i-1]), 6 * T));
-
-        L +=  ST * i; 
-
-        if (i > N-3)
-        {
-            sum_3_ST += ST;
-        } 
-    }
-
-    next_D = (static_cast<int64_t>(cumulativeDifficulties[N] - cumulativeDifficulties[0]) * T * (N+1) * 99) / (100 * 2 * L);
-    prev_D = cumulativeDifficulties[N] - cumulativeDifficulties[N-1];
-
-    /* Make sure we don't divide by zero if 50x attacker (thanks fireice) */
-    next_D = std::max((prev_D*70)/100, std::min(next_D, (prev_D*107)/100));
-
-    if (sum_3_ST < (8 * T) / 10)
-    {  
-        next_D = (prev_D * 110) / 100;
-    }
-
-    return static_cast<uint64_t>(next_D);
 }
 
-template <typename T>
-T clamp(const T& n, const T& lower, const T& upper) {
-  return std::max(lower, std::min(n, upper));
-}
-
-// LWMA-2 difficulty algorithm 
-// Copyright (c) 2017-2018 Zawy, MIT License
-// https://github.com/zawy12/difficulty-algorithms/issues/3
-Difficulty Currency::nextDifficultyV4(std::vector<std::uint64_t> timestamps, std::vector<Difficulty> cumulativeDifficulties) const
-{
-    int64_t T = CryptoNote::parameters::DIFFICULTY_TARGET;
-    int64_t N = CryptoNote::parameters::DIFFICULTY_WINDOW;
-    int64_t L(0), ST, sum_3_ST(0), next_D, prev_D;
-
-    if (timestamps.size() <= static_cast<uint64_t>(N))
-    {
-        return 1000;
-    }
-
-    for (int64_t i = 1; i <= N; i++)
-    {  
-        ST = clamp(-6 * T, static_cast<int64_t>(timestamps[i]) - static_cast<int64_t>(timestamps[i-1]), 6 * T);
-
-        L +=  ST * i; 
-
-        if (i > N-3)
-        {
-            sum_3_ST += ST;
-        } 
-    }
-
-    next_D = (static_cast<int64_t>(cumulativeDifficulties[N] - cumulativeDifficulties[0]) * T * (N+1) * 99) / (100 * 2 * L);
-    prev_D = cumulativeDifficulties[N] - cumulativeDifficulties[N-1];
-
-    /* Make sure we don't divide by zero if 50x attacker (thanks fireice) */
-    next_D = std::max((prev_D*67)/100, std::min(next_D, (prev_D*150)/100));
-
-    if (sum_3_ST < (8 * T) / 10)
-    {  
-        next_D = std::max(next_D, (prev_D * 110) / 100);
-    }
-
-    return static_cast<uint64_t>(next_D);
-}
-
-
-Difficulty Currency::nextDifficulty(std::vector<uint64_t> timestamps,
-  std::vector<Difficulty> cumulativeDifficulties) const {
-  assert(m_difficultyWindow >= 2);
-
-  if (timestamps.size() > m_difficultyWindow) {
-    timestamps.resize(m_difficultyWindow);
-    cumulativeDifficulties.resize(m_difficultyWindow);
-  }
-
-  size_t length = timestamps.size();
-  assert(length == cumulativeDifficulties.size());
-  assert(length <= m_difficultyWindow);
-  if (length <= 1) {
-    return 1;
-  }
-
-  sort(timestamps.begin(), timestamps.end());
-
-  size_t cutBegin, cutEnd;
-  assert(2 * m_difficultyCut <= m_difficultyWindow - 2);
-  if (length <= m_difficultyWindow - 2 * m_difficultyCut) {
-    cutBegin = 0;
-    cutEnd = length;
-  } else {
-    cutBegin = (length - (m_difficultyWindow - 2 * m_difficultyCut) + 1) / 2;
-    cutEnd = cutBegin + (m_difficultyWindow - 2 * m_difficultyCut);
-  }
-  assert(/*cut_begin >= 0 &&*/ cutBegin + 2 <= cutEnd && cutEnd <= length);
-  uint64_t timeSpan = timestamps[cutEnd - 1] - timestamps[cutBegin];
-  if (timeSpan == 0) {
-    timeSpan = 1;
-  }
-
-  Difficulty totalWork = cumulativeDifficulties[cutEnd - 1] - cumulativeDifficulties[cutBegin];
-  assert(totalWork > 0);
-
-  uint64_t low, high;
-  low = mul128(totalWork, m_difficultyTarget, &high);
-  if (high != 0 || std::numeric_limits<uint64_t>::max() - low < (timeSpan - 1)) {
-    return 0;
-  }
-
-  return (low + timeSpan - 1) / timeSpan;
-}
-
-Difficulty Currency::nextDifficulty(uint8_t version, uint32_t blockIndex, std::vector<uint64_t> timestamps,
-  std::vector<Difficulty> cumulativeDifficulties) const {
+uint64_t Currency::nextDifficulty(uint8_t version, uint32_t blockIndex, std::vector<uint64_t> timestamps,
+  std::vector<uint64_t> cumulativeDifficulties) const {
 
 std::vector<uint64_t> timestamps_o(timestamps);
 std::vector<uint64_t> cumulativeDifficulties_o(cumulativeDifficulties);
@@ -587,7 +484,7 @@ std::vector<uint64_t> cumulativeDifficulties_o(cumulativeDifficulties);
     timeSpan = 1;
   }
 
-  Difficulty totalWork = cumulativeDifficulties[cutEnd - 1] - cumulativeDifficulties[cutBegin];
+  uint64_t totalWork = cumulativeDifficulties[cutEnd - 1] - cumulativeDifficulties[cutBegin];
   assert(totalWork > 0);
 
   uint64_t low, high;
@@ -672,7 +569,7 @@ std::vector<uint64_t> cumulativeDifficulties_o(cumulativeDifficulties);
   return (low + timeSpan - 1) / timeSpan;  // with version
 }
 
-bool Currency::checkProofOfWorkV1(const CachedBlock& block, Difficulty currentDifficulty) const {
+bool Currency::checkProofOfWorkV1(const CachedBlock& block, uint64_t currentDifficulty) const {
   if (BLOCK_MAJOR_VERSION_1 != block.getBlock().majorVersion) {
     return false;
   }
@@ -680,7 +577,7 @@ bool Currency::checkProofOfWorkV1(const CachedBlock& block, Difficulty currentDi
   return check_hash(block.getBlockLongHash(), currentDifficulty);
 }
 
-bool Currency::checkProofOfWorkV2(const CachedBlock& cachedBlock, Difficulty currentDifficulty) const {
+bool Currency::checkProofOfWorkV2(const CachedBlock& cachedBlock, uint64_t currentDifficulty) const {
   const auto& block = cachedBlock.getBlock();
   if (block.majorVersion < BLOCK_MAJOR_VERSION_2) {
     return false;
@@ -712,11 +609,11 @@ bool Currency::checkProofOfWorkV2(const CachedBlock& cachedBlock, Difficulty cur
   return true;
 }
 
-bool Currency::checkProofOfWork(const CachedBlock& block, Difficulty currentDiffic) const {
+bool Currency::checkProofOfWork(const CachedBlock& block, uint64_t currentDiffic) const {
   switch (block.getBlock().majorVersion) {
   case BLOCK_MAJOR_VERSION_1:
     return checkProofOfWorkV1(block, currentDiffic);
-    
+
   case BLOCK_MAJOR_VERSION_2:
   case BLOCK_MAJOR_VERSION_3:
   case BLOCK_MAJOR_VERSION_4:
@@ -824,8 +721,8 @@ zawyDifficultyBlockVersion(parameters::ZAWY_DIFFICULTY_DIFFICULTY_BLOCK_VERSION)
   blockGrantedFullRewardZone(parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE);
   minerTxBlobReservedSize(parameters::CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE);
 
-  numberOfDecimalPlaces(parameters::CRYPTONOTE_DUST_DECIMAL_POINT);
   numberOfDisplayDecimalPlaces(parameters::CRYPTONOTE_DISPLAY_DECIMAL_POINT);
+  numberOfDecimalPlaces(parameters::CRYPTONOTE_DISPLAY_DECIMAL_POINT);
 
   mininumFee(parameters::MINIMUM_FEE);
   defaultDustThreshold(parameters::DEFAULT_DUST_THRESHOLD);

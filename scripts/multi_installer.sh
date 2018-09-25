@@ -37,26 +37,26 @@ _fail() {
 }
 
 _set_wd() {
-    #if [ -d "$PWD/.git" ] && [ -f "$PWD/Makefile" ]; then
+    if [ -d "$PWD/.git" ] && [ -f "$PWD/Makefile" ]; then
         _note "Building project from current working directory ($PWD)"
-    #else
-    #    _note "Cloning project with git..."
-    #    if [ -d "$PWD"/plenteum ]; then
-    #        read -r -p "${1:-plenteum directory already exists. Overwrite? [y/N]} " response
-    #        case "$response" in
-    #            [yY][eE][sS|[yY])
-    #                _colorize red "Overwriting old plenteum directory" && echo
-    #                rm -rf "$PWD"/plenteum
-    #                ;;
-    #            *)
-    #               _fail "plenteum directory already exists. Aborting..."
-    #               ;;
-    #        esac
-    #    fi
-    #    mkdir plenteum
-    #    git clone -b master -q https://github.com/plenteum/plenteum plenteum   >>build.log 2>&1 || _fail "Unable to clone git repository. Please see build.log for more information"
-    #    cd plenteum
-    #fi
+    else
+        _note "Cloning project with git..."
+        if [ -d "$PWD"/plenteum ]; then
+            read -r -p "${1:-plenteum directory already exists. Overwrite? [y/N]} " response
+            case "$response" in
+                [yY][eE][sS|[yY])
+                    _colorize red "Overwriting old plenteum directory" && echo
+                    rm -rf "$PWD"/plenteum
+                    ;;
+                *)
+                    _fail "plenteum directory already exists. Aborting..."
+                    ;;
+            esac
+        fi
+        mkdir plenteum
+        git clone -b master -q https://github.com/plenteum/plenteum plenteum   >>build.log 2>&1 || _fail "Unable to clone git repository. Please see build.log for more information"
+        cd plenteum
+    fi
 }
 
 _build_plenteum() {
@@ -84,7 +84,7 @@ _configure_ubuntu() {
         _note "Sudo privileges required for package installation"
     fi
     $_sudo apt-get update -qq
-    $_sudo apt-get install -qq -y git build-essential python-dev gcc g++ git cmake libboost-all-dev librocksdb-dev libreadline-dev >>build.log 2>&1 || _fail "Unable to install build dependencies. Please see build.log for more information"
+    $_sudo apt-get install -qq -y git build-essential python-dev gcc g++ git cmake libboost-all-dev >>build.log 2>&1 || _fail "Unable to install build dependencies. Please see build.log for more information"
 
     export CXXFLAGS="-std=gnu++11"
 }
@@ -124,8 +124,7 @@ _configure_osx() {
     fi
     _note "Updating homebrew and installing software dependencies..."
     brew update --quiet
-    brew install --quiet git cmake boost rocksdb readline
-    brew link --force readline
+    brew install --quiet git cmake boost rocksdb
 }
 
 _configure_os() {
@@ -145,8 +144,8 @@ _configure_os() {
     _note "Operating system configuration completed. You're halfway there!"
 }
 
-_note "Plenteum Multi_Installer v1.0"
-_colorize green "" && echo
+_note "Plenteum Multi_Installer v1.0 (pepperoni)"
+_colorize green " _______         _   _       _____      _       \n|__   __|       | | | |     / ____|    (_)      \n   | |_   _ _ __| |_| | ___| |     ___  _ _ __  \n   | | | | | '__| __| |/ _ \ |    / _ \| | '_ \ \n   | | |_| | |  | |_| |  __/ |___| (_) | | | | |\n   |_|\__,_|_|   \__|_|\___|\_____\___/|_|_| |_|\n" && echo
 
 _configure_os
 
@@ -154,4 +153,4 @@ _set_wd
 _build_plenteum
 
 _note "Installation complete!"
-_note "Look in 'plenteum/build/src/' for the executible binaries. See 'https://github.com/plenteum/plenteum' for more project support."
+_note "Look in 'plenteum/build/src/' for the executible binaries. See 'https://github.com/plenteum/plenteum' for more project support. Cowabunga!"

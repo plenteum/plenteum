@@ -1,8 +1,7 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero Project
-// Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
-// 
+//
 // Please see the included LICENSE file for more information.
 
 #include <algorithm>
@@ -26,6 +25,7 @@
 #include "CryptoNoteCore/TransactionPool.h"
 #include "CryptoNoteCore/TransactionPoolCleaner.h"
 #include "CryptoNoteCore/UpgradeManager.h"
+#include "CryptoNoteCore/Mixins.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandlerCommon.h"
 
 #include <System/Timer.h>
@@ -443,7 +443,7 @@ bool Core::queryBlocksLite(const std::vector<Crypto::Hash>& knownBlockHashes, ui
 
     return true;
   } catch (std::exception& e) {
-	logger(Logging::ERROR) << "Failed to query blocks: " << e.what();
+    logger(Logging::ERROR) << "Failed to query blocks: " << e.what();
     return false;
   }
 }
@@ -488,7 +488,7 @@ void Core::getTransactions(const std::vector<Crypto::Hash>& transactionHashes, s
   missedHashes.insert(missedHashes.end(), leftTransactions.begin(), leftTransactions.end());
 }
 
-Difficulty Core::getBlockDifficulty(uint32_t blockIndex) const {
+uint64_t Core::getBlockDifficulty(uint32_t blockIndex) const {
   throwIfNotInitialized();
   IBlockchainCache* mainChain = chainsLeaves[0];
   auto difficulties = mainChain->getLastCumulativeDifficulties(2, blockIndex, addGenesisBlock);
@@ -501,7 +501,7 @@ Difficulty Core::getBlockDifficulty(uint32_t blockIndex) const {
 }
 
 // TODO: just use mainChain->getDifficultyForNextBlock() ?
-Difficulty Core::getDifficultyForNextBlock() const {
+uint64_t Core::getDifficultyForNextBlock() const {
   throwIfNotInitialized();
   IBlockchainCache* mainChain = chainsLeaves[0];
 
@@ -589,9 +589,28 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
     return error::BlockValidationError::DIFFICULTY_OVERHEAD;
   }
 
-  if (!validateMixin(transactions, blockIndex))
+  // This allows us to accept blocks with transaction mixins for the mined money unlock window
+  // that may be using older mixin rules on the network. This helps to clear out the transaction
+  // pool during a network soft fork that requires a mixin lower or upper bound change
+  uint32_t mixinChangeWindow = blockIndex;
+  if (mixinChangeWindow > CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW)
   {
+    mixinChangeWindow = mixinChangeWindow - CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW;
+  }
+
+  bool success;
+  std::string error;
+  std::tie(success, error) = Mixins::validate(transactions, blockIndex);
+
+  if (!success)
+  {
+    std::tie(success, error) = Mixins::validate(transactions, mixinChangeWindow);
+
+    if (!success)
+    {
+      logger(Logging::DEBUGGING) << error;
       return error::TransactionValidationError::INVALID_MIXIN;
+    }
   }
 
   uint64_t cumulativeFee = 0;
@@ -680,7 +699,7 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
           ret = error::AddBlockErrorCode::ADDED_TO_ALTERNATIVE_AND_SWITCHED;
 
           logger(Logging::INFO) << "Resolved: " << blockStr
-                                << ", Previous: " << chainsLeaves[endpointIndex]->getTopBlockIndex() << " (" 
+                                << ", Previous: " << chainsLeaves[endpointIndex]->getTopBlockIndex() << " ("
                                 << chainsLeaves[endpointIndex]->getTopBlockHash() << ")";
         }
       }
@@ -946,72 +965,17 @@ bool Core::addTransactionToPool(CachedTransaction&& cachedTransaction) {
   return true;
 }
 
-bool Core::validateMixin(const std::vector<CachedTransaction> transactions,
-                         uint32_t height)
-{
-    uint64_t minMixin = 0;
-    uint64_t maxMixin = std::numeric_limits<uint64_t>::max();
-
-    minMixin = CryptoNote::parameters::MINIMUM_MIXIN;
-    maxMixin = CryptoNote::parameters::MAXIMUM_MIXIN;
-    
-
-    for (const auto& transaction : transactions)
-    {
-        if (!validateMixin(transaction, minMixin, maxMixin))
-        {
-            return false;
-        }
-    }
-	
-    return true;
-}
-
-bool Core::validateMixin(const CachedTransaction& cachedTransaction,
-                         uint64_t minMixin, uint64_t maxMixin) {
-  uint64_t ringSize = 1;
-  
-  const auto tx = createTransaction(cachedTransaction.getTransaction());
-
-  for (size_t i = 0; i < tx->getInputCount(); ++i) {
-    if (tx->getInputType(i) != TransactionTypes::InputType::Key) {
-      continue;
-    }
-
-    KeyInput input;
-    tx->getInput(i, input);
-    const uint64_t currentRingSize = input.outputIndexes.size();
-    if (currentRingSize > ringSize) {
-        ringSize = currentRingSize;
-    }
-  }
-
-  /* Ring size = mixin + 1 - your transaction plus the others you mix with */
-  const uint64_t mixin = ringSize - 1;
-
-  if (mixin > maxMixin) {
-    logger(Logging::DEBUGGING) << "Transaction " << cachedTransaction.getTransactionHash()
-      << " is not valid. Reason: transaction mixin is too large (" << mixin
-      << "). Maximum mixin allowed is " << maxMixin;
-
-    return false;
-  } else if (mixin < minMixin) {
-    logger(Logging::DEBUGGING) << "Transaction " << cachedTransaction.getTransactionHash()
-      << " is not valid. Reason: transaction mixin is too small (" << mixin
-      << "). Minimum mixin allowed is " << minMixin;
-
-    return false;
-  }
-
-  return true;
-}
-
 bool Core::isTransactionValidForPool(const CachedTransaction& cachedTransaction, TransactionValidatorState& validatorState) {
-  if (!validateMixin({cachedTransaction}, getTopBlockIndex()))
+  bool success;
+  std::string err;
+
+  std::tie(success, err) = Mixins::validate({cachedTransaction}, getTopBlockIndex());
+
+  if (!success)
   {
       return false;
   }
-  
+
   uint64_t fee;
 
   if (auto validationResult = validateTransaction(cachedTransaction, validatorState, chainsLeaves[0], fee, getTopBlockIndex())) {
@@ -1082,7 +1046,7 @@ bool Core::getPoolChangesLite(const Crypto::Hash& lastBlockHash, const std::vect
 }
 
 bool Core::getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, const BinaryArray& extraNonce,
-                            Difficulty& difficulty, uint32_t& height) const {
+                            uint64_t& difficulty, uint32_t& height) const {
   throwIfNotInitialized();
 
   height = getTopBlockIndex() + 1;
@@ -1142,7 +1106,7 @@ bool Core::getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, c
 
   if (height >= CryptoNote::parameters::LWMA_2_DIFFICULTY_BLOCK_INDEX)
   {
-      blockchain_timestamp_check_window = CryptoNote::parameters::BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW;
+      blockchain_timestamp_check_window = CryptoNote::parameters::BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW_V3;
   }
   else
   {
@@ -1516,8 +1480,8 @@ std::error_code Core::validateBlock(const CachedBlock& cachedBlock, IBlockchainC
     return error::BlockValidationError::TIMESTAMP_TOO_FAR_IN_FUTURE;
   }
 
-  auto timestamps = cache->getLastTimestamps(currency.timestampCheckWindow(), previousBlockIndex, addGenesisBlock);
-  if (timestamps.size() >= currency.timestampCheckWindow()) {
+  auto timestamps = cache->getLastTimestamps(currency.timestampCheckWindow(previousBlockIndex+1), previousBlockIndex, addGenesisBlock);
+  if (timestamps.size() >= currency.timestampCheckWindow(previousBlockIndex+1)) {
     auto median_ts = Common::medianValue(timestamps);
     if (block.timestamp < median_ts) {
       return error::BlockValidationError::TIMESTAMP_TOO_FAR_IN_PAST;
@@ -2083,7 +2047,7 @@ BlockDetails Core::getBlockDetails(const Crypto::Hash& blockHash) const {
 
   uint32_t blockIndex = segment->getBlockIndex(blockHash);
   BlockTemplate blockTemplate = restoreBlockTemplate(segment, blockIndex);
-  
+
   BlockDetails blockDetails;
   blockDetails.majorVersion = blockTemplate.majorVersion;
   blockDetails.minorVersion = blockTemplate.minorVersion;
@@ -2236,7 +2200,7 @@ TransactionDetails Core::getTransactionDetails(const Crypto::Hash& transactionHa
   }
   transactionDetails.extra.publicKey = transaction->getTransactionPublicKey();
   transaction->getExtraNonce(transactionDetails.extra.nonce);
-  
+
   transactionDetails.signatures = rawTransaction.signatures;
 
   transactionDetails.inputs.reserve(transaction->getInputCount());
@@ -2396,7 +2360,7 @@ void Core::transactionPoolCleaningProcedure() {
     for (;;) {
       timer.sleep(OUTDATED_TRANSACTION_POLLING_INTERVAL);
 
-      auto deletedTransactions = transactionPool->clean();
+      auto deletedTransactions = transactionPool->clean(getTopBlockIndex());
       notifyObservers(makeDelTransactionMessage(std::move(deletedTransactions), Messages::DeleteTransaction::Reason::Outdated));
     }
   } catch (System::InterruptedException&) {
@@ -2418,11 +2382,11 @@ void Core::updateBlockMedianSize() {
 
 uint64_t Core::get_current_blockchain_height() const
 {
-	// TODO: remove when GetCoreStatistics is implemented
-	return mainChainStorage->getBlockCount();
+  // TODO: remove when GetCoreStatistics is implemented
+  return mainChainStorage->getBlockCount();
 }
 
-std::time_t Core::getStartTime() const 
+std::time_t Core::getStartTime() const
 {
   return start_time;
 }

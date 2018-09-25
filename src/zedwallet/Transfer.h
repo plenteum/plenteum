@@ -1,4 +1,3 @@
-// Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
@@ -8,30 +7,34 @@
 #include <memory>
 
 #include <zedwallet/Types.h>
-#include <zedwallet/WalletConfig.h>
+#include <config/WalletConfig.h>
 
 enum AddressType {NotAnAddress, IntegratedAddress, StandardAddress};
 
 enum BalanceInfo {NotEnoughBalance, EnoughBalance, SetMixinToZero};
 
 void transfer(std::shared_ptr<WalletInfo> walletInfo, uint32_t height,
-              bool sendAll = false);
+              bool sendAll = false, std::string nodeAddress = std::string(),
+              uint32_t nodeFee = 0);
 
 void doTransfer(std::string address, uint64_t amount, uint64_t fee,
                 std::string extra, std::shared_ptr<WalletInfo> walletInfo,
                 uint32_t height, bool integratedAddress,
-                uint64_t mixin = WalletConfig::defaultMixin);
+                uint64_t mixin, std::string nodeAddress, uint32_t nodeFee,
+                std::string originalAddress);
 
 void splitTX(CryptoNote::WalletGreen &wallet,
-             const CryptoNote::TransactionParameters p);
+             const CryptoNote::TransactionParameters splitTXParams,
+             uint32_t nodeFee);
 
 void sendTX(std::shared_ptr<WalletInfo> walletInfo, 
             CryptoNote::TransactionParameters p, uint32_t height,
-            bool retried = false);
+            bool retried = false, uint32_t nodeFee = 0);
 
 bool confirmTransaction(CryptoNote::TransactionParameters t,
                         std::shared_ptr<WalletInfo> walletInfo,
-                        bool integratedAddress);
+                        bool integratedAddress, uint32_t nodeFee,
+                        std::string originalAddress);
 
 bool parseAmount(std::string amountString);
 
@@ -63,4 +66,4 @@ Maybe<std::pair<std::string, std::string>> extractIntegratedAddress(
 
 BalanceInfo doWeHaveEnoughBalance(uint64_t amount, uint64_t fee,
                                   std::shared_ptr<WalletInfo> walletInfo,
-                                  uint64_t height);
+                                  uint64_t height, uint32_t nodeFee);

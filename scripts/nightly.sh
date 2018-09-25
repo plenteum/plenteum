@@ -4,7 +4,7 @@
 # and put it inside a timestamped folder.
 # rock made this
 
-sourcefolder=~/Source/turtle-dev-build-$(date +%F)
+sourcefolder=~/Source/plenteum-dev-build-$(date +%F)
 
 mkdir ~/Source
 mkdir ~/Binaries

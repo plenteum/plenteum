@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
-// 
+//
 // Please see the included LICENSE file for more information.
 
 #pragma once
@@ -64,7 +63,7 @@ struct BlockHeaderInfo {
   uint32_t nonce;
   bool isAlternative;
   uint32_t depth; // last block index = current block index + depth
-  Difficulty difficulty;
+  uint64_t difficulty;
   uint64_t reward;
 };
 
@@ -88,7 +87,10 @@ public:
   virtual uint32_t getLocalBlockCount() const = 0;
   virtual uint32_t getKnownBlockCount() const = 0;
   virtual uint64_t getLastLocalBlockTimestamp() const = 0;
+  virtual uint64_t getNodeHeight() const = 0;
+
   virtual std::string getInfo() = 0;
+  virtual void getFeeInfo() = 0;
 
   virtual void getBlockHashesByTimestamps(uint64_t timestampBegin, size_t secondsCount, std::vector<Crypto::Hash>& blockHashes, const Callback& callback) = 0;
   virtual void getTransactionHashesByPaymentId(const Crypto::Hash& paymentId, std::vector<Crypto::Hash>& transactionHashes, const Callback& callback) = 0;
@@ -107,6 +109,8 @@ public:
   virtual void getBlock(const uint32_t blockHeight, BlockDetails &block, const Callback& callback) = 0;
   virtual void getTransactions(const std::vector<Crypto::Hash>& transactionHashes, std::vector<TransactionDetails>& transactions, const Callback& callback) = 0;
   virtual void isSynchronized(bool& syncStatus, const Callback& callback) = 0;
+  virtual std::string feeAddress() = 0;
+  virtual uint32_t feeAmount() = 0;
 };
 
 }

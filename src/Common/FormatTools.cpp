@@ -1,14 +1,14 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero Project
-// Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
-// 
+//
 // Please see the included LICENSE file for more information.
 
 
 #include "FormatTools.h"
 #include <cstdio>
 #include <ctime>
+#include <config/CryptoNoteConfig.h>
 #include "CryptoNoteCore/Core.h"
 #include "Rpc/CoreRpcServerCommandsDefinitions.h"
 #include <boost/format.hpp>
@@ -26,12 +26,13 @@ std::string get_mining_speed(uint32_t hr) {
 
 //--------------------------------------------------------------------------------
 std::string get_sync_percentage(uint64_t height, uint64_t target_height) {
-   /* Don't divide by zero */
+  /* Don't divide by zero */
   if (height == 0 || target_height == 0)
   {
     return "0.00";
   }
-   /* So we don't have > 100% */
+
+  /* So we don't have > 100% */
   if (height > target_height)
   {
       height = target_height;
@@ -76,8 +77,8 @@ ForkStatus get_fork_status(uint64_t height, std::vector<uint64_t> upgrade_height
 
     float days = (next_fork - height) / CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;
 
-    /* Next fork in < 30 days away */
-    if (days < 30)
+    /* Next fork in < 14 days away */
+    if (days < 14)
     {
         /* Software doesn't support the next fork yet */
         if (supported_height < next_fork)
@@ -163,7 +164,7 @@ std::string get_upgrade_info(uint64_t supported_height, std::vector<uint64_t> up
     {
         if (upgrade > supported_height)
         {
-            return "The network forked at height " + std::to_string(upgrade) + ", please update your software: https://www.plenteum.com";
+            return "The network forked at height " + std::to_string(upgrade) + ", please update your software: " + CryptoNote::LATEST_VERSION_URL;
         }
     }
 
@@ -177,13 +178,12 @@ std::string get_status_string(CryptoNote::COMMAND_RPC_GET_INFO::response iresp) 
   std::time_t uptime = std::time(nullptr) - iresp.start_time;
   auto forkStatus = get_fork_status(iresp.network_height, iresp.upgrade_heights, iresp.supported_height);
 
-  //<< +iresp.major_version << "," //hardcoded v1 for now...  (add back to line 176 --> << "v1,")
   ss << "Height: " << iresp.height << "/" << iresp.network_height
      << " (" << get_sync_percentage(iresp.height, iresp.network_height) << "%) "
      << "on " << (iresp.testnet ? "testnet, " : "mainnet, ")
-     << (iresp.synced ? "synced, " : "syncing, ") 
+     << (iresp.synced ? "synced, " : "syncing, ")
      << "net hash " << get_mining_speed(iresp.hashrate) << ", "
-     << "v1," 
+     << "v" << +iresp.major_version << ","
      << get_update_status(forkStatus, iresp.network_height, iresp.upgrade_heights)
      << ", " << iresp.outgoing_connections_count << "(out)+" << iresp.incoming_connections_count << "(in) connections, "
      << "uptime " << (unsigned int)floor(uptime / 60.0 / 60.0 / 24.0)

@@ -1,4 +1,3 @@
-// Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
@@ -8,6 +7,6 @@
 #include <zedwallet/Types.h>
 
 void syncWallet(CryptoNote::INode &node,
-                std::shared_ptr<WalletInfo> &walletInfo);
+                std::shared_ptr<WalletInfo> walletInfo);
 
-void checkForNewTransactions(std::shared_ptr<WalletInfo> &walletInfo);
+void checkForNewTransactions(std::shared_ptr<WalletInfo> walletInfo);

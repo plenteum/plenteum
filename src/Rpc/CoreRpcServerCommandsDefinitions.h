@@ -1,5 +1,4 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
 // Copyright (c) 2018, The Karai Developers
 // 
@@ -396,7 +395,7 @@ struct block_header_response {
   uint32_t height;
   uint32_t depth;
   std::string hash;
-  Difficulty difficulty;
+  uint64_t difficulty;
   uint64_t reward;
   uint32_t num_txes;
   uint64_t block_size;

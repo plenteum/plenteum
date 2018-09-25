@@ -1,19 +1,7 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018, The Plenteum Developers
 //
-// This file is part of Bytecoin.
-//
-// Bytecoin is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Bytecoin is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// Please see the included LICENSE file for more information.
 
 #include "CryptoNoteProtocolHandler.h"
 
@@ -29,6 +17,12 @@
 #include "CryptoNoteCore/VerificationContext.h"
 #include "P2p/LevinProtocol.h"
 
+#include <Common/FormatTools.h>
+
+#include <config/Ascii.h>
+#include <config/CryptoNoteConfig.h>
+#include <config/WalletConfig.h>
+
 using namespace Logging;
 using namespace Common;
 
@@ -43,7 +37,7 @@ bool post_notify(IP2pEndpoint& p2p, typename t_parametr::request& arg, const Cry
 
 template<class t_parametr>
 void relay_post_notify(IP2pEndpoint& p2p, typename t_parametr::request& arg, const net_connection_id* excludeConnection = nullptr) {
-  p2p.relay_notify_to_all(t_parametr::ID, LevinProtocol::encode(arg), excludeConnection);
+  p2p.externalRelayNotifyToAll(t_parametr::ID, LevinProtocol::encode(arg), excludeConnection);
 }
 
 std::vector<RawBlockLegacy> convertRawBlocksToRawBlocksLegacy(const std::vector<RawBlock>& rawBlocks) {
@@ -227,26 +221,64 @@ uint32_t CryptoNoteProtocolHandler::get_current_blockchain_height() {
   return m_core.getTopBlockIndex() + 1;
 }
 
-bool CryptoNoteProtocolHandler::process_payload_sync_data(const CORE_SYNC_DATA& hshd, CryptoNoteConnectionContext& context, bool is_inital) {
-  if (context.m_state == CryptoNoteConnectionContext::state_befor_handshake && !is_inital)
+bool CryptoNoteProtocolHandler::process_payload_sync_data(const CORE_SYNC_DATA& hshd, CryptoNoteConnectionContext& context, bool is_initial) {
+  if (context.m_state == CryptoNoteConnectionContext::state_befor_handshake && !is_initial)
     return true;
 
   if (context.m_state == CryptoNoteConnectionContext::state_synchronizing) {
   } else if (m_core.hasBlock(hshd.top_id)) {
-    if (is_inital) {
+    if (is_initial) {
       on_connection_synchronized();
       context.m_state = CryptoNoteConnectionContext::state_pool_sync_required;
     } else {
       context.m_state = CryptoNoteConnectionContext::state_normal;
     }
   } else {
-    int64_t diff = static_cast<int64_t>(hshd.current_height) - static_cast<int64_t>(get_current_blockchain_height());
+    uint64_t currentHeight = get_current_blockchain_height();
 
-    logger(diff >= 0 ? (is_inital ? Logging::INFO : Logging::DEBUGGING) : Logging::TRACE, Logging::BRIGHT_GREEN) << context <<
-      "Your Plenteum node is syncing with the network. You are "
-      // << get_current_blockchain_height() << " -> " << hshd.current_height
-      << std::abs(diff) << " blocks (" << std::abs(diff) / (24 * 60 * 60 / m_currency.difficultyTarget()) << " days) "
-      << (diff >= 0 ? std::string("behind") : std::string("ahead")) << ". Please be patient while we sync with the network! " << std::endl;
+    uint64_t remoteHeight = hshd.current_height;
+
+    /* Find the difference between the remote and the local height */
+    int64_t diff = static_cast<int64_t>(remoteHeight) - static_cast<int64_t>(currentHeight);
+
+    /* Find out how many days behind/ahead we are from the remote height */
+    uint64_t days = std::abs(diff) / (24 * 60 * 60 / m_currency.difficultyTarget());
+
+    std::stringstream ss;
+
+    ss << "Your " << CRYPTONOTE_NAME << " node is syncing with the network ";
+
+    /* We're behind the remote node */
+    if (diff >= 0)
+    {
+        ss << "(" << Common::get_sync_percentage(currentHeight, remoteHeight)
+          << "% complete) ";
+
+        ss << "You are " << diff << " blocks (" << days << " days) behind ";
+    }
+    /* We're ahead of the remote node, no need to print percentages */
+    else
+    {
+        ss << "You are " << std::abs(diff) << " blocks (" << days << " days) ahead ";
+    }
+
+    ss << "the current peer you're connected to. Please be patient while we sync with the network! ";
+
+    auto logLevel = Logging::TRACE;
+    /* Log at different levels depending upon if we're ahead, behind, and if it's 
+      a newly formed connection */
+    if (diff >= 0)
+    {
+        if (is_initial)
+        {
+            logLevel = Logging::INFO;
+        }
+        else
+        {
+            logLevel = Logging::DEBUGGING;    
+        }
+    }
+    logger(logLevel, Logging::BRIGHT_GREEN) << context << ss.str();
 
     logger(Logging::DEBUGGING) << "Remote top block height: " << hshd.current_height << ", id: " << hshd.top_id;
     //let the socket to send response to handshake, but request callback, to let send request data after response
@@ -257,7 +289,7 @@ bool CryptoNoteProtocolHandler::process_payload_sync_data(const CORE_SYNC_DATA& 
   updateObservedHeight(hshd.current_height, context);
   context.m_remote_blockchain_height = hshd.current_height;
 
-  if (is_inital) {
+  if (is_initial) {
     m_peersCount++;
     m_observerManager.notify(&ICryptoNoteProtocolObserver::peerCountUpdated, m_peersCount.load());
   }
@@ -585,15 +617,16 @@ bool CryptoNoteProtocolHandler::on_connection_synchronized() {
   if (m_synchronized.compare_exchange_strong(val_expected, true)) {
     logger(Logging::INFO)
       << ENDL ;
-      logger(INFO, BRIGHT_MAGENTA) << "===[ Plenteum Tip! ]=============================" << ENDL ;
-      logger(INFO, WHITE) << " Always exit Plenteumd and zedwallet with the \"exit\" command to preserve your chain and wallet data." << ENDL ;
+      logger(INFO, BRIGHT_MAGENTA) << "===[ " + std::string(CryptoNote::CRYPTONOTE_NAME) + " Tip! ]=============================" << ENDL ;
+      logger(INFO, WHITE) << " Always exit " + WalletConfig::daemonName + " and " + WalletConfig::walletName + " with the \"exit\" command to preserve your chain and wallet data." << ENDL ;
       logger(INFO, WHITE) << " Use the \"help\" command to see a list of available commands." << ENDL ;
-      logger(INFO, WHITE) << " Use the \"export_keys\" command in zedwallet to display your keys for restoring a corrupted wallet." << ENDL ;
-      logger(INFO, WHITE) << " If you need more assistance, visit the #HELP channel in the Plenteum Discord Chat - http://chat.plenteum.com" << ENDL ;
+      logger(INFO, WHITE) << " Use the \"backup\" command in zedwallet to display your keys/seed for restoring a corrupted wallet." << ENDL ;
+      logger(INFO, WHITE) << " If you need more assistance, you can contact us for support at " + WalletConfig::contactLink << ENDL;
       logger(INFO, BRIGHT_MAGENTA) << "===================================================" << ENDL << ENDL ;
 
+      
       logger(INFO, BRIGHT_GREEN) <<
-            "\n                                   \n"
+      "\n                                   \n"
       "          _________________________  \n"
       "         / _____________________  /| \n"
       "        / / ___________________/ / | \n"
@@ -602,12 +635,12 @@ bool CryptoNoteProtocolHandler::on_connection_synchronized() {
       "     / / /| | |             / / /| | \n"
       "    / / / | | |            / / / | | \n"
       "   / / /  | | |           / / /| | | \n"
-      "  / /_/__________________/ / / | | | \n"
+      "  / /_/___|_|_|__________/ / / | | | \n"
       " /________________________/ /  | | | \n"
       " | | |    | | |_________| | |__| | | \n"
       " | | |    | |___________| | |____| | \n"
-      " | | |   / / ___________| | |_  / /  \n"
-      " | | |  / / /           | | |/ / /  \n"
+      " | | |   / / ___________| | |_  / / \n"
+      " | | |  / / /           | | |/ / / \n"
       " | | | / / / Plenteum   | | | / / \n"
       " | | |/ / /  Daemon     | | |/ / \n"
       " | | | / /   Started    | | ' / \n"
@@ -615,6 +648,7 @@ bool CryptoNoteProtocolHandler::on_connection_synchronized() {
       " | |____________________| | / \n"
       " |________________________|/ \n"
        << ENDL; 
+
 
     m_observerManager.notify(&ICryptoNoteProtocolObserver::blockchainSynchronized, m_core.getTopBlockIndex());
   }
@@ -687,16 +721,16 @@ int CryptoNoteProtocolHandler::handleRequestTxPool(int command, NOTIFY_REQUEST_T
 
 void CryptoNoteProtocolHandler::relayBlock(NOTIFY_NEW_BLOCK::request& arg) {
   auto buf = LevinProtocol::encode(arg);
-  m_p2p->externalRelayNotifyToAll(NOTIFY_NEW_BLOCK::ID, buf);
+  m_p2p->externalRelayNotifyToAll(NOTIFY_NEW_BLOCK::ID, buf, nullptr);
 }
 
 void CryptoNoteProtocolHandler::relayTransactions(const std::vector<BinaryArray>& transactions) {
   auto buf = LevinProtocol::encode(NOTIFY_NEW_TRANSACTIONS::request{transactions});
-  m_p2p->externalRelayNotifyToAll(NOTIFY_NEW_TRANSACTIONS::ID, buf);
+  m_p2p->externalRelayNotifyToAll(NOTIFY_NEW_TRANSACTIONS::ID, buf, nullptr);
 }
 
 void CryptoNoteProtocolHandler::requestMissingPoolTransactions(const CryptoNoteConnectionContext& context) {
-  if (context.version < P2PProtocolVersion::V1) {
+  if (context.version < 1) {
     return;
   }
 
@@ -733,16 +767,16 @@ void CryptoNoteProtocolHandler::updateObservedHeight(uint32_t peerHeight, const 
       }
     }
   }
-  
+
   {
     std::lock_guard<std::mutex> lock(m_blockchainHeightMutex);
     if (peerHeight > m_blockchainHeight) {
       m_blockchainHeight = peerHeight;
-      logger(Logging::INFO, Logging::BRIGHT_GREEN) << "New Top Block Detected: " << peerHeight; 
+      logger(Logging::INFO, Logging::BRIGHT_GREEN) << "New Top Block Detected: " << peerHeight;
     }
   }
 
-  
+
   if (updated) {
     logger(TRACE) << "Observed height updated: " << m_observedHeight;
     m_observerManager.notify(&ICryptoNoteProtocolObserver::lastKnownBlockHeightUpdated, m_observedHeight);
@@ -771,7 +805,7 @@ uint32_t CryptoNoteProtocolHandler::getObservedHeight() const {
 
 uint32_t CryptoNoteProtocolHandler::getBlockchainHeight() const {
   std::lock_guard<std::mutex> lock(m_blockchainHeightMutex);
-  return m_blockchainHeight;  
+  return m_blockchainHeight;
 };
 
 bool CryptoNoteProtocolHandler::addObserver(ICryptoNoteProtocolObserver* observer) {

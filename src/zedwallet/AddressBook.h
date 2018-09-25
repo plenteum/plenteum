@@ -1,4 +1,3 @@
-// Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
@@ -7,8 +6,8 @@
 
 void addToAddressBook();
 
-void sendFromAddressBook(std::shared_ptr<WalletInfo> &walletInfo,
-                         uint32_t height);
+void sendFromAddressBook(std::shared_ptr<WalletInfo> walletInfo,
+                         uint32_t height, std::string nodeAddress, uint32_t nodeFee);
 
 void deleteFromAddressBook();
 

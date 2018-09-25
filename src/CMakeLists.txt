@@ -1,6 +1,7 @@
 add_definitions(-DSTATICLIB)
 
 include_directories(${CMAKE_SOURCE_DIR}/external/rocksdb/include)
+include_directories(${CMAKE_SOURCE_DIR}/external/linenoise)
 
 file(GLOB_RECURSE BlockchainExplorer BlockchainExplorer/*)
 file(GLOB_RECURSE Common Common/*)
@@ -21,8 +22,7 @@ file(GLOB_RECURSE Transfers Transfers/*)
 file(GLOB_RECURSE Wallet Wallet/*)
 file(GLOB_RECURSE WalletLegacy WalletLegacy/*)
 file(GLOB_RECURSE JsonRpcServer JsonRpcServer/*)
-file(GLOB_RECURSE PaymentGate PaymentGate/*)
-file(GLOB_RECURSE service PaymentGateService/*)
+file(GLOB_RECURSE service WalletService/*)
 file(GLOB_RECURSE zedwallet zedwallet/*)
 
 if(MSVC)
@@ -52,8 +52,8 @@ add_library(Serialization ${Serialization})
 add_library(System ${System})
 add_library(Transfers ${Transfers})
 add_library(Wallet ${Wallet} ${WalletLegacy})
-add_library(PaymentGate ${PaymentGate})
 add_library(JsonRpcServer ${JsonRpcServer})
+add_library(WalletService ${service})
 
 if(MSVC)
   set(DAEMON_SOURCES_OS
@@ -86,23 +86,22 @@ target_link_libraries(CryptoNoteCore Common Logging Crypto P2P Rpc Http Serializ
 target_link_libraries(CryptoNoteCore Common Crypto Logging Serialization)
 target_link_libraries(P2P CryptoNoteCore Logging ${Boost_LIBRARIES} upnpc-static)
 target_link_libraries(Rpc CryptoNoteCore Logging P2P)
+target_link_libraries(WalletService Mnemonics)
 if(MSVC)
 	target_link_libraries(Plenteumd P2P Rpc Serialization System Http Logging CryptoNoteCore Crypto Common rocksdb ${Boost_LIBRARIES} )
 else()
 	target_link_libraries(Plenteumd P2P Rpc Serialization System Http Logging CryptoNoteCore Crypto Common rocksdblib ${Boost_LIBRARIES} )
 endif()
-target_link_libraries(zedwallet Mnemonics Wallet NodeRpcProxy Transfers Rpc Http CryptoNoteCore System Logging Common ${Boost_LIBRARIES} ${Readline_LIBRARY})
-target_link_libraries(PaymentGate Mnemonics)
-if(MSVC)
-	target_link_libraries(service PaymentGate JsonRpcServer Wallet NodeRpcProxy Transfers CryptoNoteCore Crypto Rpc Http System Logging Common ${Boost_LIBRARIES})
-else()
-	target_link_libraries(service PaymentGate JsonRpcServer Wallet NodeRpcProxy Transfers CryptoNoteCore Crypto Rpc Http System Logging Common ${Boost_LIBRARIES})
-endif()
+
+target_link_libraries(zedwallet Mnemonics Wallet NodeRpcProxy Transfers Rpc Http CryptoNoteCore System Logging Common ${Boost_LIBRARIES})
+target_link_libraries(service WalletService JsonRpcServer Wallet NodeRpcProxy Transfers CryptoNoteCore Crypto Rpc Http System Logging Common ${Boost_LIBRARIES})
+target_link_libraries(Wallet NodeRpcProxy Transfers Rpc P2P upnpc-static Http Serialization CryptoNoteCore System Logging Common Crypto ${Boost_LIBRARIES})
 target_link_libraries(miner CryptoNoteCore Rpc Serialization System Http Logging Common Crypto ${Boost_LIBRARIES})
 
 # Add dependencies means we have to build the latter before we build the former
 # In this case it's because we need to have the current version name rather
 # than a cached one
+add_dependencies(WalletService version)
 add_dependencies(Rpc version)
 add_dependencies(Plenteumd version)
 add_dependencies(zedwallet version)
@@ -112,5 +111,10 @@ add_dependencies(P2P version)
 # Finally build the binaries
 set_property(TARGET Plenteumd PROPERTY OUTPUT_NAME "Plenteumd")
 set_property(TARGET zedwallet PROPERTY OUTPUT_NAME "zedwallet")
-set_property(TARGET service PROPERTY OUTPUT_NAME "service")
+set_property(TARGET service PROPERTY OUTPUT_NAME "wallet-service")
 set_property(TARGET miner PROPERTY OUTPUT_NAME "miner")
+
+# Additional make targets
+add_custom_target(pool DEPENDS Plenteumd service)
+add_custom_target(solominer DEPENDS Plenteumd zedwallet miner)
+add_custom_target(cli DEPENDS Plenteumd zedwallet)

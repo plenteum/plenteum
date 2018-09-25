@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero Project
-// Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
@@ -868,7 +867,7 @@ void DatabaseBlockchainCache::insertBlockTimestamp(BlockchainWriteBatch& batch, 
 void DatabaseBlockchainCache::pushBlock(const CachedBlock& cachedBlock,
                                         const std::vector<CachedTransaction>& cachedTransactions,
                                         const TransactionValidatorState& validatorState, size_t blockSize,
-                                        uint64_t generatedCoins, Difficulty blockDifficulty, RawBlock&& rawBlock) {
+                                        uint64_t generatedCoins, uint64_t blockDifficulty, RawBlock&& rawBlock) {
   BlockchainWriteBatch batch;
   logger(Logging::DEBUGGING) << "push block with hash " << cachedBlock.getBlockHash() << ", and "
                              << cachedTransactions.size() + 1 << " transactions"; //+1 for base transaction
@@ -1118,20 +1117,20 @@ std::vector<uint64_t> DatabaseBlockchainCache::getLastBlocksSizes(size_t count, 
   return getLastUnits(count, blockIndex, useGenesis, [](const CachedBlockInfo& cb) { return cb.blockSize; });
 }
 
-std::vector<Difficulty> DatabaseBlockchainCache::getLastCumulativeDifficulties(size_t count, uint32_t blockIndex,
+std::vector<uint64_t> DatabaseBlockchainCache::getLastCumulativeDifficulties(size_t count, uint32_t blockIndex,
                                                                                UseGenesis useGenesis) const {
   return getLastUnits(count, blockIndex, useGenesis,
                       [](const CachedBlockInfo& info) { return info.cumulativeDifficulty; });
 }
-std::vector<Difficulty> DatabaseBlockchainCache::getLastCumulativeDifficulties(size_t count) const {
+std::vector<uint64_t> DatabaseBlockchainCache::getLastCumulativeDifficulties(size_t count) const {
   return getLastCumulativeDifficulties(count, getTopBlockIndex(), UseGenesis{true});
 }
 
-Difficulty DatabaseBlockchainCache::getDifficultyForNextBlock() const {
+uint64_t DatabaseBlockchainCache::getDifficultyForNextBlock() const {
   return getDifficultyForNextBlock(getTopBlockIndex());
 }
 
-Difficulty DatabaseBlockchainCache::getDifficultyForNextBlock(uint32_t blockIndex) const {
+uint64_t DatabaseBlockchainCache::getDifficultyForNextBlock(uint32_t blockIndex) const {
   assert(blockIndex <= getTopBlockIndex());
   uint8_t nextBlockMajorVersion = getBlockMajorVersionForHeight(blockIndex+1);
   auto timestamps = getLastTimestamps(currency.difficultyBlocksCountByBlockVersion(nextBlockMajorVersion, blockIndex), blockIndex, UseGenesis{false});
@@ -1140,11 +1139,11 @@ Difficulty DatabaseBlockchainCache::getDifficultyForNextBlock(uint32_t blockInde
   return currency.getNextDifficulty(nextBlockMajorVersion, blockIndex, std::move(timestamps), std::move(commulativeDifficulties));
 }
 
-Difficulty DatabaseBlockchainCache::getCurrentCumulativeDifficulty() const {
+uint64_t DatabaseBlockchainCache::getCurrentCumulativeDifficulty() const {
   return getCachedBlockInfo(getTopBlockIndex()).cumulativeDifficulty;
 }
 
-Difficulty DatabaseBlockchainCache::getCurrentCumulativeDifficulty(uint32_t blockIndex) const {
+uint64_t DatabaseBlockchainCache::getCurrentCumulativeDifficulty(uint32_t blockIndex) const {
   assert(blockIndex <= getTopBlockIndex());
   return getCachedBlockInfo(blockIndex).cumulativeDifficulty;
 }

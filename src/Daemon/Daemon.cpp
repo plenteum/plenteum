@@ -1,5 +1,4 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
 // Copyright (c) 2018, The Karai Developers
 // 
@@ -19,7 +18,6 @@
 #include "Common/PathTools.h"
 #include "Common/Util.h"
 #include "crypto/hash.h"
-#include "CryptoNoteCheckpoints.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
 #include "CryptoNoteCore/Core.h"
 #include "CryptoNoteCore/Currency.h"
@@ -36,6 +34,9 @@
 #include "Serialization/BinaryInputStreamSerializer.h"
 #include "Serialization/BinaryOutputStreamSerializer.h"
 #include "version.h"
+
+#include <config/Ascii.h>
+#include <config/CryptoNoteCheckpoints.h>
 
 #include <Logging/LoggerManager.h>
 
@@ -61,11 +62,11 @@ namespace
   const command_line::arg_descriptor<bool>        arg_console     = {"no-console", "Disable daemon console commands"};
   const command_line::arg_descriptor<bool>        arg_print_genesis_tx = { "print-genesis-tx", "Prints genesis' block tx hex to insert it to config and exits" };
   const command_line::arg_descriptor<std::vector<std::string>> arg_genesis_block_reward_address = { "genesis-block-reward-address", "" };
-  const command_line::arg_descriptor<bool> arg_blockexplorer_on = {"enable_blockexplorer", "Enable blockchain explorer RPC", false};
+  const command_line::arg_descriptor<bool> arg_blockexplorer_on = {"enable-blockexplorer", "Enable blockchain explorer RPC", false};
   const command_line::arg_descriptor<std::vector<std::string>>        arg_enable_cors = { "enable-cors", "Adds header 'Access-Control-Allow-Origin' to the daemon's RPC responses. Uses the value as domain. Use * for all" };
   const command_line::arg_descriptor<bool>        arg_testnet_on  = {"testnet", "Used to deploy test nets. Checkpoints and hardcoded seeds are ignored, "
     "network id is changed. Use it with --data-dir flag. The wallet must be launched with --testnet flag.", false};
-  const command_line::arg_descriptor<std::string> arg_load_checkpoints   = {"load-checkpoints", "<default|filename> Use builtin default checkpoints or checkpoint csv file for faster initial blockchain sync", ""};
+  const command_line::arg_descriptor<std::string> arg_load_checkpoints   = {"load-checkpoints", "<default|filename> Use builtin default checkpoints or checkpoint csv file for faster initial blockchain sync", "default"};
   const command_line::arg_descriptor<std::string> arg_set_fee_address = { "fee-address", "Sets fee address for light wallets that use the daemon.", "" };
   const command_line::arg_descriptor<int> arg_set_fee_amount = { "fee-amount", "Sets the fee amount for the light wallets that use the daemon.", 0 };
 }
@@ -230,30 +231,8 @@ int main(int argc, char* argv[])
     // configure logging
     logManager.configure(buildLoggerConfiguration(cfgLogLevel, cfgLogFile));
 
-    logger(INFO, BRIGHT_GREEN) <<
-
-     +"\n                                   \n"
-"          _________________________  \n"
-"         / _____________________  /| \n"
-"        / / ___________________/ / | \n"
-"       / / /| |               / /  | \n"
-"      / / / | |              / / . | \n"
-"     / / /| | |             / / /| | \n"
-"    / / / | | |            / / / | | \n"
-"   / / /  | | |           / / /| | | \n"
-"  / /_/__________________/ / / | | | \n"
-" /________________________/ /  | | | \n"
-" | | |    | | |_________| | |__| | | \n"
-" | | |    | |___________| | |____| | \n"
-" | | |   / / ___________| | |_  / /  \n"
-" | | |  / / /           | | |/ / /  \n"
-" | | | / / /            | | | / / \n"
-" | | |/ / /             | | |/ / \n"
-" | | | / /  Plenteum    | | ' / \n"
-" | | |/_/_______________| |  / \n"
-" | |____________________| | / \n"
-" |________________________|/ \n"
- << ENDL;
+    /* Yay, ascii art ^__^ */
+    logger(INFO, BRIGHT_GREEN) << asciiArt << ENDL;
 
     logger(INFO, BRIGHT_GREEN) << "Welcome to " << CryptoNote::CRYPTONOTE_NAME << " v" << PROJECT_VERSION_LONG;
 
