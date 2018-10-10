@@ -83,12 +83,12 @@ public:
       return m_defaultDustThreshold;
   }
   uint64_t defaultFusionDustThreshold(uint32_t height) const {
-      if (height >= CryptoNote::parameters::FUSION_DUST_THRESHOLD_HEIGHT_V2)
-      {
-          return CryptoNote::parameters::DEFAULT_DUST_THRESHOLD_V2;
-      }
+	  if (height >= CryptoNote::parameters::FUSION_DUST_THRESHOLD_HEIGHT_V2)
+	  {
+		  return CryptoNote::parameters::CRYPTONOTE_DUST_OUT_LIMIT; //when creating fusions, the outputs should never be lower than this amount, as then they will be consumed by dustfund
+	  }
 
-      return m_defaultDustThreshold;
+	  return m_defaultDustThreshold;
   }
 
   uint64_t difficultyTarget() const { return m_difficultyTarget; }

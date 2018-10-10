@@ -88,7 +88,8 @@ struct WalletTransaction {
 enum class WalletTransferType : uint8_t {
   USUAL = 0,
   DONATION,
-  CHANGE
+  CHANGE,
+  DUST
 };
 
 struct WalletOrder {
