@@ -48,6 +48,9 @@ namespace CryptoNote {
 	  {    30000, "b7ac6cbad0b3c16cf1ed289f9ddd6ead1eae4a83e34cb931663f76ea7f254884"  },
 	  {    35000, "4c840fd466b1e5a4cb483401a1bcaf249be0c18db86893cf5c2a69fef8aa1bd4"  },
 	  {    40000, "75d853e29d25c477161aa1df310a74fa12fe2c06ca6c5dcd3bc89024dee34e91"  },
+	  {    45000, "0cd2478c82bb4f853b9cf009e72d3df8c073c7068f23976c1cc9a06dcd7a306b	"  },
+	  {    50000, "	36bb2c0b33b21776b79989076f84d18b819f31cc1849c6f858d0803c69c588f7"  },
+	  
 	  
 	};
 }
