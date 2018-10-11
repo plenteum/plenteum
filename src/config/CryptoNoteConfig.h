@@ -253,6 +253,5 @@ const char* const SEED_NODES[] = {
   "142.93.132.203:44015", //DO Seed3
   "206.189.124.145:44015", //DO Seed2
   "94.237.65.140:44015" //Singapore
-  "94.237.65.140:44015" //Optimus Blue
 };
 } // CryptoNote
