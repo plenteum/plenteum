@@ -37,7 +37,7 @@ const uint8_t ZAWY_DIFFICULTY_DIFFICULTY_BLOCK_VERSION       = 3;
 
 const uint64_t LWMA_2_DIFFICULTY_BLOCK_INDEX                 = 2;
 const uint64_t LWMA_2_DIFFICULTY_BLOCK_INDEX_V2              = 3;
-const uint64_t LWMA_2_DIFFICULTY_BLOCK_INDEX_V3              = 65500; //THIS is the Next Upgrade Height, should match Dustfund Update Height
+const uint64_t LWMA_2_DIFFICULTY_BLOCK_INDEX_V3              = 100000; //Diff algo update at 100, 000
 
 const uint64_t DIFFICULTY_WINDOW_V3                          = 720;
 const uint64_t DIFFICULTY_BLOCKS_COUNT_V3                    = DIFFICULTY_WINDOW_V3 + 1;
@@ -87,8 +87,6 @@ const size_t   CRYPTONOTE_DUST_DECIMAL_POINT                 = 8; //the decimal 
 //DustFund Parameters
 const uint64_t CRYPTONOTE_DUST_OUT_LIMIT					 = UINT64_C(1000000); //the limit up to which dust outs should be removed and contributed back to the dust fund
 const char CRYPTONOTE_DUST_OUT_ADDRESS[]					 = "PLeafjfpaRWEXR4artCAer4yZFzeq5mRrMaLByP7Rkf3FL1URKUrBnP3ppfL6LVgz4hJYwk6DebUxZq6aQKHa8eT5f1ycM7j7d";
-const char CRYPTONOTE_DUST_OUT_VIEWKEY[]					 = "";
-
 
 const uint64_t MINIMUM_FEE									 = UINT64_C(0); //0
 
@@ -167,17 +165,18 @@ const uint64_t FORK_HEIGHTS[] =
     1,
     2,
     3,
-    65500 //first fork to introduce DUST fund
+    65500, //first fork to introduce DUST fund
+	100000
 };
 
 /* MAKE SURE TO UPDATE THIS VALUE WITH EVERY MAJOR RELEASE BEFORE A FORK */
-const uint64_t SOFTWARE_SUPPORTED_FORK_INDEX                 = 4;
+const uint64_t SOFTWARE_SUPPORTED_FORK_INDEX                 = 5;
 
 const uint64_t FORK_HEIGHTS_SIZE = sizeof(FORK_HEIGHTS) / sizeof(*FORK_HEIGHTS);
 
 /* The index in the FORK_HEIGHTS array that this version of the software will
    support. For example, if CURRENT_FORK_INDEX is 4, this version of the
-   software will support the fork at 500 blocks.
+   software will support the fork at 65500 blocks.
 
    This will default to zero if the FORK_HEIGHTS array is empty, so you don't
    need to change it manually. */
