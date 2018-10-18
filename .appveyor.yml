@@ -1,0 +1,36 @@
+os: Visual Studio 2015
+
+environment:
+  BOOST_ROOT: C:\Libraries\boost_1_67_0
+  BOOST_LIBRARYDIR: C:\Libraries\boost_1_67_0\lib64-msvc-14
+
+build_script:
+  - md build
+  - cd build
+  - cmake -G "Visual Studio 14 Win64" ..
+  - MSBuild Plenteum.sln /p:Configuration=Release /m
+
+after_build:
+  - if not defined APPVEYOR_REPO_TAG_NAME (set APPVEYOR_REPO_TAG_NAME=%APPVEYOR_REPO_COMMIT%)
+  - cd src\Release
+  - mkdir plenteum-%APPVEYOR_REPO_TAG_NAME%
+  - copy *.exe plenteum-%APPVEYOR_REPO_TAG_NAME%
+  - copy ..\..\..\LICENSE plenteum-%APPVEYOR_REPO_TAG_NAME%
+  - 7z a plenteum-%APPVEYOR_REPO_TAG_NAME%-windows.zip plenteum-%APPVEYOR_REPO_TAG_NAME%
+  - copy plenteum-%APPVEYOR_REPO_TAG_NAME%-windows.zip ..\..\..\
+
+artifacts:
+  - path: plenteum-$(APPVEYOR_REPO_TAG_NAME)-windows.zip
+    name: PlenteumRelease
+
+deploy:
+  - provider: GitHub
+    auth_token:
+      secure: ZX7Fi2/O/49+ch63DJPBUf2SlUuK2usUYzVEr7z7kVygwD4gt3lFlDIxeQknxJ2g
+    artifact: PlenteumRelease
+    draft: false
+    prerelease: false
+    on:
+      appveyor_repo_name: plenteum/plenteum
+      appveyor_repo_tag: true
+

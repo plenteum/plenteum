@@ -1,0 +1,73 @@
+sudo: false
+language: cpp
+
+matrix:
+  include:
+  - os: linux
+    addons:
+      apt:
+        sources:
+        - ubuntu-toolchain-r-test
+        packages:
+        - libboost1.55-all-dev
+    env:
+    - MATRIX_EVAL="CC=gcc && CXX=g++"
+    - LABEL="linux"
+    - STRIP="strip"
+  - os: osx
+    env:
+    - MATRIX_EVAL="CC=gcc && CXX=g++"
+    - CXXFLAGS="-std=gnu++11"
+    - LABEL="osx"
+    - STRIP="strip"
+  - os: linux
+    addons:
+      apt:
+        sources:
+        - ubuntu-toolchain-r-test
+        packages:
+        - gcc-aarch64-linux-gnu
+        - g++-aarch64-linux-gnu
+    env:
+    - MATRIX_EVAL="CC=aarch64-linux-gnu-gcc && CXX=aarch64-linux-gnu-g++"
+    - LABEL="aarch64"
+    - STRIP="aarch64-linux-gnu-strip"
+
+before_install:
+- eval $MATRIX_EVAL
+
+install:
+- if [[ "$LABEL" == "aarch64" ]]; then wget http://sourceforge.net/projects/boost/files/boost/1.55.0/boost_1_55_0.tar.gz ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then tar zxvf boost_1_55_0.tar.gz >/dev/null ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then cd boost_1_55_0 ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then ./bootstrap.sh ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then curl https://raw.githubusercontent.com/plenteum/plenteum/development/scripts/fix_boost_aarch64.sh | sh ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then ./b2 toolset=gcc-aarch64 --with-system --with-filesystem --with-thread --with-date_time --with-chrono --with-regex --with-serialization --with-program_options >/dev/null ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then export CUSTOM_BOOST_ROOT="-DBOOST_ROOT=`pwd`" ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then cd .. ; fi
+
+script:
+- mkdir build && cd build
+- cmake -DCMAKE_BUILD_TYPE=Release -DSTATIC=true .. ${CUSTOM_BOOST_ROOT} && make -j2
+
+before_deploy:
+- if [[ "${TRAVIS_TAG}" == "" ]]; then export TRAVIS_TAG=${TRAVIS_COMMIT} ; fi
+- cd src
+- ${STRIP} Plenteumd miner zedwallet wallet-service
+- mkdir plenteum-${TRAVIS_TAG}
+- mv Plenteumd miner zedwallet wallet-service plenteum-${TRAVIS_TAG}/
+- cp ../../LICENSE plenteum-${TRAVIS_TAG}/
+- tar cvfz plenteum-${TRAVIS_TAG}-${LABEL}.tar.gz plenteum-${TRAVIS_TAG}/
+- mkdir builds
+- cp plenteum-${TRAVIS_TAG}-${LABEL}.tar.gz builds
+
+deploy:
+  provider: releases
+  api_key:
+    secure: eEOsTnudYcuXkHiclmvxVOsbhudAaj1W+AzJpAHR1RuPtWZC1n2NTkJZ+V+JH1/z+rfwd0tG8oYH2sRqa18BkLo6f2ySBU/0Ara8DG5oNTjVVgi9CKJcVlW3SHTLJNwF3YQhZ2IdW+TKd2PvoW7E/6u9pyebikhjVUgC5wqnCknDOF8TEdLJNmGrQXrQFvUwUEBcYW6WqLxDpc1xQfm9Wm1YAeRus+gKm2ENONrAIgisYcP1RSIYPVQH/q9LuSo1adunsuXrLIr/Oh5WxOZr4QKriq3OTETxq9MaM4CjmsG3QCfyH9/iHbJH0pUrPSycuFRU6Pr9/r7C20IQOW5WnjD2dZ/KketN+GSmx1GI83Xr5PhEUC9LdvQN7dilClTSD5BcPeXEpvY5LFxa9klaarwNHeHWfPpbw8DFwVTRmyZXRkv47ayl9SHbDz8nDW+HuLIipI24TpEtOWHvr+OYd0HFydf+s0efDj/Q8dhyn+FDMcGsOxSx8IZ/Og+o2cTC8ArrUMzNJfbLYydbNlL2CDkmpfZigv2YsGROL5ZMCpn1ZPwNXeYaJluUG3r/WYezalsKtUO/VNKLZJDXKAvCiQT434BIM2UcCwOCjSCWR9KXQ04f1Dn/gX2eZ4YHjzxjST06axy2uTAT6cfoN8+nsevlxrPESjEL3RHMNv+5nro=
+  file: 
+    - plenteum-${TRAVIS_TAG}-${LABEL}.tar.gz
+  skip_cleanup: true
+  on:
+    repo: plenteum/plenteum
+    tags: true
