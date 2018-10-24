@@ -2374,11 +2374,11 @@ void Core::transactionPoolCleaningProcedure() {
 void Core::updateBlockMedianSize() {
   auto mainChain = chainsLeaves[0];
 
-  size_t nextBlockGrantedFullRewardZone = currency.blockGrantedFullRewardZoneByBlockVersion(upgradeManager->getBlockMajorVersion(mainChain->getTopBlockIndex() + 1));
+  size_t maxBlockSizeInitial = CryptoNote::parameters::MAX_BLOCK_SIZE_INITIAL;
 
   auto lastBlockSizes = mainChain->getLastBlocksSizes(currency.rewardBlocksWindow());
 
-  blockMedianSize = std::max(Common::medianValue(lastBlockSizes), static_cast<uint64_t>(nextBlockGrantedFullRewardZone));
+  blockMedianSize = std::max(Common::medianValue(lastBlockSizes), static_cast<uint64_t>(maxBlockSizeInitial));
 }
 
 uint64_t Core::get_current_blockchain_height() const
