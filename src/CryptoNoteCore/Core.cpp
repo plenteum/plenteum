@@ -2373,11 +2373,9 @@ void Core::transactionPoolCleaningProcedure() {
 
 void Core::updateBlockMedianSize() {
   auto mainChain = chainsLeaves[0];
-
+  //re-aligning with WalletGreen to get this max block size issue fixed.
   size_t maxBlockSizeInitial = CryptoNote::parameters::MAX_BLOCK_SIZE_INITIAL;
-
   auto lastBlockSizes = mainChain->getLastBlocksSizes(currency.rewardBlocksWindow());
-
   blockMedianSize = std::max(Common::medianValue(lastBlockSizes), static_cast<uint64_t>(maxBlockSizeInitial));
 }
 
