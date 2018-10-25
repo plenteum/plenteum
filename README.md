@@ -40,7 +40,7 @@ If the script doesn't work for you:
 - `git clone -b master https://github.com/plenteum/plenteum`
 - `cd plenteum`
 - `mkdir build && cd $_`
-- `cmake ..`
+- `cmake -DCMAKE_BUILD_TYPE=Release -DSTATIC=true ..`
 - `make`
 
 #### Apple

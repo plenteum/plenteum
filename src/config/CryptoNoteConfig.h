@@ -74,6 +74,7 @@ const uint64_t GENESIS_BLOCK_TIMESTAMP                       = 1533098345;
 
 const size_t   CRYPTONOTE_REWARD_BLOCKS_WINDOW               = 100;
 const size_t   CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE	 = 10000; //size of block (bytes) after which reward for block calculated using block size
+const size_t   CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_V1  = 100000; //size of block (bytes) after which reward for block calculated using block size
 const size_t   CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_CURRENT = CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE;
 const size_t   CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE        = 600;
 const size_t   CRYPTONOTE_DISPLAY_DECIMAL_POINT              = 2; // the number of decimal points to display in the wallet and other software
@@ -130,8 +131,9 @@ const uint32_t UPGRADE_HEIGHT_V2                             = 1;
 const uint32_t UPGRADE_HEIGHT_V3                             = 2;
 const uint32_t UPGRADE_HEIGHT_V4                             = 3; // Upgrade height for CN-Lite Variant 1 switch.
 const uint32_t UPGRADE_HEIGHT_V5							 = 65500; // Upgrade height for DustFund V1.
+const uint32_t UPGRADE_HEIGHT_V6							 = 67500; // tx & block size issue fix.
 
-const uint32_t UPGRADE_HEIGHT_CURRENT                        = UPGRADE_HEIGHT_V5;
+const uint32_t UPGRADE_HEIGHT_CURRENT                        = UPGRADE_HEIGHT_V6;
 const unsigned UPGRADE_VOTING_THRESHOLD                      = 90;               // percent
 const uint32_t UPGRADE_VOTING_WINDOW                         = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;  // blocks
 const uint32_t UPGRADE_WINDOW                                = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;  // blocks
@@ -146,7 +148,8 @@ const uint64_t FORK_HEIGHTS[] =
     2,
     3,
     65500, //first fork to introduce DUST fund
-	100000 //difficulty update and web wallet direct connect
+	67500, //tx & block size issue fix
+	130000 //difficulty update and web wallet direct connect
 };
 
 /* MAKE SURE TO UPDATE THIS VALUE WITH EVERY MAJOR RELEASE BEFORE A FORK */
@@ -182,6 +185,7 @@ const uint8_t  BLOCK_MAJOR_VERSION_1                         =  0;
 const uint8_t  BLOCK_MAJOR_VERSION_2                         =  1;
 const uint8_t  BLOCK_MAJOR_VERSION_3                         =  2;
 const uint8_t  BLOCK_MAJOR_VERSION_4                         =  3;
+const uint8_t  BLOCK_MAJOR_VERSION_5						 =  4;
 const uint8_t  BLOCK_MINOR_VERSION_0                         =  0;
 const uint8_t  BLOCK_MINOR_VERSION_1                         =  1;
 
@@ -227,9 +231,8 @@ const static boost::uuids::uuid CRYPTONOTE_NETWORK =
 const char* const SEED_NODES[] = {
   //add seed nodes
   "85.216.148.43:44015", //miner.care
-  "192.99.244.16:44015", //Charlie
+  "95.216.184.244:44015", //Charlie
   "85.90.244.194:44015", //DeadSet
-  "18.222.7.255:44015", //AWS Seed1
   "142.93.132.203:44015", //DO Seed3
   "206.189.124.145:44015", //DO Seed2
   "94.237.65.140:44015" //Singapore
