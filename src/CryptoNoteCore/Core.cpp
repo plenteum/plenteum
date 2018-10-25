@@ -191,6 +191,7 @@ Core::Core(const Currency& currency, Logging::ILogger& logger, Checkpoints&& che
   upgradeManager->addMajorBlockVersion(BLOCK_MAJOR_VERSION_2, currency.upgradeHeight(BLOCK_MAJOR_VERSION_2));
   upgradeManager->addMajorBlockVersion(BLOCK_MAJOR_VERSION_3, currency.upgradeHeight(BLOCK_MAJOR_VERSION_3));
   upgradeManager->addMajorBlockVersion(BLOCK_MAJOR_VERSION_4, currency.upgradeHeight(BLOCK_MAJOR_VERSION_4));
+  upgradeManager->addMajorBlockVersion(BLOCK_MAJOR_VERSION_5, currency.upgradeHeight(BLOCK_MAJOR_VERSION_5));
 
   transactionPool = std::unique_ptr<ITransactionPoolCleanWrapper>(new TransactionPoolCleanWrapper(
     std::unique_ptr<ITransactionPool>(new TransactionPool(logger)),
@@ -573,7 +574,7 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
   bool addOnTop = cache->getTopBlockIndex() == previousBlockIndex;
   auto maxBlockCumulativeSize = currency.maxBlockCumulativeSize(previousBlockIndex + 1);
   if (cumulativeBlockSize > maxBlockCumulativeSize) {
-    logger(Logging::DEBUGGING) << "Block " << blockStr << " has too big cumulative size";
+    logger(Logging::DEBUGGING) << "Block " << blockStr << " has too big cumulative size: " << cumulativeBlockSize;
     return error::BlockValidationError::CUMULATIVE_BLOCK_SIZE_TOO_BIG;
   }
 
@@ -635,7 +636,7 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
 
   if (!currency.getBlockReward(cachedBlock.getBlock().majorVersion, blocksSizeMedian,
                                cumulativeBlockSize, alreadyGeneratedCoins, cumulativeFee, reward, emissionChange)) {
-    logger(Logging::DEBUGGING) << "Block " << blockStr << " has too big cumulative size";
+    logger(Logging::DEBUGGING) << "Block " << blockStr << " has too big cumulative size (" << cumulativeBlockSize << ")";
     return error::BlockValidationError::CUMULATIVE_BLOCK_SIZE_TOO_BIG;
   }
 
@@ -1059,7 +1060,7 @@ bool Core::getBlockTemplate(BlockTemplate& b, const AccountPublicAddress& adr, c
 
   b = boost::value_initialized<BlockTemplate>();
   b.majorVersion = getBlockMajorVersionForHeight(height);
-
+  //HERE
   if (b.majorVersion == BLOCK_MAJOR_VERSION_1) {
     b.minorVersion = currency.upgradeHeight(BLOCK_MAJOR_VERSION_2) == IUpgradeDetector::UNDEF_HEIGHT ? BLOCK_MINOR_VERSION_1 : BLOCK_MINOR_VERSION_0;
   } else if (b.majorVersion >= BLOCK_MAJOR_VERSION_2) {
