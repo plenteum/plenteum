@@ -412,6 +412,7 @@ namespace CryptoNote {
 
 	uint64_t Currency::getNextDifficulty(uint8_t version, uint32_t blockIndex, std::vector<uint64_t> timestamps, std::vector<uint64_t> cumulativeDifficulties) const
 	{
+		//TODO: reconfig for LWMA-3
 		if (blockIndex < CryptoNote::parameters::LWMA_2_DIFFICULTY_BLOCK_INDEX)
 		{
 			return nextDifficulty(version, blockIndex, timestamps, cumulativeDifficulties);

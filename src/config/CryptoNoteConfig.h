@@ -38,6 +38,7 @@ const uint8_t ZAWY_DIFFICULTY_DIFFICULTY_BLOCK_VERSION       = 3;
 const uint64_t LWMA_2_DIFFICULTY_BLOCK_INDEX                 = 2;
 const uint64_t LWMA_2_DIFFICULTY_BLOCK_INDEX_V2              = 3;
 
+const uint64_t LWMA_3_DIFFICULTY_BLOCK_INDEX				 = 130000; //LWMA-3 Difficulty Upgrade Height
 
 const unsigned EMISSION_SPEED_FACTOR                         = 22;
 static_assert(EMISSION_SPEED_FACTOR <= 8 * sizeof(uint64_t), "Bad EMISSION_SPEED_FACTOR");
@@ -149,11 +150,12 @@ const uint64_t FORK_HEIGHTS[] =
     3,
     65500, //first fork to introduce DUST fund
 	67500, //tx & block size issue fix
-	130000 //difficulty update and web wallet direct connect
+	130000, //difficulty update and web wallet direct connect
+	200000 // dustfund v2 
 };
 
 /* MAKE SURE TO UPDATE THIS VALUE WITH EVERY MAJOR RELEASE BEFORE A FORK */
-const uint64_t SOFTWARE_SUPPORTED_FORK_INDEX                 = 5;
+const uint64_t SOFTWARE_SUPPORTED_FORK_INDEX                 = 6;
 
 const uint64_t FORK_HEIGHTS_SIZE = sizeof(FORK_HEIGHTS) / sizeof(*FORK_HEIGHTS);
 

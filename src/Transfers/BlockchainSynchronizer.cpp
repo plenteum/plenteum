@@ -438,6 +438,7 @@ BlockchainSynchronizer::GetBlocksRequest BlockchainSynchronizer::getCommonHistor
 
     auto consumerStart = it->first->getSyncStart();
     syncStart.timestamp = std::min(syncStart.timestamp, consumerStart.timestamp);
+	//TODO: Need some what to validate that timestamp is not too far ahead... 
     syncStart.height = std::min(syncStart.height, consumerStart.height);
   }
 
