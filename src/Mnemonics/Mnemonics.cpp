@@ -1,15 +1,14 @@
-//
 // Copyright 2014-2018 The Monero Developers
+// Copyright 2018 The Turtlecoin Developers
 // Copyright 2018 The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 
 #include <algorithm>
-#include <boost/crc.hpp>
+#include <Mnemonics/CRC32.h>
+#include <Mnemonics/Mnemonics.h>
+#include <Mnemonics/WordList.h>
 #include <sstream>
-
-#include "Mnemonics.h"
-#include "WordList.h"
 
 namespace Mnemonics
 {
@@ -179,10 +178,12 @@ namespace Mnemonics
             trimmed += word.substr(0, 3);
         }
 
-        boost::crc_32_type crc32;
-        crc32.process_bytes(trimmed.data(), trimmed.length());
+		/* Hash the data */
+		uint64_t hash = CRC32::crc32(trimmed);
 
-        return words[crc32.checksum() % words.size()];
+		/* Modulus the hash by the word length to get the index of the
+		  checksum word */
+		return words[hash % words.size()];
     }
 
     std::vector<int> GetWordIndexes(const std::vector<std::string> words)
