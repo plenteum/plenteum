@@ -9,6 +9,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <limits>
 #include <initializer_list>
 #include <boost/uuid/uuid.hpp>
@@ -150,7 +151,7 @@ const uint64_t FORK_HEIGHTS[] =
     3,
     65500, //first fork to introduce DUST fund
 	67500, //tx & block size issue fix
-	130000, //difficulty update and web wallet direct connect
+	150000, //difficulty update 
 	200000 // dustfund v2 
 };
 
@@ -223,7 +224,13 @@ const uint64_t P2P_DEFAULT_INVOKE_TIMEOUT                    = 60 * 2 * 1000; //
 const size_t   P2P_DEFAULT_HANDSHAKE_INVOKE_TIMEOUT          = 5000;          // 5 seconds
 const char     P2P_STAT_TRUSTED_PUB_KEY[]                    = "";
 
-const char     LATEST_VERSION_URL[]                          = "http://latest.plenteum.com";
+const uint64_t DATABASE_WRITE_BUFFER_MB_DEFAULT_SIZE = 256;
+const uint64_t DATABASE_READ_BUFFER_MB_DEFAULT_SIZE = 10;
+const uint32_t DATABASE_DEFAULT_MAX_OPEN_FILES = 100;
+const uint16_t DATABASE_DEFAULT_BACKGROUND_THREADS_COUNT = 2;
+
+const char     LATEST_VERSION_URL[] = "https://www.plenteum.com/latest.html";
+const std::string LICENSE_URL = "https://github.com/plenteum/plenteum/blob/master/LICENSE";
 
 const static boost::uuids::uuid CRYPTONOTE_NETWORK =
 {

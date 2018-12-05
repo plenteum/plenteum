@@ -1,3 +1,4 @@
+// Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
@@ -24,4 +25,4 @@ std::string getAction(Config &config);
 void mainLoop(std::shared_ptr<WalletInfo> walletInfo, CryptoNote::INode &node);
 
 template<typename T>
-void printCommands(const std::vector<T> &commands, int offset = 0);
+void printCommands(const std::vector<T> &commands, size_t offset = 0);

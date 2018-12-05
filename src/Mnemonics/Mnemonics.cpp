@@ -1,27 +1,29 @@
 // Copyright 2014-2018 The Monero Developers
-// Copyright 2018 The Turtlecoin Developers
+// Copyright 2018 The TurtleCoin Developers
 // Copyright 2018 The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 
 #include <algorithm>
+
 #include <Mnemonics/CRC32.h>
 #include <Mnemonics/Mnemonics.h>
 #include <Mnemonics/WordList.h>
+
 #include <sstream>
 
 namespace Mnemonics
 {
-    std::tuple<std::string, Crypto::SecretKey> MnemonicToPrivateKey(const std::string words)
+    std::tuple<WalletError, Crypto::SecretKey> MnemonicToPrivateKey(const std::string words)
     {
         std::vector<std::string> wordsList;
 
         std::istringstream stream(words);
 
         /* Convert whitespace separated string into vector of words */
-        for(std::string s; stream >> s;)
+        for (std::string word; stream >> word;)
         {
-            wordsList.push_back(s);
+            wordsList.push_back(word);
         }
 
         return MnemonicToPrivateKey(wordsList);
@@ -29,48 +31,50 @@ namespace Mnemonics
 
     /* Note - if the returned string is not empty, it is an error message, and
        the returned secret key is not initialized. */
-    std::tuple<std::string, Crypto::SecretKey> MnemonicToPrivateKey(std::vector<std::string> words)
+    std::tuple<WalletError, Crypto::SecretKey> MnemonicToPrivateKey(const std::vector<std::string> words)
     {
-        Crypto::SecretKey key;
-
         const size_t len = words.size();
 
         /* Mnemonics must be 25 words long */
         if (len != 25)
         {
-            std::stringstream str;
+            /* Write out "word" or "words" to make the grammar of the next sentence
+               correct, based on if we have 1 or more words */
+            const std::string wordPlural = len == 1 ? "word" : "words";
 
-			/* Write out "word" or "words" to make the grammar of the next sentence
-			   correct, based on if we have 1 or more words */
-			const std::string wordPlural = len == 1 ? "word" : "words";
+            WalletError error(
+                MNEMONIC_WRONG_LENGTH,
+                "The mnemonic seed given is the wrong length. It should be "
+                "25 words long, but it is " + std::to_string(len) + " " +
+                wordPlural + " long."
+            );
 
-            str << "Mnemonic seed is wrong length - It should be 25 words "
-                << "long, but it is " << len << " " << wordPlural << " long!";
-
-            return std::make_tuple(str.str(), key);
+            return {error, Crypto::SecretKey()};
         }
 
         /* All words must be present in the word list */
-        for (auto &word : words)
+        for (auto word : words)
         {
-			std::transform(word.begin(), word.end(), word.begin(), ::tolower);
+            /* Convert to lower case */
+            std::transform(word.begin(), word.end(), word.begin(), ::tolower);
+
             if (std::find(WordList::English.begin(),
                           WordList::English.end(), word) == WordList::English.end())
             {
-                std::stringstream str;
+                WalletError error(
+                    MNEMONIC_INVALID_WORD,
+                    "The mnemonic seed given has a word that is not present "
+                    "in the english word list (" + word + ")."
+                );
 
-                str << "Mnemonic seed has invalid word - "
-                    << word << " is not in the English word list!";
-
-                return std::make_tuple(str.str(), key);
+                return {error, Crypto::SecretKey()};
             }
         }
 
         /* The checksum must be correct */
         if (!HasValidChecksum(words))
         {
-            return std::make_tuple("Mnemonic seed has incorrect checksum!",
-                                   key);
+            return {MNEMONIC_INVALID_CHECKSUM, Crypto::SecretKey()};
         }
 
         auto wordIndexes = GetWordIndexes(words);
@@ -88,13 +92,15 @@ namespace Mnemonics
             const size_t wlLen = WordList::English.size();
 
             /* no idea what this does lol */
-            const uint32_t val = w1 + wlLen * (((wlLen - w1) + w2) % wlLen) + wlLen 
-                                            * wlLen * (((wlLen - w2) + w3) % wlLen);
+            const uint32_t val = static_cast<uint32_t>(
+                w1 + wlLen * (((wlLen - w1) + w2) % wlLen) + wlLen 
+                           * wlLen * (((wlLen - w2) + w3) % wlLen)
+            );
 
             /* Don't know what this is testing either */
             if (!(val % wlLen == w1))
             {
-                return std::make_tuple("Mnemonic seed is invalid!", key);
+                return {INVALID_MNEMONIC, Crypto::SecretKey()};
             }
 
             /* Interpret val as 4 uint8_t's */
@@ -107,10 +113,12 @@ namespace Mnemonics
             }
         }
 
+        Crypto::SecretKey key;
+
         /* Copy the data to the secret key */
         std::copy(data.begin(), data.end(), key.data);
 
-        return std::make_tuple(std::string(), key);
+        return {SUCCESS, key};
     }
 
     std::string PrivateKeyToMnemonic(const Crypto::SecretKey privateKey)
@@ -178,12 +186,12 @@ namespace Mnemonics
             trimmed += word.substr(0, 3);
         }
 
-		/* Hash the data */
-		uint64_t hash = CRC32::crc32(trimmed);
+        /* Hash the data */
+        uint64_t hash = CRC32::crc32(trimmed);
 
-		/* Modulus the hash by the word length to get the index of the
-		  checksum word */
-		return words[hash % words.size()];
+        /* Modulus the hash by the word length to get the index of the 
+           checksum word */
+        return words[hash % words.size()];
     }
 
     std::vector<int> GetWordIndexes(const std::vector<std::string> words)

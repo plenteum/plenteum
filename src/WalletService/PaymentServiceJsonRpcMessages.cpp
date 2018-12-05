@@ -27,7 +27,7 @@ void Export::Response::serialize(CryptoNote::ISerializer& serializer) {
 }
 
 void Reset::Request::serialize(CryptoNote::ISerializer& serializer) {
-	serializer(scanHeight, "scanHeight");
+  serializer(scanHeight, "scanHeight");
 }
 
 void Reset::Response::serialize(CryptoNote::ISerializer& serializer) {

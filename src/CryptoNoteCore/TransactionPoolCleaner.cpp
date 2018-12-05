@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
@@ -90,10 +91,8 @@ std::vector<Crypto::Hash> TransactionPoolCleanWrapper::clean(const uint32_t heig
       std::vector<CachedTransaction> transactions;
       transactions.emplace_back(transaction);
 
-      bool success;
-      std::string error;
+      auto [success, error] = Mixins::validate(transactions, height);
 
-      std::tie(success, error) = Mixins::validate(transactions, height);
       if (!success)
       {
         logger(Logging::DEBUGGING) << "Deleting invalid transaction " << Common::podToHex(hash) << " from pool." <<

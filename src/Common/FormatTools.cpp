@@ -17,7 +17,7 @@
 namespace Common {
 
 //--------------------------------------------------------------------------------
-std::string get_mining_speed(uint32_t hr) {
+std::string get_mining_speed(uint64_t hr) {
   if (hr>1e9) return (boost::format("%.2f GH/s") % (hr/1e9)).str();
   if (hr>1e6) return (boost::format("%.2f MH/s") % (hr/1e6)).str();
   if (hr>1e3) return (boost::format("%.2f KH/s") % (hr/1e3)).str();
@@ -78,8 +78,8 @@ ForkStatus get_fork_status(uint64_t height, std::vector<uint64_t> upgrade_height
 
     float days = (next_fork - height) / CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;
 
-    /* Next fork in < 14 days away */
-    if (days < 14)
+    /* Next fork in < 30 days away */
+    if (days < 30)
     {
         /* Software doesn't support the next fork yet */
         if (supported_height < next_fork)

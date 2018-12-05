@@ -3,71 +3,151 @@ language: cpp
 
 matrix:
   include:
+
+  # Ubuntu, g++-8
   - os: linux
+    compiler: gcc
     addons:
       apt:
         sources:
         - ubuntu-toolchain-r-test
-        packages:
-        - libboost1.55-all-dev
+        packages: 
+          - libboost1.55-all-dev
+          - g++-8
+          - gcc-8
     env:
-    - MATRIX_EVAL="CC=gcc && CXX=g++"
+    - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
     - LABEL="linux"
+    - _DEPLOYABLE="true"
     - STRIP="strip"
-  - os: osx
-    env:
-    - MATRIX_EVAL="CC=gcc && CXX=g++"
-    - CXXFLAGS="-std=gnu++11"
-    - LABEL="osx"
-    - STRIP="strip"
+
+  # Ubuntu, g++-7
   - os: linux
+    compiler: gcc
     addons:
       apt:
         sources:
         - ubuntu-toolchain-r-test
-        packages:
-        - gcc-aarch64-linux-gnu
-        - g++-aarch64-linux-gnu
+        packages: 
+          - libboost1.55-all-dev
+          - g++-7
+          - gcc-7
+    env:
+    - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+    - LABEL="linux-g++-7"
+    - STRIP="strip"
+
+  # Ubuntu, clang-6
+  - os: linux
+    compiler: clang
+    addons:
+      apt:
+        sources:
+        - ubuntu-toolchain-r-test
+        - llvm-toolchain-trusty-6.0
+        packages: 
+          - libboost1.55-all-dev
+          - clang-6.0
+          - libstdc++-7-dev
+    env:
+    - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
+    - LABEL="linux-clang-6"
+    - STRIP="strip"
+
+  ## OSX, g++-8
+  - os: osx
+    osx_image: xcode10
+    compiler: gcc
+    env:
+    - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+    - LABEL="osx-g++-8"
+    - STRIP="strip"
+
+  # OSX, g++-7
+  - os: osx
+    osx_image: xcode10
+    compiler: gcc
+    env:
+    - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+    - LABEL="osx-g++-7"
+    - STRIP="strip"
+
+  # OSX, clang
+  - os: osx
+    osx_image: xcode10
+    compiler: clang
+    env:
+    - MATRIX_EVAL="CC=/usr/local/opt/llvm/bin/clang && CXX=/usr/local/opt/llvm/bin/clang++"
+    - LABEL="osx"
+    - _DEPLOYABLE="true"
+    - STRIP="strip"
+
+  # Arm (aarch64) cross compile
+  - os: linux
     env:
     - MATRIX_EVAL="CC=aarch64-linux-gnu-gcc && CXX=aarch64-linux-gnu-g++"
     - LABEL="aarch64"
+    - _DEPLOYABLE="true"
     - STRIP="aarch64-linux-gnu-strip"
 
 before_install:
 - eval $MATRIX_EVAL
 
 install:
+# Need to uninstall oclint to get newer gcc installed https://github.com/travis-ci/travis-ci/issues/8826
+- if [[ "${LABEL:0:3}" == "osx" ]]; then brew cask uninstall --force oclint || true ; fi
+
+# Need a newer version of llvm to link against to get std::filesystem / std::experimental::filesystem 
+- if [[ "${LABEL:0:3}" == "osx" ]]; then brew install llvm || brew upgrade llvm ; fi
+
+# Install the correct gcc version
+- if [[ "$LABEL" == "osx-g++-8" ]]; then brew install gcc@8 ; fi
+- if [[ "$LABEL" == "osx-g++-7" ]]; then brew install gcc@7 ; fi
+
+- if [[ "$LABEL" == "aarch64" ]]; then export BASEDIR=`pwd` ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then cd $HOME ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then wget https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-a/8.2-2018.08/gcc-arm-8.2-2018.08-x86_64-aarch64-linux-gnu.tar.xz ; fi
 - if [[ "$LABEL" == "aarch64" ]]; then wget http://sourceforge.net/projects/boost/files/boost/1.55.0/boost_1_55_0.tar.gz ; fi
-- if [[ "$LABEL" == "aarch64" ]]; then tar zxvf boost_1_55_0.tar.gz >/dev/null ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then mkdir toolchain && cd toolchain ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then tar xfv ../gcc-arm-8.2-2018.08-x86_64-aarch64-linux-gnu.tar.xz >/dev/null ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then cd gcc-arm-8.2-2018.08-x86_64-aarch64-linux-gnu ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then tar zxvf ../../boost_1_55_0.tar.gz >/dev/null ; fi
 - if [[ "$LABEL" == "aarch64" ]]; then cd boost_1_55_0 ; fi
 - if [[ "$LABEL" == "aarch64" ]]; then ./bootstrap.sh ; fi
-- if [[ "$LABEL" == "aarch64" ]]; then curl https://raw.githubusercontent.com/plenteum/plenteum/master/scripts/fix_boost_aarch64.sh | sh ; fi
-- if [[ "$LABEL" == "aarch64" ]]; then ./b2 toolset=gcc-aarch64 --with-system --with-filesystem --with-thread --with-date_time --with-chrono --with-regex --with-serialization --with-program_options >/dev/null ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then curl https://raw.githubusercontent.com/plenteum/plenteum/development/scripts/fix_boost_aarch64.sh | sh ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then ./b2 toolset=gcc-aarch64 --with-system --with-filesystem --with-thread --with-date_time --with-chrono --with-regex --with-serialization --with-program_options >/dev/null; fi
 - if [[ "$LABEL" == "aarch64" ]]; then export CUSTOM_BOOST_ROOT="-DBOOST_ROOT=`pwd`" ; fi
-- if [[ "$LABEL" == "aarch64" ]]; then cd .. ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then export CUSTOM_TOOLCHAIN="-DCMAKE_TOOLCHAIN_FILE=../scripts/cross-aarch64.cmake" ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then export STRIP="$HOME/toolchain/gcc-arm-8.2-2018.08-x86_64-aarch64-linux-gnu/bin/aarch64-linux-gnu-strip" ; fi
+- if [[ "$LABEL" == "aarch64" ]]; then cd $BASEDIR ; fi
 
 script:
+- eval $MATRIX_EVAL
 - mkdir build && cd build
-- cmake -DCMAKE_BUILD_TYPE=Release -DSTATIC=true .. ${CUSTOM_BOOST_ROOT} && make -j2
+- cmake -DCMAKE_BUILD_TYPE=Release -DSTATIC=true .. ${CUSTOM_TOOLCHAIN} ${CUSTOM_BOOST_ROOT} && make -j2
 
 before_deploy:
 - if [[ "${TRAVIS_TAG}" == "" ]]; then export TRAVIS_TAG=${TRAVIS_COMMIT} ; fi
 - cd src
-- ${STRIP} Plenteumd miner zedwallet wallet-service
+- ${STRIP} Plenteumd miner zedwallet wallet-service zedwallet-beta
+- rm -rf plenteum-${TRAVIS_TAG} 
 - mkdir plenteum-${TRAVIS_TAG}
-- cp Plenteumd miner zedwallet wallet-service plenteum-${TRAVIS_TAG}/
+- cp Plenteumd miner zedwallet wallet-service zedwallet-beta plenteum-${TRAVIS_TAG}/
 - cp ../../LICENSE plenteum-${TRAVIS_TAG}/
 - tar cvfz plenteum-${TRAVIS_TAG}-${LABEL}.tar.gz plenteum-${TRAVIS_TAG}/
+- rm -rf builds
 - mkdir builds
 - cp plenteum-${TRAVIS_TAG}-${LABEL}.tar.gz builds
+- cd ..
 
 deploy:
-  provider: releases
-  api_key:
-    secure: eEOsTnudYcuXkHiclmvxVOsbhudAaj1W+AzJpAHR1RuPtWZC1n2NTkJZ+V+JH1/z+rfwd0tG8oYH2sRqa18BkLo6f2ySBU/0Ara8DG5oNTjVVgi9CKJcVlW3SHTLJNwF3YQhZ2IdW+TKd2PvoW7E/6u9pyebikhjVUgC5wqnCknDOF8TEdLJNmGrQXrQFvUwUEBcYW6WqLxDpc1xQfm9Wm1YAeRus+gKm2ENONrAIgisYcP1RSIYPVQH/q9LuSo1adunsuXrLIr/Oh5WxOZr4QKriq3OTETxq9MaM4CjmsG3QCfyH9/iHbJH0pUrPSycuFRU6Pr9/r7C20IQOW5WnjD2dZ/KketN+GSmx1GI83Xr5PhEUC9LdvQN7dilClTSD5BcPeXEpvY5LFxa9klaarwNHeHWfPpbw8DFwVTRmyZXRkv47ayl9SHbDz8nDW+HuLIipI24TpEtOWHvr+OYd0HFydf+s0efDj/Q8dhyn+FDMcGsOxSx8IZ/Og+o2cTC8ArrUMzNJfbLYydbNlL2CDkmpfZigv2YsGROL5ZMCpn1ZPwNXeYaJluUG3r/WYezalsKtUO/VNKLZJDXKAvCiQT434BIM2UcCwOCjSCWR9KXQ04f1Dn/gX2eZ4YHjzxjST06axy2uTAT6cfoN8+nsevlxrPESjEL3RHMNv+5nro=
-  file: 
-    - plenteum-${TRAVIS_TAG}-${LABEL}.tar.gz
-  skip_cleanup: true
-  on:
-    repo: plenteum/plenteum
-    tags: true
+  - provider: releases
+    api_key:
+      secure: eEOsTnudYcuXkHiclmvxVOsbhudAaj1W+AzJpAHR1RuPtWZC1n2NTkJZ+V+JH1/z+rfwd0tG8oYH2sRqa18BkLo6f2ySBU/0Ara8DG5oNTjVVgi9CKJcVlW3SHTLJNwF3YQhZ2IdW+TKd2PvoW7E/6u9pyebikhjVUgC5wqnCknDOF8TEdLJNmGrQXrQFvUwUEBcYW6WqLxDpc1xQfm9Wm1YAeRus+gKm2ENONrAIgisYcP1RSIYPVQH/q9LuSo1adunsuXrLIr/Oh5WxOZr4QKriq3OTETxq9MaM4CjmsG3QCfyH9/iHbJH0pUrPSycuFRU6Pr9/r7C20IQOW5WnjD2dZ/KketN+GSmx1GI83Xr5PhEUC9LdvQN7dilClTSD5BcPeXEpvY5LFxa9klaarwNHeHWfPpbw8DFwVTRmyZXRkv47ayl9SHbDz8nDW+HuLIipI24TpEtOWHvr+OYd0HFydf+s0efDj/Q8dhyn+FDMcGsOxSx8IZ/Og+o2cTC8ArrUMzNJfbLYydbNlL2CDkmpfZigv2YsGROL5ZMCpn1ZPwNXeYaJluUG3r/WYezalsKtUO/VNKLZJDXKAvCiQT434BIM2UcCwOCjSCWR9KXQ04f1Dn/gX2eZ4YHjzxjST06axy2uTAT6cfoN8+nsevlxrPESjEL3RHMNv+5nro=
+    file:
+      - plenteum-${TRAVIS_TAG}-${LABEL}.tar.gz
+    skip_cleanup: true
+    on:
+      repo: plenteum/plenteum
+      tags: true
+      condition: "$_DEPLOYABLE = true"
