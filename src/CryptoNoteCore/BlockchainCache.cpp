@@ -596,7 +596,7 @@ size_t BlockchainCache::getTransactionCount() const {
 }
 
 std::vector<RawBlock> BlockchainCache::getBlocksByHeight(
-    const uint64_t startHeight, const uint64_t endHeight) const
+    const uint64_t startHeight, uint64_t endHeight) const
 {
     if (endHeight < startIndex)
     {
@@ -612,7 +612,16 @@ std::vector<RawBlock> BlockchainCache::getBlocksByHeight(
 
     uint64_t startOffset = std::max(startHeight, static_cast<uint64_t>(startIndex));
 
-    for (uint64_t i = startOffset; i <= endHeight; i++)
+	uint64_t blockCount = storage->getBlockCount();
+
+	/* Make sure we don't overflow the storage (for example, the block might
+	  not exist yet) */
+	if (endHeight > startIndex + blockCount)
+	{
+		endHeight = startIndex + blockCount;
+	}
+
+	for (uint64_t i = startOffset; i < endHeight -1; i++)
     {
         blocks.push_back(storage->getBlockByIndex(i - startIndex));
     }
@@ -1148,6 +1157,7 @@ uint32_t BlockchainCache::getBlockIndexContainingTx(const Crypto::Hash& transact
 
 uint8_t BlockchainCache::getBlockMajorVersionForHeight(uint32_t height) const {
   UpgradeManager upgradeManager;
+  upgradeManager.addMajorBlockVersion(BLOCK_MAJOR_VERSION_1, currency.upgradeHeight(BLOCK_MAJOR_VERSION_1));
   upgradeManager.addMajorBlockVersion(BLOCK_MAJOR_VERSION_2, currency.upgradeHeight(BLOCK_MAJOR_VERSION_2));
   upgradeManager.addMajorBlockVersion(BLOCK_MAJOR_VERSION_3, currency.upgradeHeight(BLOCK_MAJOR_VERSION_3));
   upgradeManager.addMajorBlockVersion(BLOCK_MAJOR_VERSION_4, currency.upgradeHeight(BLOCK_MAJOR_VERSION_4));

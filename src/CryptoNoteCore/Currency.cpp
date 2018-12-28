@@ -91,7 +91,7 @@ bool Currency::generateGenesisBlock() {
     return false;
   }
 
-  genesisBlockTemplate.majorVersion = BLOCK_MAJOR_VERSION_1;
+  genesisBlockTemplate.majorVersion = BLOCK_MAJOR_VERSION_0;
   genesisBlockTemplate.minorVersion = BLOCK_MINOR_VERSION_0;
   genesisBlockTemplate.timestamp = 0;
   genesisBlockTemplate.nonce = 70;
@@ -121,7 +121,7 @@ size_t Currency::difficultyBlocksCountByBlockVersion(uint8_t blockMajorVersion, 
 }
 
 size_t Currency::blockGrantedFullRewardZoneByBlockVersion(uint8_t blockMajorVersion) const {
-	if (blockMajorVersion < BLOCK_MAJOR_VERSION_5) {
+	if (blockMajorVersion < BLOCK_MAJOR_VERSION_4) {
 		return m_blockGrantedFullRewardZone;
 	}
 	else {
@@ -130,16 +130,18 @@ size_t Currency::blockGrantedFullRewardZoneByBlockVersion(uint8_t blockMajorVers
 }
 
 uint32_t Currency::upgradeHeight(uint8_t majorVersion) const {
-  if (majorVersion == BLOCK_MAJOR_VERSION_2) {
+  if (majorVersion == BLOCK_MAJOR_VERSION_1) {
     return m_upgradeHeightV2;
-  } else if (majorVersion == BLOCK_MAJOR_VERSION_3) {
+  } else if (majorVersion == BLOCK_MAJOR_VERSION_2) {
     return m_upgradeHeightV3;
-  } else if (majorVersion == BLOCK_MAJOR_VERSION_4) {
+  } else if (majorVersion == BLOCK_MAJOR_VERSION_3) {
     return m_upgradeHeightV4;
-  } else if (majorVersion == BLOCK_MAJOR_VERSION_5) {
+  } else if (majorVersion == BLOCK_MAJOR_VERSION_4) {
 	  return m_upgradeHeightV6; //height of fix for tx sizes
   }
-  else {
+  else if (majorVersion == BLOCK_MAJOR_VERSION_5) {
+	  return m_upgradeHeightV7;
+  } else {
     return static_cast<uint32_t>(-1);
   }
 }
@@ -163,7 +165,7 @@ bool Currency::getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size
   }
 
   uint64_t penalizedBaseReward = getPenalizedAmount(baseReward, medianSize, currentBlockSize);
-  uint64_t penalizedFee = blockMajorVersion >= BLOCK_MAJOR_VERSION_2 ? getPenalizedAmount(fee, medianSize, currentBlockSize) : fee;
+  uint64_t penalizedFee = blockMajorVersion >= BLOCK_MAJOR_VERSION_1 ? getPenalizedAmount(fee, medianSize, currentBlockSize) : fee;
 
   emissionChange = penalizedBaseReward - (fee - penalizedFee);
   reward = penalizedBaseReward + penalizedFee;
@@ -545,7 +547,7 @@ std::vector<uint64_t> cumulativeDifficulties_o(cumulativeDifficulties);
 }
 
 bool Currency::checkProofOfWorkV1(const CachedBlock& block, uint64_t currentDifficulty) const {
-  if (BLOCK_MAJOR_VERSION_1 != block.getBlock().majorVersion) {
+  if (BLOCK_MAJOR_VERSION_0 != block.getBlock().majorVersion) {
     return false;
   }
 
@@ -554,17 +556,19 @@ bool Currency::checkProofOfWorkV1(const CachedBlock& block, uint64_t currentDiff
 
 bool Currency::checkProofOfWorkV2(const CachedBlock& cachedBlock, uint64_t currentDifficulty) const {
   const auto& block = cachedBlock.getBlock();
-  if (block.majorVersion < BLOCK_MAJOR_VERSION_2) {
+  if (block.majorVersion < BLOCK_MAJOR_VERSION_1) {
+	  logger(ERROR) << "Invalid major version";
     return false;
   }
 
   if (!check_hash(cachedBlock.getBlockLongHash(), currentDifficulty)) {
+	  logger(ERROR) << "Failed hash check for version: " << block.majorVersion << "( " << cachedBlock.getBlockLongHash() << ")";
     return false;
   }
 
   TransactionExtraMergeMiningTag mmTag;
   if (!getMergeMiningTagFromExtra(block.parentBlock.baseTransaction.extra, mmTag)) {
-    logger(ERROR) << "merge mining tag wasn't found in extra of the parent block miner transaction";
+	  logger(ERROR) << "merge mining tag wasn't found in extra of the parent block miner transaction";
     return false;
   }
 
@@ -586,9 +590,10 @@ bool Currency::checkProofOfWorkV2(const CachedBlock& cachedBlock, uint64_t curre
 
 bool Currency::checkProofOfWork(const CachedBlock& block, uint64_t currentDiffic) const {
   switch (block.getBlock().majorVersion) {
-  case BLOCK_MAJOR_VERSION_1:
+  case BLOCK_MAJOR_VERSION_0:
     return checkProofOfWorkV1(block, currentDiffic);
 
+  case BLOCK_MAJOR_VERSION_1:
   case BLOCK_MAJOR_VERSION_2:
   case BLOCK_MAJOR_VERSION_3:
   case BLOCK_MAJOR_VERSION_4:
@@ -662,6 +667,7 @@ m_upgradeHeightV3(currency.m_upgradeHeightV3),
 m_upgradeHeightV4(currency.m_upgradeHeightV4),
 m_upgradeHeightV5(currency.m_upgradeHeightV5),
 m_upgradeHeightV6(currency.m_upgradeHeightV6),
+m_upgradeHeightV7(currency.m_upgradeHeightV7),
 m_upgradeVotingThreshold(currency.m_upgradeVotingThreshold),
 m_upgradeVotingWindow(currency.m_upgradeVotingWindow),
 m_upgradeWindow(currency.m_upgradeWindow),
@@ -730,6 +736,7 @@ zawyDifficultyBlockVersion(parameters::ZAWY_DIFFICULTY_DIFFICULTY_BLOCK_VERSION)
   upgradeHeightV4(parameters::UPGRADE_HEIGHT_V4);
   upgradeHeightV5(parameters::UPGRADE_HEIGHT_V5);
   upgradeHeightV6(parameters::UPGRADE_HEIGHT_V6);
+  upgradeHeightV7(parameters::UPGRADE_HEIGHT_V7);
   upgradeVotingThreshold(parameters::UPGRADE_VOTING_THRESHOLD);
   upgradeVotingWindow(parameters::UPGRADE_VOTING_WINDOW);
   upgradeWindow(parameters::UPGRADE_WINDOW);

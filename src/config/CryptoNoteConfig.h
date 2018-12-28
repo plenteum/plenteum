@@ -134,8 +134,9 @@ const uint32_t UPGRADE_HEIGHT_V3                             = 2;
 const uint32_t UPGRADE_HEIGHT_V4                             = 3; // Upgrade height for CN-Lite Variant 1 switch.
 const uint32_t UPGRADE_HEIGHT_V5							 = 65500; // Upgrade height for DustFund V1.
 const uint32_t UPGRADE_HEIGHT_V6							 = 67500; // tx & block size issue fix.
+const uint32_t UPGRADE_HEIGHT_V7							 = 130000; // cn turtle.
 
-const uint32_t UPGRADE_HEIGHT_CURRENT                        = UPGRADE_HEIGHT_V6;
+const uint32_t UPGRADE_HEIGHT_CURRENT                        = UPGRADE_HEIGHT_V7;
 const unsigned UPGRADE_VOTING_THRESHOLD                      = 90;               // percent
 const uint32_t UPGRADE_VOTING_WINDOW                         = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;  // blocks
 const uint32_t UPGRADE_WINDOW                                = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;  // blocks
@@ -151,7 +152,7 @@ const uint64_t FORK_HEIGHTS[] =
     3,
     65500, //first fork to introduce DUST fund
 	67500, //tx & block size issue fix
-	150000, //difficulty update 
+	130000, //difficulty update 
 	200000 // dustfund v2 
 };
 
@@ -181,16 +182,17 @@ const char     MINER_CONFIG_FILE_NAME[]                      = "miner_conf.json"
 
 const char     CRYPTONOTE_NAME[]                             = "Plenteum";
 
-const uint8_t  TRANSACTION_VERSION_1                         =  1;
-const uint8_t  TRANSACTION_VERSION_2                         =  2;
-const uint8_t  CURRENT_TRANSACTION_VERSION                   =  TRANSACTION_VERSION_1;
-const uint8_t  BLOCK_MAJOR_VERSION_1                         =  0;
-const uint8_t  BLOCK_MAJOR_VERSION_2                         =  1;
-const uint8_t  BLOCK_MAJOR_VERSION_3                         =  2;
-const uint8_t  BLOCK_MAJOR_VERSION_4                         =  3;
-const uint8_t  BLOCK_MAJOR_VERSION_5						 =  4;
-const uint8_t  BLOCK_MINOR_VERSION_0                         =  0;
-const uint8_t  BLOCK_MINOR_VERSION_1                         =  1;
+const uint8_t  TRANSACTION_VERSION_1						= 1;
+const uint8_t  TRANSACTION_VERSION_2						= 2;
+const uint8_t  CURRENT_TRANSACTION_VERSION					= TRANSACTION_VERSION_1;
+const uint8_t  BLOCK_MAJOR_VERSION_0						= 0;
+const uint8_t  BLOCK_MAJOR_VERSION_1						= 1;
+const uint8_t  BLOCK_MAJOR_VERSION_2						= 2;
+const uint8_t  BLOCK_MAJOR_VERSION_3						= 3;
+const uint8_t  BLOCK_MAJOR_VERSION_4						= 4; //block version to fix tx sizes issue
+const uint8_t  BLOCK_MAJOR_VERSION_5						= 5; //algo change to CN Turtle
+const uint8_t  BLOCK_MINOR_VERSION_0						= 0;
+const uint8_t  BLOCK_MINOR_VERSION_1						= 1;
 
 const size_t   BLOCKS_IDS_SYNCHRONIZING_DEFAULT_COUNT        =  10000;  //by default, blocks ids count in synchronizing
 const size_t   BLOCKS_SYNCHRONIZING_DEFAULT_COUNT            =  100;    //by default, blocks count in blocks downloading
@@ -205,7 +207,7 @@ const size_t   P2P_LOCAL_GRAY_PEERLIST_LIMIT                 =  5000;
 
 // P2P Network Configuration Section - This defines our current P2P network version
 // and the minimum version for communication between nodes
-const uint8_t  P2P_CURRENT_VERSION                           = 3;
+const uint8_t  P2P_CURRENT_VERSION                           = 4;
 const uint8_t  P2P_MINIMUM_VERSION                           = 2; //bumped to min supported software version for peer connect
 // This defines the number of versions ahead we must see peers before we start displaying
 // warning messages that we need to upgrade our software.
