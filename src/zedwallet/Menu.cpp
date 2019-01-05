@@ -1,3 +1,4 @@
+// Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
@@ -42,12 +43,12 @@ std::string parseCommand(const std::vector<T> &printableCommands,
 
         try
         {
-            size_t selectionNum = std::stoi(selection);
+            int selectionNum = std::stoi(selection);
 
             /* Input is in 1 based indexing, we need 0 based indexing */
             selectionNum--;
 
-            size_t numCommands = availableCommands.size();
+            int numCommands = static_cast<int>(availableCommands.size());
 
             /* Must be in the bounds of the vector */
             if (selectionNum < 0 || selectionNum >= numCommands)
@@ -108,7 +109,7 @@ std::tuple<bool, std::shared_ptr<WalletInfo>>
         /* User wants to exit */
         if (launchCommand == "exit")
         {
-            return std::make_tuple(true, nullptr);
+            return {true, nullptr};
         }
 
         /* Handle the user input */
@@ -128,7 +129,7 @@ std::tuple<bool, std::shared_ptr<WalletInfo>>
         /* Node is down, user wants to exit */
         if (!checkNodeStatus(node))
         {
-            return std::make_tuple(true, nullptr);
+            return {true, nullptr};
         }
     
         /* If we're creating a wallet, don't print the lengthy sync process */
@@ -166,7 +167,7 @@ std::tuple<bool, std::shared_ptr<WalletInfo>>
         }
 
         /* Return the wallet info */
-        return std::make_tuple(false, walletInfo);
+        return {false, walletInfo};
     }
 }
 
@@ -279,9 +280,9 @@ void mainLoop(std::shared_ptr<WalletInfo> walletInfo, CryptoNote::INode &node)
 }
 
 template<typename T>
-void printCommands(const std::vector<T> &commands, int offset)
+void printCommands(const std::vector<T> &commands, size_t offset)
 {
-    int i = 1 + offset;
+    size_t i = 1 + offset;
 
     std::cout << std::endl;
 
@@ -316,7 +317,7 @@ std::string parseCommand(const std::vector<AdvancedCommand> &printableCommands,
                          std::shared_ptr<WalletInfo> walletInfo);
 
 template
-void printCommands(const std::vector<Command> &commands, int offset);
+void printCommands(const std::vector<Command> &commands, size_t offset);
 
 template
-void printCommands(const std::vector<AdvancedCommand> &commands, int offset);
+void printCommands(const std::vector<AdvancedCommand> &commands, size_t offset);

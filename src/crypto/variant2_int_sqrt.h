@@ -52,19 +52,19 @@
 // It was tested once for all edge cases and confirmed correct
 static inline uint32_t integer_square_root_v2(uint64_t n)
 {
-	uint64_t r = 1ULL << 63;
+  uint64_t r = 1ULL << 63;
 
-	for (uint64_t bit = 1ULL << 60; bit; bit >>= 2)
-	{
-		const bool b = (n < r + bit);
-		const uint64_t n_next = n - (r + bit);
-		const uint64_t r_next = r + bit * 2;
-		n = b ? n : n_next;
-		r = b ? r : r_next;
-		r >>= 1;
-	}
+  for (uint64_t bit = 1ULL << 60; bit; bit >>= 2)
+  {
+    const bool b = (n < r + bit);
+    const uint64_t n_next = n - (r + bit);
+    const uint64_t r_next = r + bit * 2;
+    n = b ? n : n_next;
+    r = b ? r : r_next;
+    r >>= 1;
+  }
 
-	return r * 2 + ((n > r) ? 1 : 0);
+  return r * 2 + ((n > r) ? 1 : 0);
 }
 
 /*

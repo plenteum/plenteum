@@ -2,7 +2,7 @@
 // Copyright (c) 2014-2018, The Monero Project
 // Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
-// 
+//
 // Please see the included LICENSE file for more information.
 
 #include "PaymentServiceJsonRpcServer.h"
@@ -21,7 +21,7 @@
 
 namespace PaymentService {
 
-PaymentServiceJsonRpcServer::PaymentServiceJsonRpcServer(System::Dispatcher& sys, System::Event& stopEvent, WalletService& service, Logging::ILogger& loggerGroup, PaymentService::Configuration& config) 
+PaymentServiceJsonRpcServer::PaymentServiceJsonRpcServer(System::Dispatcher& sys, System::Event& stopEvent, WalletService& service, Logging::ILogger& loggerGroup, PaymentService::ConfigurationManager& config)
   : JsonRpcServer(sys, stopEvent, loggerGroup, config)
   , service(service)
   , logger(loggerGroup, "PaymentServiceJsonRpcServer")
@@ -58,23 +58,23 @@ PaymentServiceJsonRpcServer::PaymentServiceJsonRpcServer(System::Dispatcher& sys
 void PaymentServiceJsonRpcServer::processJsonRpcRequest(const Common::JsonValue& req, Common::JsonValue& resp) {
   try {
     prepareJsonResponse(req, resp);
-    
-    if (!config.legacySecurity) {
+
+    if (!config.serviceConfig.legacySecurity) {
       std::string clientPassword;
       if (!req.contains("password")) {
         makeInvalidPasswordResponse(resp);
         return;
-      }   
+      }
       if (!req("password").isString()) {
         makeInvalidPasswordResponse(resp);
         return;
       }
       clientPassword = req("password").getString();
 
-	  std::vector<uint8_t> rawData(clientPassword.begin(), clientPassword.end());
-	  Crypto::Hash hashedPassword = Crypto::Hash();
-	  cn_slow_hash_v0(rawData.data(), rawData.size(), hashedPassword);
-	  if (hashedPassword != config.rpcPassword) {
+      std::vector<uint8_t> rawData(clientPassword.begin(), clientPassword.end());
+      Crypto::Hash hashedPassword = Crypto::Hash();
+      cn_slow_hash_v0(rawData.data(), rawData.size(), hashedPassword);
+      if (hashedPassword != config.rpcSecret) {
         makeInvalidPasswordResponse(resp);
         return;
       }
@@ -124,7 +124,7 @@ std::error_code PaymentServiceJsonRpcServer::handleExport(const Export::Request&
 }
 
 std::error_code PaymentServiceJsonRpcServer::handleReset(const Reset::Request& request, Reset::Response& response) {
-    return service.resetWallet(request.scanHeight);
+  return service.resetWallet(request.scanHeight);
 }
 
 std::error_code PaymentServiceJsonRpcServer::handleCreateAddress(const CreateAddress::Request& request, CreateAddress::Response& response) {
@@ -189,7 +189,7 @@ std::error_code PaymentServiceJsonRpcServer::handleSendTransaction(SendTransacti
   return service.sendTransaction(request, response.transactionHash);
 }
 
-std::error_code PaymentServiceJsonRpcServer::handleCreateDelayedTransaction(const CreateDelayedTransaction::Request& request, CreateDelayedTransaction::Response& response) {
+std::error_code PaymentServiceJsonRpcServer::handleCreateDelayedTransaction(CreateDelayedTransaction::Request& request, CreateDelayedTransaction::Response& response) {
   return service.createDelayedTransaction(request, response.transactionHash);
 }
 
@@ -201,7 +201,7 @@ std::error_code PaymentServiceJsonRpcServer::handleDeleteDelayedTransaction(cons
   return service.deleteDelayedTransaction(request.transactionHash);
 }
 
-std::error_code PaymentServiceJsonRpcServer::handleSendDelayedTransaction(const SendDelayedTransaction::Request& request, SendDelayedTransaction::Response& response) {
+std::error_code PaymentServiceJsonRpcServer::handleSendDelayedTransaction(SendDelayedTransaction::Request& request, SendDelayedTransaction::Response& response) {
   return service.sendDelayedTransaction(request.transactionHash);
 }
 

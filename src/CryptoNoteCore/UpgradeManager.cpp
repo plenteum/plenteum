@@ -39,7 +39,7 @@ uint8_t UpgradeManager::getBlockMajorVersion(uint32_t blockIndex) const {
     }
   }
 
-  return BLOCK_MAJOR_VERSION_1;
+  return BLOCK_MAJOR_VERSION_0;
 }
 
 }

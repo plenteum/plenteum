@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
 // Copyright (c) 2018, The Karai Developers
 //
@@ -13,7 +14,6 @@
 #include "Common/StringTools.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
 #include "CryptoNoteCore/Core.h"
-#include "CryptoNoteCore/Miner.h"
 #include "CryptoNoteCore/TransactionExtra.h"
 #include <config/CryptoNoteConfig.h>
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandlerCommon.h"
@@ -54,6 +54,39 @@ void serialize(BlockShortInfo& blockShortInfo, ISerializer& s) {
   KV_MEMBER(blockShortInfo.txPrefixes);
 }
 
+void serialize(WalletTypes::WalletBlockInfo &walletBlockInfo, ISerializer &s)
+{
+    KV_MEMBER(walletBlockInfo.coinbaseTransaction);
+    KV_MEMBER(walletBlockInfo.transactions);
+    KV_MEMBER(walletBlockInfo.blockHeight);
+    KV_MEMBER(walletBlockInfo.blockHash);
+    KV_MEMBER(walletBlockInfo.blockTimestamp);
+}
+
+void serialize(WalletTypes::RawTransaction &rawTransaction, ISerializer &s)
+{
+    KV_MEMBER(rawTransaction.keyInputs);
+    KV_MEMBER(rawTransaction.paymentID);
+    KV_MEMBER(rawTransaction.keyOutputs);
+    KV_MEMBER(rawTransaction.hash);
+    KV_MEMBER(rawTransaction.transactionPublicKey);
+    KV_MEMBER(rawTransaction.unlockTime);
+}
+
+void serialize(WalletTypes::RawCoinbaseTransaction &rawCoinbaseTransaction, ISerializer &s)
+{
+    KV_MEMBER(rawCoinbaseTransaction.keyOutputs);
+    KV_MEMBER(rawCoinbaseTransaction.hash);
+    KV_MEMBER(rawCoinbaseTransaction.transactionPublicKey);
+    KV_MEMBER(rawCoinbaseTransaction.unlockTime);
+}
+
+void serialize(WalletTypes::KeyOutput &keyOutput, ISerializer &s)
+{
+    KV_MEMBER(keyOutput.key);
+    KV_MEMBER(keyOutput.amount);
+}
+
 namespace {
 
 template <typename Command>
@@ -81,16 +114,26 @@ RpcServer::HandlerFunction jsonMethod(bool (RpcServer::*handler)(typename Comman
 }
 
 std::unordered_map<std::string, RpcServer::RpcHandler<RpcServer::HandlerFunction>> RpcServer::s_handlers = {
-  // json handlers
+  // old json handlers - remove me in 2019
   { "/getinfo", { jsonMethod<COMMAND_RPC_GET_INFO>(&RpcServer::on_get_info), true } },
   { "/getheight", { jsonMethod<COMMAND_RPC_GET_HEIGHT>(&RpcServer::on_get_height), true } },
-  { "/gettransactions", { jsonMethod<COMMAND_RPC_GET_TRANSACTIONS>(&RpcServer::on_get_transactions), false } },
-  { "/sendrawtransaction", { jsonMethod<COMMAND_RPC_SEND_RAW_TX>(&RpcServer::on_send_raw_tx), false } },
   { "/feeinfo", { jsonMethod<COMMAND_RPC_GET_FEE_ADDRESS>(&RpcServer::on_get_fee_info), true } },
   { "/getpeers", { jsonMethod<COMMAND_RPC_GET_PEERS>(&RpcServer::on_get_peers), true } },
+
+  // new json handlers
+  { "/info", { jsonMethod<COMMAND_RPC_GET_INFO>(&RpcServer::on_get_info), true } },
+  { "/height", { jsonMethod<COMMAND_RPC_GET_HEIGHT>(&RpcServer::on_get_height), true } },
+  { "/fee", { jsonMethod<COMMAND_RPC_GET_FEE_ADDRESS>(&RpcServer::on_get_fee_info), true } },
+  { "/peers", { jsonMethod<COMMAND_RPC_GET_PEERS>(&RpcServer::on_get_peers), true } },
+
+  { "/gettransactions", { jsonMethod<COMMAND_RPC_GET_TRANSACTIONS>(&RpcServer::on_get_transactions), false } },
+  { "/sendrawtransaction", { jsonMethod<COMMAND_RPC_SEND_RAW_TX>(&RpcServer::on_send_raw_tx), false } },
+
   { "/getblocks", { jsonMethod<COMMAND_RPC_GET_BLOCKS_FAST>(&RpcServer::on_get_blocks), false } },
   { "/queryblocks", { jsonMethod<COMMAND_RPC_QUERY_BLOCKS>(&RpcServer::on_query_blocks), false } },
   { "/queryblockslite", { jsonMethod<COMMAND_RPC_QUERY_BLOCKS_LITE>(&RpcServer::on_query_blocks_lite), false } },
+  { "/queryblocksdetailed", { jsonMethod<COMMAND_RPC_QUERY_BLOCKS_DETAILED>(&RpcServer::on_query_blocks_detailed), false } },
+  { "/getwalletsyncdata", { jsonMethod<COMMAND_RPC_GET_WALLET_SYNC_DATA>(&RpcServer::on_get_wallet_sync_data), false} },
   { "/get_o_indexes", { jsonMethod<COMMAND_RPC_GET_TX_GLOBAL_OUTPUTS_INDEXES>(&RpcServer::on_get_indexes), false } },
   { "/getrandom_outs", { jsonMethod<COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS>(&RpcServer::on_get_random_outs), false } },
   { "/get_pool_changes", { jsonMethod<COMMAND_RPC_GET_POOL_CHANGES>(&RpcServer::onGetPoolChanges), false } },
@@ -101,6 +144,8 @@ std::unordered_map<std::string, RpcServer::RpcHandler<RpcServer::HandlerFunction
   { "/get_blocks_hashes_by_timestamps", { jsonMethod<COMMAND_RPC_GET_BLOCKS_HASHES_BY_TIMESTAMPS>(&RpcServer::onGetBlocksHashesByTimestamps), false } },
   { "/get_transaction_details_by_hashes", { jsonMethod<COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES>(&RpcServer::onGetTransactionDetailsByHashes), false } },
   { "/get_transaction_hashes_by_payment_id", { jsonMethod<COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID>(&RpcServer::onGetTransactionHashesByPaymentId), false } },
+  { "/get_global_indexes_for_range", { jsonMethod<COMMAND_RPC_GET_GLOBAL_INDEXES_FOR_RANGE>(&RpcServer::onGetGlobalIndexesForRange), false} },
+  { "/get_transactions_status", { jsonMethod<COMMAND_RPC_GET_TRANSACTIONS_STATUS>(&RpcServer::onGetTransactionsStatus), false} },
 
   // json rpc
   { "/json_rpc", { std::bind(&RpcServer::processJsonRpcRequest, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), true } }
@@ -271,6 +316,53 @@ bool RpcServer::on_query_blocks_lite(const COMMAND_RPC_QUERY_BLOCKS_LITE::reques
   return true;
 }
 
+bool RpcServer::on_query_blocks_detailed(const COMMAND_RPC_QUERY_BLOCKS_DETAILED::request& req, COMMAND_RPC_QUERY_BLOCKS_DETAILED::response& res) {
+	uint64_t startIndex;
+	uint64_t currentIndex;
+	uint64_t fullOffset;
+
+  if (!m_core.queryBlocksDetailed(req.blockIds, req.timestamp, startIndex, currentIndex, fullOffset, res.blocks, req.blockCount))
+  {
+    res.status = "Failed to perform query";
+    return false;
+  }
+
+  res.startHeight = startIndex;
+  res.currentHeight = currentIndex;
+  res.fullOffset = fullOffset;
+  res.status = CORE_RPC_STATUS_OK;
+
+  return true;
+}
+
+bool RpcServer::on_get_wallet_sync_data(const COMMAND_RPC_GET_WALLET_SYNC_DATA::request &req, COMMAND_RPC_GET_WALLET_SYNC_DATA::response &res)
+{
+    if (!m_core.getWalletSyncData(req.blockIds, req.startHeight, req.startTimestamp, res.items))
+    {
+        res.status = "Failed to perform query";
+        return false;
+    }
+
+    res.status = CORE_RPC_STATUS_OK;
+
+    return true;
+}
+
+bool RpcServer::onGetTransactionsStatus(
+    const COMMAND_RPC_GET_TRANSACTIONS_STATUS::request &req,
+    COMMAND_RPC_GET_TRANSACTIONS_STATUS::response &res)
+{
+    if (!m_core.getTransactionsStatus(req.transactionHashes, res.transactionsInPool, res.transactionsInBlock, res.transactionsUnknown))
+    {
+        res.status = "Failed to perform query";
+        return false;
+    }
+
+    res.status = CORE_RPC_STATUS_OK;
+
+    return true;
+}
+
 bool RpcServer::on_get_indexes(const COMMAND_RPC_GET_TX_GLOBAL_OUTPUTS_INDEXES::request& req, COMMAND_RPC_GET_TX_GLOBAL_OUTPUTS_INDEXES::response& res) {
   std::vector<uint32_t> outputIndexes;
   if (!m_core.getTransactionGlobalIndexes(req.txid, outputIndexes)) {
@@ -284,6 +376,21 @@ bool RpcServer::on_get_indexes(const COMMAND_RPC_GET_TX_GLOBAL_OUTPUTS_INDEXES::
   return true;
 }
 
+bool RpcServer::onGetGlobalIndexesForRange(
+    const COMMAND_RPC_GET_GLOBAL_INDEXES_FOR_RANGE::request &req,
+    COMMAND_RPC_GET_GLOBAL_INDEXES_FOR_RANGE::response &res)
+{
+    if (!m_core.getGlobalIndexesForRange(req.startHeight, req.endHeight, res.indexes))
+    {
+        res.status = "Failed";
+        return true;
+    }
+
+    res.status = CORE_RPC_STATUS_OK;
+
+    return true;
+}
+
 bool RpcServer::on_get_random_outs(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::request& req, COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::response& res) {
   res.status = "Failed";
 
@@ -295,7 +402,7 @@ bool RpcServer::on_get_random_outs(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOU
     }
 
     assert(globalIndexes.size() == publicKeys.size());
-    res.outs.emplace_back(COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS_outs_for_amount{amount, {}});
+    res.outs.push_back({amount, {}});
     for (size_t i = 0; i < globalIndexes.size(); ++i) {
       res.outs.back().outs.push_back({globalIndexes[i], publicKeys[i]});
     }
@@ -304,15 +411,13 @@ bool RpcServer::on_get_random_outs(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOU
   res.status = CORE_RPC_STATUS_OK;
 
   std::stringstream ss;
-  typedef COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount outs_for_amount;
-  typedef COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::out_entry out_entry;
 
-  std::for_each(res.outs.begin(), res.outs.end(), [&](outs_for_amount& ofa)  {
+  std::for_each(res.outs.begin(), res.outs.end(), [&](auto& ofa)  {
     ss << "[" << ofa.amount << "]:";
 
     assert(ofa.outs.size() && "internal error: ofa.outs.size() is empty");
 
-    std::for_each(ofa.outs.begin(), ofa.outs.end(), [&](out_entry& oe)
+    std::for_each(ofa.outs.begin(), ofa.outs.end(), [&](auto& oe)
     {
       ss << oe.global_amount_index << " ";
     });
@@ -564,9 +669,9 @@ bool RpcServer::on_get_peers(const COMMAND_RPC_GET_PEERS::request& req, COMMAND_
   }
 
   for (const auto& peer : peers_gray) {
-	  std::stringstream stream;
-	  stream << peer.adr;
-	  res.gray_peers.push_back(stream.str());
+    std::stringstream stream;
+    stream << peer.adr;
+    res.gray_peers.push_back(stream.str());
   }
 
   res.status = CORE_RPC_STATUS_OK;
@@ -683,7 +788,7 @@ bool RpcServer::f_on_block_json(const F_COMMAND_RPC_GET_BLOCK_DETAILS::request& 
   if (currentReward) {}
   if (emissionChange) {}
 
-  size_t blockGrantedFullRewardZone = m_core.getCurrency().blockGrantedFullRewardZoneByBlockVersion(block_header.major_version);
+  uint64_t blockGrantedFullRewardZone = m_core.getCurrency().blockGrantedFullRewardZoneByBlockVersion(block_header.major_version);
   res.block.effectiveSizeMedian = std::max(res.block.sizeMedian, blockGrantedFullRewardZone);
 
   res.block.baseReward = blkDetails.baseReward;

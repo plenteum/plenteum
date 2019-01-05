@@ -33,7 +33,7 @@ public:
   {
 	  return m_timestampCheckWindow;
   }
-  
+
   uint64_t blockFutureTimeLimit(uint32_t blockHeight) const
   {
 	  if (blockHeight >= CryptoNote::parameters::LWMA_2_DIFFICULTY_BLOCK_INDEX)
@@ -59,21 +59,24 @@ public:
   size_t minerTxBlobReservedSize() const { return m_minerTxBlobReservedSize; }
 
   size_t numberOfDecimalPlaces() const { return m_numberOfDecimalPlaces; }
-  size_t numberOfDisplayDecimalPlaces() const { return m_numberOfDisplayDecimalPlaces; }
   uint64_t coin() const { return m_coin; }
-  uint64_t coinDisplay() const { return m_coinDisplay; }
 
   uint64_t minimumFee() const { return m_mininumFee; }
   uint64_t defaultDustThreshold(uint32_t height) const {
-	  return CryptoNote::parameters::DEFAULT_DUST_THRESHOLD;
+      if (height >= CryptoNote::parameters::DUST_THRESHOLD_V2_HEIGHT)
+      {
+          return CryptoNote::parameters::DEFAULT_DUST_THRESHOLD_V2;
+      }
+
+      return m_defaultDustThreshold;
   }
   uint64_t defaultFusionDustThreshold(uint32_t height) const {
-	  if (height >= CryptoNote::parameters::FUSION_DUST_THRESHOLD_HEIGHT_V2)
-	  {
-		  return CryptoNote::parameters::CRYPTONOTE_DUST_OUT_LIMIT; //when creating fusions, the outputs should never be lower than this amount, as then they will be consumed by dustfund
-	  }
+      if (height >= CryptoNote::parameters::FUSION_DUST_THRESHOLD_HEIGHT_V2)
+      {
+          return CryptoNote::parameters::DEFAULT_DUST_THRESHOLD_V2;
+      }
 
-	  return CryptoNote::parameters::DEFAULT_DUST_THRESHOLD;
+      return m_defaultDustThreshold;
   }
 
   uint64_t difficultyTarget() const { return m_difficultyTarget; }
@@ -150,7 +153,7 @@ size_t difficultyBlocksCountByBlockVersion(uint8_t blockMajorVersion, uint32_t h
 
   Currency(Currency&& currency);
 
-  size_t getApproximateMaximumInputCount(size_t transactionSize, size_t outputCount, size_t mixinCount) const;
+  static size_t getApproximateMaximumInputCount(size_t transactionSize, size_t outputCount, size_t mixinCount);
 
 private:
   Currency(Logging::ILogger& log) : logger(log, "currency") {
@@ -214,6 +217,7 @@ private:
   uint32_t m_upgradeHeightV4;
   uint32_t m_upgradeHeightV5;
   uint32_t m_upgradeHeightV6;
+  uint32_t m_upgradeHeightV7;
   unsigned int m_upgradeVotingThreshold;
   uint32_t m_upgradeVotingWindow;
   uint32_t m_upgradeWindow;
@@ -300,6 +304,7 @@ public:
   CurrencyBuilder& upgradeHeightV4(uint32_t val) { m_currency.m_upgradeHeightV4 = val; return *this; }
   CurrencyBuilder& upgradeHeightV5(uint32_t val) { m_currency.m_upgradeHeightV5 = val; return *this; }
   CurrencyBuilder& upgradeHeightV6(uint32_t val) { m_currency.m_upgradeHeightV6 = val; return *this; }
+  CurrencyBuilder& upgradeHeightV7(uint32_t val) { m_currency.m_upgradeHeightV7 = val; return *this; }
   CurrencyBuilder& upgradeVotingThreshold(unsigned int val);
   CurrencyBuilder& upgradeVotingWindow(uint32_t val) { m_currency.m_upgradeVotingWindow = val; return *this; }
   CurrencyBuilder& upgradeWindow(uint32_t val);

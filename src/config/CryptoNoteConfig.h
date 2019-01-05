@@ -9,6 +9,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <limits>
 #include <initializer_list>
 #include <boost/uuid/uuid.hpp>
@@ -38,6 +39,7 @@ const uint8_t ZAWY_DIFFICULTY_DIFFICULTY_BLOCK_VERSION       = 3;
 const uint64_t LWMA_2_DIFFICULTY_BLOCK_INDEX                 = 2;
 const uint64_t LWMA_2_DIFFICULTY_BLOCK_INDEX_V2              = 3;
 
+const uint64_t LWMA_3_DIFFICULTY_BLOCK_INDEX				 = 130000; //LWMA-3 Difficulty Upgrade Height
 
 const unsigned EMISSION_SPEED_FACTOR                         = 22;
 static_assert(EMISSION_SPEED_FACTOR <= 8 * sizeof(uint64_t), "Bad EMISSION_SPEED_FACTOR");
@@ -132,8 +134,9 @@ const uint32_t UPGRADE_HEIGHT_V3                             = 2;
 const uint32_t UPGRADE_HEIGHT_V4                             = 3; // Upgrade height for CN-Lite Variant 1 switch.
 const uint32_t UPGRADE_HEIGHT_V5							 = 65500; // Upgrade height for DustFund V1.
 const uint32_t UPGRADE_HEIGHT_V6							 = 67500; // tx & block size issue fix.
+const uint32_t UPGRADE_HEIGHT_V7							 = 130000; // cn turtle.
 
-const uint32_t UPGRADE_HEIGHT_CURRENT                        = UPGRADE_HEIGHT_V6;
+const uint32_t UPGRADE_HEIGHT_CURRENT                        = UPGRADE_HEIGHT_V7;
 const unsigned UPGRADE_VOTING_THRESHOLD                      = 90;               // percent
 const uint32_t UPGRADE_VOTING_WINDOW                         = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;  // blocks
 const uint32_t UPGRADE_WINDOW                                = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;  // blocks
@@ -149,11 +152,12 @@ const uint64_t FORK_HEIGHTS[] =
     3,
     65500, //first fork to introduce DUST fund
 	67500, //tx & block size issue fix
-	130000 //difficulty update and web wallet direct connect
+	130000, //difficulty update 
+	200000 // dustfund v2 
 };
 
 /* MAKE SURE TO UPDATE THIS VALUE WITH EVERY MAJOR RELEASE BEFORE A FORK */
-const uint64_t SOFTWARE_SUPPORTED_FORK_INDEX                 = 5;
+const uint64_t SOFTWARE_SUPPORTED_FORK_INDEX                 = 6;
 
 const uint64_t FORK_HEIGHTS_SIZE = sizeof(FORK_HEIGHTS) / sizeof(*FORK_HEIGHTS);
 
@@ -178,16 +182,17 @@ const char     MINER_CONFIG_FILE_NAME[]                      = "miner_conf.json"
 
 const char     CRYPTONOTE_NAME[]                             = "Plenteum";
 
-const uint8_t  TRANSACTION_VERSION_1                         =  1;
-const uint8_t  TRANSACTION_VERSION_2                         =  2;
-const uint8_t  CURRENT_TRANSACTION_VERSION                   =  TRANSACTION_VERSION_1;
-const uint8_t  BLOCK_MAJOR_VERSION_1                         =  0;
-const uint8_t  BLOCK_MAJOR_VERSION_2                         =  1;
-const uint8_t  BLOCK_MAJOR_VERSION_3                         =  2;
-const uint8_t  BLOCK_MAJOR_VERSION_4                         =  3;
-const uint8_t  BLOCK_MAJOR_VERSION_5						 =  4;
-const uint8_t  BLOCK_MINOR_VERSION_0                         =  0;
-const uint8_t  BLOCK_MINOR_VERSION_1                         =  1;
+const uint8_t  TRANSACTION_VERSION_1						= 1;
+const uint8_t  TRANSACTION_VERSION_2						= 2;
+const uint8_t  CURRENT_TRANSACTION_VERSION					= TRANSACTION_VERSION_1;
+const uint8_t  BLOCK_MAJOR_VERSION_0						= 0;
+const uint8_t  BLOCK_MAJOR_VERSION_1						= 1;
+const uint8_t  BLOCK_MAJOR_VERSION_2						= 2;
+const uint8_t  BLOCK_MAJOR_VERSION_3						= 3;
+const uint8_t  BLOCK_MAJOR_VERSION_4						= 4; //block version to fix tx sizes issue
+const uint8_t  BLOCK_MAJOR_VERSION_5						= 5; //algo change to CN Turtle
+const uint8_t  BLOCK_MINOR_VERSION_0						= 0;
+const uint8_t  BLOCK_MINOR_VERSION_1						= 1;
 
 const size_t   BLOCKS_IDS_SYNCHRONIZING_DEFAULT_COUNT        =  10000;  //by default, blocks ids count in synchronizing
 const size_t   BLOCKS_SYNCHRONIZING_DEFAULT_COUNT            =  100;    //by default, blocks count in blocks downloading
@@ -202,8 +207,8 @@ const size_t   P2P_LOCAL_GRAY_PEERLIST_LIMIT                 =  5000;
 
 // P2P Network Configuration Section - This defines our current P2P network version
 // and the minimum version for communication between nodes
-const uint8_t  P2P_CURRENT_VERSION                           = 2;
-const uint8_t  P2P_MINIMUM_VERSION                           = 1;
+const uint8_t  P2P_CURRENT_VERSION                           = 4;
+const uint8_t  P2P_MINIMUM_VERSION                           = 2; //bumped to min supported software version for peer connect
 // This defines the number of versions ahead we must see peers before we start displaying
 // warning messages that we need to upgrade our software.
 
@@ -221,7 +226,13 @@ const uint64_t P2P_DEFAULT_INVOKE_TIMEOUT                    = 60 * 2 * 1000; //
 const size_t   P2P_DEFAULT_HANDSHAKE_INVOKE_TIMEOUT          = 5000;          // 5 seconds
 const char     P2P_STAT_TRUSTED_PUB_KEY[]                    = "";
 
-const char     LATEST_VERSION_URL[]                          = "http://latest.plenteum.com";
+const uint64_t DATABASE_WRITE_BUFFER_MB_DEFAULT_SIZE = 256;
+const uint64_t DATABASE_READ_BUFFER_MB_DEFAULT_SIZE = 10;
+const uint32_t DATABASE_DEFAULT_MAX_OPEN_FILES = 100;
+const uint16_t DATABASE_DEFAULT_BACKGROUND_THREADS_COUNT = 2;
+
+const char     LATEST_VERSION_URL[] = "https://www.plenteum.com/latest.html";
+const std::string LICENSE_URL = "https://github.com/plenteum/plenteum/blob/master/LICENSE";
 
 const static boost::uuids::uuid CRYPTONOTE_NETWORK =
 {
@@ -230,11 +241,11 @@ const static boost::uuids::uuid CRYPTONOTE_NETWORK =
 
 const char* const SEED_NODES[] = {
   //add seed nodes
-  "85.216.148.43:44015", //miner.care
-  "95.216.184.244:44015", //Charlie
-  "85.90.244.194:44015", //DeadSet
-  "142.93.132.203:44015", //DO Seed3
-  "206.189.124.145:44015", //DO Seed2
-  "94.237.65.140:44015" //Singapore
+  "miner.care:44015", //miner.care
+  "one.public.plenteum.com:44015", //Charlie
+  "ple.optimusblue.com:44015", //DeadSet
+  "three.seed.plenteum.com:44015", //DO Seed3
+  "two.seed.plenteum.com:44015", //DO Seed2
+  "four.seed.plenteum.com:44015" //Singapore
 };
 } // CryptoNote

@@ -55,7 +55,6 @@ public:
   std::error_code saveWalletNoThrow();
   std::error_code exportWallet(const std::string& fileName);
   std::error_code resetWallet(const uint64_t scanHeight);
-  std::error_code replaceWithNewWallet(const std::string& viewSecretKey, const uint64_t scanHeight, const bool newAddress);
   std::error_code createAddress(const std::string& spendSecretKeyText, const uint64_t scanHeight, const bool newAddress, std::string& address);
   std::error_code createAddressList(const std::vector<std::string>& spendSecretKeysText, const uint64_t scanHeight, const bool newAddress, std::vector<std::string>& addresses);
   std::error_code createAddress(std::string& address);
@@ -78,7 +77,7 @@ public:
   std::error_code getTransaction(const std::string& transactionHash, TransactionRpcInfo& transaction);
   std::error_code getAddresses(std::vector<std::string>& addresses);
   std::error_code sendTransaction(SendTransaction::Request& request, std::string& transactionHash);
-  std::error_code createDelayedTransaction(const CreateDelayedTransaction::Request& request, std::string& transactionHash);
+  std::error_code createDelayedTransaction(CreateDelayedTransaction::Request& request, std::string& transactionHash);
   std::error_code getDelayedTransactionHashes(std::vector<std::string>& transactionHashes);
   std::error_code deleteDelayedTransaction(const std::string& transactionHash);
   std::error_code sendDelayedTransaction(const std::string& transactionHash);
@@ -99,8 +98,6 @@ private:
   void loadWallet();
   void loadTransactionIdIndex();
   void getNodeFee();
-
-  void replaceWithNewWallet(const Crypto::SecretKey& viewSecretKey, const uint64_t scanHeight, const bool newAddress);
 
   std::vector<CryptoNote::TransactionsInBlockInfo> getTransactions(const Crypto::Hash& blockHash, size_t blockCount) const;
   std::vector<CryptoNote::TransactionsInBlockInfo> getTransactions(uint32_t firstBlockIndex, size_t blockCount) const;

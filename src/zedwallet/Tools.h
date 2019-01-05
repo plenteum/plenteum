@@ -1,3 +1,4 @@
+// Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
@@ -63,3 +64,6 @@ std::vector<T> filter(const std::vector<T> &input, Function predicate)
 
     return result;
 }
+
+std::vector<std::string> split(const std::string& str, char delim);
+bool parseDaemonAddressFromString(std::string& host, int& port, const std::string& address);

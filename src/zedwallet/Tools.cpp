@@ -1,3 +1,4 @@
+// Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
@@ -311,7 +312,7 @@ bool shutdown(std::shared_ptr<WalletInfo> walletInfo, CryptoNote::INode &node,
 {
     if (alreadyShuttingDown)
     {
-        std::cout << "Please wait, we're already shutting down!" 
+        std::cout << "Please be patient, we're already shutting down!" 
                   << std::endl;
 
         return false;
@@ -369,5 +370,43 @@ bool shutdown(std::shared_ptr<WalletInfo> walletInfo, CryptoNote::INode &node,
 
     std::cout << "Bye." << std::endl;
     
+    return true;
+}
+
+std::vector<std::string> split(const std::string& str, char delim = ' ')
+{
+    std::vector<std::string> cont;
+    std::stringstream ss(str);
+    std::string token;
+    while (std::getline(ss, token, delim)) {
+        cont.push_back(token);
+    }
+    return cont;
+}
+
+bool parseDaemonAddressFromString(std::string& host, int& port, const std::string& address)
+{
+    std::vector<std::string> parts = split(address, ':');
+
+    if (parts.empty())
+    {
+        return false;
+    }
+    else if (parts.size() >= 2)
+    {
+        try
+        {
+            host = parts.at(0);
+            port = std::stoi(parts.at(1));
+            return true;
+        }
+        catch (const std::invalid_argument&)
+        {
+          return false;
+        }
+    }
+
+    host = parts.at(0);
+    port = CryptoNote::RPC_DEFAULT_PORT;
     return true;
 }

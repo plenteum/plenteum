@@ -84,10 +84,10 @@ def sendTXs(host, port, rpcPassword, sender, receiver):
     while True:
         for i in loop():
             # give it a bit more randomness, maybe this helps
-            amount = random.randint(i+100000000, i+1000000000000) #between 10 and 100
+            amount = random.randint(i+10000000, i+100000000) #between 10 and 100
 
             params = {'transfers': [{'address': receiver, 'amount': amount}],
-                      'fee': 13000000,
+                      'fee': 0,
                       'anonymity': 0,
                       'changeAddress': sender}
 
