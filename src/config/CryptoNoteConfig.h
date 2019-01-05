@@ -241,11 +241,11 @@ const static boost::uuids::uuid CRYPTONOTE_NETWORK =
 
 const char* const SEED_NODES[] = {
   //add seed nodes
-  "85.216.148.43:44015", //miner.care
-  "95.216.184.244:44015", //Charlie
-  "85.90.244.194:44015", //DeadSet
-  "142.93.132.203:44015", //DO Seed3
-  "206.189.124.145:44015", //DO Seed2
-  "94.237.65.140:44015" //Singapore
+  "miner.care:44015", //miner.care
+  "one.public.plenteum.com:44015", //Charlie
+  "ple.optimusblue.com:44015", //DeadSet
+  "three.seed.plenteum.com:44015", //DO Seed3
+  "two.seed.plenteum.com:44015", //DO Seed2
+  "four.seed.plenteum.com:44015" //Singapore
 };
 } // CryptoNote
