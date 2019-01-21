@@ -3,7 +3,7 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/b5v5l8ta4rcqgt8r?svg=true)](https://ci.appveyor.com/project/plenteum/plenteum) 
 [![Build status](https://travis-ci.com/plenteum/plenteum.svg?branch=master)](https://travis-ci.com/plenteum/plenteum)
 
-### What is Plenteum
+### What is Plenteum 
 
 Plenteum is a cryptonote based coin that aims to solve (at least) two significant problems in current implementations. 
   1. Sustainability of future mining rewards
