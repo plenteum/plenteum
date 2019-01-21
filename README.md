@@ -1,6 +1,7 @@
 ![logo_small_flat](https://user-images.githubusercontent.com/38456463/43392866-43c69cf4-93f5-11e8-81e2-3e3f81b6ca1d.png)
 
-[![Build status](https://ci.appveyor.com/api/projects/status/b5v5l8ta4rcqgt8r?svg=true)](https://ci.appveyor.com/project/plenteum/plenteum) 
+### Master Build Status
+[![Build status](https://ci.appveyor.com/api/projects/status/yiyj95qfdgkpca39/branch/master?svg=true)](https://ci.appveyor.com/project/davehlong/plenteum/branch/master)
 [![Build status](https://travis-ci.com/plenteum/plenteum.svg?branch=master)](https://travis-ci.com/plenteum/plenteum)
 
 ### What is Plenteum 
