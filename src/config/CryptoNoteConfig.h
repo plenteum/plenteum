@@ -152,7 +152,7 @@ const uint64_t FORK_HEIGHTS[] =
     3,
     65500, //first fork to introduce DUST fund
 	67500, //tx & block size issue fix
-	130000, //difficulty update 
+	130000, //CN Turtle Algo Switch 
 	200000 // dustfund v2 
 };
 
