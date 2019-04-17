@@ -38,7 +38,7 @@ Pools, miners, and services can do their part by upgrading their daemons as soon
 - Increased the log level of the daemon when existing to provide insight and better error reporting when the daemon appears to hang while exiting.
 - Resolved issue with imprecision in fork countdown in status command
 - Added optional blockCount parameter to getwalletsyncdata method
-- Resolved various issues regarding Lite Blocks propagation. Thanks @michael-herwig.
+- Resolved various issues regarding Lite Blocks propagation.
 
 ### zedwallet Updates
 - N/A
