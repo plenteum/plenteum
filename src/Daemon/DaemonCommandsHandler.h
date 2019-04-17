@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
 
@@ -22,7 +22,7 @@ class NodeServer;
 class DaemonCommandsHandler
 {
 public:
-  DaemonCommandsHandler(CryptoNote::Core& core, CryptoNote::NodeServer& srv, Logging::LoggerManager& log, CryptoNote::RpcServer* prpc_server);
+  DaemonCommandsHandler(CryptoNote::Core& core, CryptoNote::NodeServer& srv, std::shared_ptr<Logging::LoggerManager> log, CryptoNote::RpcServer* prpc_server);
 
   bool start_handling() {
     m_consoleHandler.start();
@@ -33,20 +33,21 @@ public:
     m_consoleHandler.stop();
   }
 
+  bool exit(const std::vector<std::string>& args);
+
 private:
 
   Common::ConsoleHandler m_consoleHandler;
   CryptoNote::Core& m_core;
   CryptoNote::NodeServer& m_srv;
   Logging::LoggerRef logger;
-  Logging::LoggerManager& m_logManager;
+  std::shared_ptr<Logging::LoggerManager> m_logManager;
   CryptoNote::RpcServer* m_prpc_server;
 
   std::string get_commands_str();
   bool print_block_by_height(uint32_t height);
   bool print_block_by_hash(const std::string& arg);
 
-  bool exit(const std::vector<std::string>& args);
   bool help(const std::vector<std::string>& args);
   bool print_pl(const std::vector<std::string>& args);
   bool show_hr(const std::vector<std::string>& args);

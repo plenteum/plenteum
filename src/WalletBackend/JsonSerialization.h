@@ -1,5 +1,4 @@
 // Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
 
@@ -13,7 +12,8 @@
 
 #include "json.hpp"
 
-#include <WalletBackend/SubWallet.h>
+#include <SubWallets/SubWallet.h>
+
 #include <WalletBackend/WalletBackend.h>
 
 using nlohmann::json;
@@ -25,57 +25,35 @@ struct Transfer
     int64_t amount;
 };
 
-/* SubWallet */
-void to_json(json &j, const SubWallet &s);
-void from_json(const json &j, SubWallet &s);
-
-/* WalletBackend */
-void to_json(json &j, const WalletBackend &w);
-void from_json(const json &j, WalletBackend &w);
-
-/* Crypto::SecretKey */
-void to_json(json &j, const Crypto::SecretKey &s);
-
-/* Crypto::PublicKey */
-void to_json(json &j, const Crypto::PublicKey &s);
-
-/* Crypto::Hash */
-void to_json(json &j, const Crypto::Hash &s);
-
-/* Crypto::KeyImage */
-void to_json(json &j, const Crypto::KeyImage &s);
-
-/* CryptoNote::WalletTransaction */
-void to_json(json &j, const CryptoNote::WalletTransaction &t);
-void from_json(const json &j, CryptoNote::WalletTransaction &t);
-
-/* Crypto::Hash */
-void to_json(json &j, const Crypto::Hash &h);
-
-/* WalletSynchronizer */
-void to_json(json &j, const WalletSynchronizer &w);
-void from_json(const json &j, WalletSynchronizer &w);
-
-/* SynchronizationStatus */
-void to_json(json &j, const SynchronizationStatus &s);
-void from_json(const json &j, SynchronizationStatus &s);
+/* As above */
+struct TxPrivateKey
+{
+    Crypto::Hash txHash;
+    Crypto::SecretKey txPrivateKey;
+};
 
 /* Transfer */
 void to_json(json &j, const Transfer &t);
 void from_json(const json &j, Transfer &t);
 
-/* TransactionInput */
-void to_json(json &j, const WalletTypes::TransactionInput &t);
-void from_json(const json &j, WalletTypes::TransactionInput &t);
+void to_json(json &j, const TxPrivateKey &t);
+void from_json(const json &j, TxPrivateKey &t);
 
-/* WalletTypes::Transaction */
-void to_json(json &j, const WalletTypes::Transaction &t);
-void from_json(const json &j, WalletTypes::Transaction &t);
+namespace WalletTypes
+{
+    /* WalletTypes::Transaction */
+    void to_json(json &j, const WalletTypes::Transaction &t);
+    void from_json(const json &j, WalletTypes::Transaction &t);
+}
 
-std::vector<Transfer> transfersToVector(std::unordered_map<Crypto::PublicKey, int64_t> transfers);
+std::vector<Transfer> transfersToVector(
+    const std::unordered_map<Crypto::PublicKey, int64_t> transfers);
 
-std::unordered_map<Crypto::PublicKey, int64_t> vectorToTransfers(std::vector<Transfer> vector);
+std::unordered_map<Crypto::PublicKey, int64_t> vectorToTransfers(
+    const std::vector<Transfer> vector);
 
-std::vector<SubWallet> subWalletsToVector(std::unordered_map<Crypto::PublicKey, SubWallet> subWallets);
+std::vector<TxPrivateKey> txPrivateKeysToVector(
+    const std::unordered_map<Crypto::Hash, Crypto::SecretKey> txPrivateKeys);
 
-std::unordered_map<Crypto::PublicKey, SubWallet> vectorToSubWallets(std::vector<SubWallet> vector);
+std::unordered_map<Crypto::Hash, Crypto::SecretKey> vectorToTxPrivateKeys(
+    const std::vector<TxPrivateKey> vector);

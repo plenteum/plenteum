@@ -1,5 +1,4 @@
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -13,9 +12,11 @@
 #include <config/CryptoNoteConfig.h>
 #include <config/WalletConfig.h>
 
-#include <zedwallet++/Utilities.h>
+#include <Utilities/Utilities.h>
 
 #include "version.h"
+
+#include <zedwallet++/Utilities.h>
 
 Config parseArguments(int argc, char **argv)
 {
@@ -29,17 +30,25 @@ Config parseArguments(int argc, char **argv)
 
     std::string remoteDaemon;
 
+    int logLevel;
+
     options.add_options("Core")
         ("h,help", "Display this help message", cxxopts::value<bool>(help)->implicit_value("true"))
         ("v,version", "Output software version information", cxxopts::value<bool>(version)->default_value("false")->implicit_value("true"));
 
     options.add_options("Daemon")
         ("r,remote-daemon", "The daemon <host:port> combination to use for node operations.",
-          cxxopts::value<std::string>(remoteDaemon)->default_value(defaultRemoteDaemon), "<host:port>");
+          cxxopts::value<std::string>(remoteDaemon)->default_value(defaultRemoteDaemon), "<host:port>")
+#ifdef CPPHTTPLIB_OPENSSL_SUPPORT
+        ("ssl", "Use SSL when connecting to the daemon.",
+          cxxopts::value<bool>(config.ssl)->default_value("false")->implicit_value("true"))
+#endif
+        ;
 
     options.add_options("Wallet")
         ("w,wallet-file", "Open the wallet <file>", cxxopts::value<std::string>(config.walletFile), "<file>")
-        ("p,password", "Use the password <pass> to open the wallet", cxxopts::value<std::string>(config.walletPass), "<pass>");
+        ("p,password", "Use the password <pass> to open the wallet", cxxopts::value<std::string>(config.walletPass), "<pass>")
+        ("log-level", "Specify log level", cxxopts::value<int>(logLevel)->default_value(std::to_string(config.logLevel)), "#");
 
     try
     {
@@ -68,9 +77,19 @@ Config parseArguments(int argc, char **argv)
         exit(0);
     }
 
+    if (logLevel < Logger::DISABLED || logLevel > Logger::DEBUG)
+    {
+        std::cout << "Log level must be between " << Logger::DISABLED << " and " << Logger::DEBUG << "!" << std::endl;
+        exit(1);
+    }
+    else
+    {
+        config.logLevel = static_cast<Logger::LogLevel>(logLevel);
+    }
+
     if (!remoteDaemon.empty())
     {
-        if (!ZedUtilities::parseDaemonAddressFromString(config.host, config.port, remoteDaemon))
+        if (!Utilities::parseDaemonAddressFromString(config.host, config.port, remoteDaemon))
         {
             std::cout << "There was an error parsing the --remote-daemon you specified" << std::endl;
             exit(1);

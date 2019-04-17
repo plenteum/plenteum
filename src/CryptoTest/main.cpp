@@ -1,4 +1,5 @@
-// Copyright (c) 2018, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -113,357 +114,296 @@ const std::string CN_SOFT_SHELL_V2[] = {
 
 static inline bool CompareHashes(const Hash leftHash, const std::string right)
 {
-	Hash rightHash = Hash();
-	if (!Common::podFromHex(right, rightHash)) {
-		return false;
-	}
+  Hash rightHash = Hash();
+  if (!Common::podFromHex(right, rightHash)) {
+    return false;
+  }
 
-	return (leftHash == rightHash);
+  return (leftHash == rightHash);
 }
 
-int main(int argc, char** argv) {
-	bool o_help, o_version, o_benchmark;
-	int o_iterations;
+/* Check if we're testing a v1 or v2 hash function */
+/* Hacky as fuck lmao */
+bool need43BytesOfData(std::string hashFunctionName)
+{
+    return (hashFunctionName.find("v1") != std::string::npos 
+        || hashFunctionName.find("v2") != std::string::npos);
+}
 
-	cxxopts::Options options(argv[0], getProjectCLIHeader());
+/* Bit of hackery so we can get the variable name of the passed in function.
+   This way we can print the test we are currently performing. */
+#define TEST_HASH_FUNCTION(hashFunction, expectedOutput) \
+   testHashFunction(hashFunction, expectedOutput, #hashFunction, -1)
 
-	options.add_options("Core")
-		("h,help", "Display this help message", cxxopts::value<bool>(o_help)->implicit_value("true"))
-		("v,version", "Output software version information", cxxopts::value<bool>(o_version)->default_value("false")->implicit_value("true"));
+#define TEST_HASH_FUNCTION_WITH_HEIGHT(hashFunction, expectedOutput, height) \
+    testHashFunction(hashFunction, expectedOutput, #hashFunction, height, height)
 
-	options.add_options("Performance Testing")
-		("b,benchmark", "Run quick performance benchmark", cxxopts::value<bool>(o_benchmark)->default_value("false")->implicit_value("true"))
-		("i,iterations", "The number of iterations for the benchmark test. Minimum of 1,000 iterations required.",
-			cxxopts::value<int>(o_iterations)->default_value(std::to_string(PERFORMANCE_ITERATIONS)), "#");
+template<typename T, typename ...Args>
+void testHashFunction(
+    T hashFunction,
+    std::string expectedOutput,
+    std::string hashFunctionName,
+    int64_t height,
+    Args && ... args)
+{
+    const BinaryArray& rawData = Common::fromHex(INPUT_DATA);
 
-	try
-	{
-		auto result = options.parse(argc, argv);
-	}
-	catch (const cxxopts::OptionException& e)
-	{
-		std::cout << "Error: Unable to parse command line argument options: " << e.what() << std::endl << std::endl;
-		std::cout << options.help({}) << std::endl;
-		exit(1);
-	}
+    if (need43BytesOfData(hashFunctionName) && rawData.size() < 43)
+    {
+        return;
+    }
 
-	if (o_help) // Do we want to display the help message?
-	{
-		std::cout << options.help({}) << std::endl;
-		exit(0);
-	}
-	else if (o_version) // Do we want to display the software version?
-	{
-		std::cout << getProjectCLIHeader() << std::endl;
-		exit(0);
-	}
+    Hash hash = Hash();
 
-	if (o_iterations < 1000 && o_benchmark)
-	{
-		std::cout << std::endl << "Error: The number of --iterations should be at least 1,000 for reasonable accuracy" << std::endl;
-		exit(1);
-	}
+    /* Perform the hash, with a height if given */
+    hashFunction(rawData.data(), rawData.size(), hash, std::forward<Args>(args)...);
 
-	int o_iterations_long = o_iterations * PERFORMANCE_ITERATIONS_LONG_MULTIPLIER;
+    if (height == -1)
+    {
+        std::cout << hashFunctionName << ": " << hash << std::endl;
+    }
+    else
+    {
+        std::cout << hashFunctionName << " (" << height << "): " << hash << std::endl;
+    }
 
-	try {
-		const BinaryArray& rawData = Common::fromHex(INPUT_DATA);
+    /* Verify the hash is as expected */
+    assert(CompareHashes(hash, expectedOutput));
+}
 
-		std::cout << getProjectCLIHeader() << std::endl;
+/* Bit of hackery so we can get the variable name of the passed in function.
+   This way we can print the test we are currently performing. */
+#define BENCHMARK(hashFunction, iterations) \
+   benchmark(hashFunction, #hashFunction, iterations)
 
-		std::cout << "Input: " << INPUT_DATA << std::endl << std::endl;
+template<typename T>
+void benchmark(T hashFunction, std::string hashFunctionName, uint64_t iterations)
+{
+    const BinaryArray& rawData = Common::fromHex(INPUT_DATA);
 
-		Hash hash = Hash();
+    if (need43BytesOfData(hashFunctionName) && rawData.size() < 43)
+    {
+        return;
+    }
 
-		cn_fast_hash(rawData.data(), rawData.size(), hash);
-		std::cout << "cn_fast_hash: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-		assert(CompareHashes(hash, CN_FAST_HASH));
+    Hash hash = Hash();
 
-		std::cout << std::endl;
+    auto startTimer = std::chrono::high_resolution_clock::now();
 
-		cn_slow_hash_v0(rawData.data(), rawData.size(), hash);
-		std::cout << "cn_slow_hash_v0: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-		assert(CompareHashes(hash, CN_SLOW_HASH_V0));
+    for (uint64_t i = 0; i < iterations; i++)
+    {
+        hashFunction(rawData.data(), rawData.size(), hash);
+    }
 
-		if (rawData.size() >= 43)
-		{
-			cn_slow_hash_v1(rawData.data(), rawData.size(), hash);
-			std::cout << "cn_slow_hash_v1: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-			assert(CompareHashes(hash, CN_SLOW_HASH_V1));
+    auto elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
 
-			cn_slow_hash_v2(rawData.data(), rawData.size(), hash);
-			std::cout << "cn_slow_hash_v2: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-			assert(CompareHashes(hash, CN_SLOW_HASH_V2));
+    std::cout << hashFunctionName << ": "
+              << (iterations / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count())
+              << " H/s\n";
+}
 
-			std::cout << std::endl;
+void benchmarkUnderivePublicKey()
+{
+    Crypto::KeyDerivation derivation;
 
-			cn_lite_slow_hash_v0(rawData.data(), rawData.size(), hash);
-			std::cout << "cn_lite_slow_hash_v0: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-			assert(CompareHashes(hash, CN_LITE_SLOW_HASH_V0));
+    Crypto::PublicKey txPublicKey;
+    Common::podFromHex("f235acd76ee38ec4f7d95123436200f9ed74f9eb291b1454fbc30742481be1ab", txPublicKey);
 
-			cn_lite_slow_hash_v1(rawData.data(), rawData.size(), hash);
-			std::cout << "cn_lite_slow_hash_v1: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-			assert(CompareHashes(hash, CN_LITE_SLOW_HASH_V1));
+    Crypto::SecretKey privateViewKey;
+    Common::podFromHex("89df8c4d34af41a51cfae0267e8254cadd2298f9256439fa1cfa7e25ee606606", privateViewKey);
 
-			cn_lite_slow_hash_v2(rawData.data(), rawData.size(), hash);
-			std::cout << "cn_lite_slow_hash_v2: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-			assert(CompareHashes(hash, CN_LITE_SLOW_HASH_V2));
+    Crypto::generate_key_derivation(txPublicKey, privateViewKey, derivation);
 
-			std::cout << std::endl;
+    const uint64_t loopIterations = 600000;
 
-			cn_dark_slow_hash_v0(rawData.data(), rawData.size(), hash);
-			std::cout << "cn_dark_slow_hash_v0: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-			assert(CompareHashes(hash, CN_DARK_SLOW_HASH_V0));
+    auto startTimer = std::chrono::high_resolution_clock::now();
 
-			cn_dark_slow_hash_v1(rawData.data(), rawData.size(), hash);
-			std::cout << "cn_dark_slow_hash_v1: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-			assert(CompareHashes(hash, CN_DARK_SLOW_HASH_V1));
+    Crypto::PublicKey spendKey;
 
-			cn_dark_slow_hash_v2(rawData.data(), rawData.size(), hash);
-			std::cout << "cn_dark_slow_hash_v2: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-			assert(CompareHashes(hash, CN_DARK_SLOW_HASH_V2));
+    Crypto::PublicKey outputKey;
+    Common::podFromHex("4a078e76cd41a3d3b534b83dc6f2ea2de500b653ca82273b7bfad8045d85a400", outputKey);
 
-			std::cout << std::endl;
+    for (uint64_t i = 0; i < loopIterations; i++)
+    {
+        /* Use i as output index to prevent optimization */
+        Crypto::underive_public_key(derivation, i, outputKey, spendKey);
+    }
 
-			cn_dark_lite_slow_hash_v0(rawData.data(), rawData.size(), hash);
-			std::cout << "cn_dark_lite_slow_hash_v0: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-			assert(CompareHashes(hash, CN_DARK_LITE_SLOW_HASH_V0));
+    auto elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
 
-			cn_dark_lite_slow_hash_v1(rawData.data(), rawData.size(), hash);
-			std::cout << "cn_dark_lite_slow_hash_v1: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-			assert(CompareHashes(hash, CN_DARK_LITE_SLOW_HASH_V1));
+    /* Need to use microseconds here then divide by 1000 - otherwise we'll just get '0' */
+    const auto timePerDerivation = std::chrono::duration_cast<std::chrono::microseconds>(elapsedTime).count() / loopIterations;
 
-			cn_dark_lite_slow_hash_v2(rawData.data(), rawData.size(), hash);
-			std::cout << "cn_dark_lite_slow_hash_v2: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-			assert(CompareHashes(hash, CN_DARK_LITE_SLOW_HASH_V2));
+    std::cout << "Time to perform underivePublicKey: " << timePerDerivation / 1000.0 << " ms" << std::endl;
+}
 
-			std::cout << std::endl;
+void benchmarkGenerateKeyDerivation()
+{
+    Crypto::KeyDerivation derivation;
 
-			cn_turtle_slow_hash_v0(rawData.data(), rawData.size(), hash);
-			std::cout << "cn_turtle_slow_hash_v0: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-			assert(CompareHashes(hash, CN_TURTLE_SLOW_HASH_V0));
+    Crypto::PublicKey txPublicKey;
+    Common::podFromHex("f235acd76ee38ec4f7d95123436200f9ed74f9eb291b1454fbc30742481be1ab", txPublicKey);
 
-			cn_turtle_slow_hash_v1(rawData.data(), rawData.size(), hash);
-			std::cout << "cn_turtle_slow_hash_v1: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-			assert(CompareHashes(hash, CN_TURTLE_SLOW_HASH_V1));
+    Crypto::SecretKey privateViewKey;
+    Common::podFromHex("89df8c4d34af41a51cfae0267e8254cadd2298f9256439fa1cfa7e25ee606606", privateViewKey);
 
-			cn_turtle_slow_hash_v2(rawData.data(), rawData.size(), hash);
-			std::cout << "cn_turtle_slow_hash_v2: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-			assert(CompareHashes(hash, CN_TURTLE_SLOW_HASH_V2));
+    const uint64_t loopIterations = 60000;
 
-			std::cout << std::endl;
+    auto startTimer = std::chrono::high_resolution_clock::now();
 
-			cn_turtle_lite_slow_hash_v0(rawData.data(), rawData.size(), hash);
-			std::cout << "cn_turtle_lite_slow_hash_v0: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-			assert(CompareHashes(hash, CN_TURTLE_LITE_SLOW_HASH_V0));
+    for (uint64_t i = 0; i < loopIterations; i++)
+    {
+        Crypto::generate_key_derivation(txPublicKey, privateViewKey, derivation);
+    }
 
-			cn_turtle_lite_slow_hash_v1(rawData.data(), rawData.size(), hash);
-			std::cout << "cn_turtle_lite_slow_hash_v1: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-			assert(CompareHashes(hash, CN_TURTLE_LITE_SLOW_HASH_V1));
+    auto elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
 
-			cn_turtle_lite_slow_hash_v2(rawData.data(), rawData.size(), hash);
-			std::cout << "cn_turtle_lite_slow_hash_v2: " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-			assert(CompareHashes(hash, CN_TURTLE_LITE_SLOW_HASH_V2));
+    const auto timePerDerivation = std::chrono::duration_cast<std::chrono::microseconds>(elapsedTime).count() / loopIterations;
 
-			std::cout << std::endl;
+    std::cout << "Time to perform generateKeyDerivation: " << timePerDerivation / 1000.0 << " ms" << std::endl;
+}
 
-			for (uint32_t height = 0; height <= 8192; height = height + 512)
-			{
-				cn_soft_shell_slow_hash_v0(rawData.data(), rawData.size(), hash, height);
-				std::cout << "cn_soft_shell_slow_hash_v0 (" << height << "): " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-				assert(CompareHashes(hash, CN_SOFT_SHELL_V0[height / 512]));
-			}
+int main(int argc, char** argv)
+{
+    bool o_help, o_version, o_benchmark;
+    int o_iterations;
 
-			std::cout << std::endl;
+    cxxopts::Options options(argv[0], getProjectCLIHeader());
 
-			for (uint32_t height = 0; height <= 8192; height = height + 512)
-			{
-				cn_soft_shell_slow_hash_v1(rawData.data(), rawData.size(), hash, height);
-				std::cout << "cn_soft_shell_slow_hash_v1 (" << height << "): " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-				assert(CompareHashes(hash, CN_SOFT_SHELL_V1[height / 512]));
-			}
+    options.add_options("Core")
+        ("h,help", "Display this help message", cxxopts::value<bool>(o_help)->implicit_value("true"))
+        ("v,version", "Output software version information", cxxopts::value<bool>(o_version)->default_value("false")->implicit_value("true"));
 
-			std::cout << std::endl;
+    options.add_options("Performance Testing")
+        ("b,benchmark", "Run quick performance benchmark", cxxopts::value<bool>(o_benchmark)->default_value("false")->implicit_value("true"))
+        ("i,iterations", "The number of iterations for the benchmark test. Minimum of 1,000 iterations required.",
+            cxxopts::value<int>(o_iterations)->default_value(std::to_string(PERFORMANCE_ITERATIONS)), "#");
 
-			for (uint32_t height = 0; height <= 8192; height = height + 512)
-			{
-				cn_soft_shell_slow_hash_v2(rawData.data(), rawData.size(), hash, height);
-				std::cout << "cn_soft_shell_slow_hash_v2 (" << height << "): " << Common::toHex(&hash, sizeof(Hash)) << std::endl;
-				assert(CompareHashes(hash, CN_SOFT_SHELL_V2[height / 512]));
-			}
-		}
+    try
+    {
+        auto result = options.parse(argc, argv);
+    }
+    catch (const cxxopts::OptionException& e)
+    {
+        std::cout << "Error: Unable to parse command line argument options: " << e.what() << std::endl << std::endl;
+        std::cout << options.help({}) << std::endl;
+        exit(1);
+    }
 
-		if (o_benchmark)
-		{
-			std::cout << "\nPerformance Tests: Please wait, this may take a while depending on your system...\n\n";
+    if (o_help) // Do we want to display the help message?
+    {
+        std::cout << options.help({}) << std::endl;
+        exit(0);
+    }
+    else if (o_version) // Do we want to display the software version?
+    {
+        std::cout << getProjectCLIHeader() << std::endl;
+        exit(0);
+    }
 
-			auto startTimer = std::chrono::high_resolution_clock::now();
-			for (auto i = 0; i < o_iterations; i++)
-			{
-				cn_slow_hash_v0(rawData.data(), rawData.size(), hash);
-			}
-			auto elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-			std::cout << "cn_slow_hash_v0: " << (o_iterations / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
+    if (o_iterations < 1000 && o_benchmark)
+    {
+        std::cout << std::endl << "Error: The number of --iterations should be at least 1,000 for reasonable accuracy" << std::endl;
+        exit(1);
+    }
 
-			if (rawData.size() >= 43)
-			{
-				startTimer = std::chrono::high_resolution_clock::now();
-				for (auto i = 0; i < o_iterations; i++)
-				{
-					cn_slow_hash_v1(rawData.data(), rawData.size(), hash);
-				}
-				elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-				std::cout << "cn_slow_hash_v1: " << (o_iterations / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
+    int o_iterations_long = o_iterations * PERFORMANCE_ITERATIONS_LONG_MULTIPLIER;
 
-				startTimer = std::chrono::high_resolution_clock::now();
-				for (auto i = 0; i < o_iterations; i++)
-				{
-					cn_slow_hash_v2(rawData.data(), rawData.size(), hash);
-				}
-				elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-				std::cout << "cn_slow_hash_v2: " << (o_iterations / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
-			}
+    try
+    {
+        std::cout << getProjectCLIHeader() << std::endl;
 
-			startTimer = std::chrono::high_resolution_clock::now();
-			for (auto i = 0; i < o_iterations; i++)
-			{
-				cn_lite_slow_hash_v0(rawData.data(), rawData.size(), hash);
-			}
-			elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-			std::cout << "cn_lite_slow_hash_v0: " << (o_iterations / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
+        std::cout << "Input: " << INPUT_DATA << std::endl << std::endl;
 
-			if (rawData.size() >= 43)
-			{
-				startTimer = std::chrono::high_resolution_clock::now();
-				for (auto i = 0; i < o_iterations; i++)
-				{
-					cn_lite_slow_hash_v1(rawData.data(), rawData.size(), hash);
-				}
-				elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-				std::cout << "cn_lite_slow_hash_v1: " << (o_iterations / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
+        TEST_HASH_FUNCTION(cn_slow_hash_v0, CN_SLOW_HASH_V0);
+        TEST_HASH_FUNCTION(cn_slow_hash_v1, CN_SLOW_HASH_V1);
+        TEST_HASH_FUNCTION(cn_slow_hash_v2, CN_SLOW_HASH_V2);
+        
+        std::cout << std::endl;
 
-				startTimer = std::chrono::high_resolution_clock::now();
-				for (auto i = 0; i < o_iterations; i++)
-				{
-					cn_lite_slow_hash_v2(rawData.data(), rawData.size(), hash);
-				}
-				elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-				std::cout << "cn_lite_slow_hash_v2: " << (o_iterations / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
-			}
+        TEST_HASH_FUNCTION(cn_lite_slow_hash_v0, CN_LITE_SLOW_HASH_V0);
+        TEST_HASH_FUNCTION(cn_lite_slow_hash_v1, CN_LITE_SLOW_HASH_V1);
+        TEST_HASH_FUNCTION(cn_lite_slow_hash_v2, CN_LITE_SLOW_HASH_V2);
 
-			startTimer = std::chrono::high_resolution_clock::now();
-			for (auto i = 0; i < o_iterations; i++)
-			{
-				cn_dark_slow_hash_v0(rawData.data(), rawData.size(), hash);
-			}
-			elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-			std::cout << "cn_dark_slow_hash_v0: " << (o_iterations / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
+        std::cout << std::endl;
 
-			if (rawData.size() >= 43)
-			{
-				startTimer = std::chrono::high_resolution_clock::now();
-				for (auto i = 0; i < o_iterations; i++)
-				{
-					cn_dark_slow_hash_v1(rawData.data(), rawData.size(), hash);
-				}
-				elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-				std::cout << "cn_dark_slow_hash_v1: " << (o_iterations / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
+        TEST_HASH_FUNCTION(cn_dark_slow_hash_v0, CN_DARK_SLOW_HASH_V0);
+        TEST_HASH_FUNCTION(cn_dark_slow_hash_v1, CN_DARK_SLOW_HASH_V1);
+        TEST_HASH_FUNCTION(cn_dark_slow_hash_v2, CN_DARK_SLOW_HASH_V2);
 
-				startTimer = std::chrono::high_resolution_clock::now();
-				for (auto i = 0; i < o_iterations; i++)
-				{
-					cn_dark_slow_hash_v2(rawData.data(), rawData.size(), hash);
-				}
-				elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-				std::cout << "cn_dark_slow_hash_v2: " << (o_iterations / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
-			}
+        std::cout << std::endl;
 
-			startTimer = std::chrono::high_resolution_clock::now();
-			for (auto i = 0; i < o_iterations; i++)
-			{
-				cn_dark_lite_slow_hash_v0(rawData.data(), rawData.size(), hash);
-			}
-			elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-			std::cout << "cn_dark_lite_slow_hash_v0: " << (o_iterations / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
+        TEST_HASH_FUNCTION(cn_dark_lite_slow_hash_v0, CN_DARK_LITE_SLOW_HASH_V0);
+        TEST_HASH_FUNCTION(cn_dark_lite_slow_hash_v1, CN_DARK_LITE_SLOW_HASH_V1);
+        TEST_HASH_FUNCTION(cn_dark_lite_slow_hash_v2, CN_DARK_LITE_SLOW_HASH_V2);
+        
+        std::cout << std::endl;
 
-			if (rawData.size() >= 43)
-			{
-				startTimer = std::chrono::high_resolution_clock::now();
-				for (auto i = 0; i < o_iterations; i++)
-				{
-					cn_dark_lite_slow_hash_v1(rawData.data(), rawData.size(), hash);
-				}
-				elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-				std::cout << "cn_dark_lite_slow_hash_v1: " << (o_iterations / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
+        TEST_HASH_FUNCTION(cn_turtle_slow_hash_v0, CN_TURTLE_SLOW_HASH_V0);
+        TEST_HASH_FUNCTION(cn_turtle_slow_hash_v1, CN_TURTLE_SLOW_HASH_V1);
+        TEST_HASH_FUNCTION(cn_turtle_slow_hash_v2, CN_TURTLE_SLOW_HASH_V2);
 
-				startTimer = std::chrono::high_resolution_clock::now();
-				for (auto i = 0; i < o_iterations; i++)
-				{
-					cn_dark_lite_slow_hash_v2(rawData.data(), rawData.size(), hash);
-				}
-				elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-				std::cout << "cn_dark_lite_slow_hash_v2: " << (o_iterations / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
-			}
+        std::cout << std::endl;
 
-			startTimer = std::chrono::high_resolution_clock::now();
-			for (auto i = 0; i < o_iterations_long; i++)
-			{
-				cn_turtle_slow_hash_v0(rawData.data(), rawData.size(), hash);
-			}
-			elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-			std::cout << "cn_turtle_slow_hash_v0: " << (o_iterations_long / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
+        TEST_HASH_FUNCTION(cn_turtle_lite_slow_hash_v0, CN_TURTLE_LITE_SLOW_HASH_V0);
+        TEST_HASH_FUNCTION(cn_turtle_lite_slow_hash_v1, CN_TURTLE_LITE_SLOW_HASH_V1);
+        TEST_HASH_FUNCTION(cn_turtle_lite_slow_hash_v2, CN_TURTLE_LITE_SLOW_HASH_V2);
 
-			if (rawData.size() >= 43)
-			{
-				startTimer = std::chrono::high_resolution_clock::now();
-				for (auto i = 0; i < o_iterations_long; i++)
-				{
-					cn_turtle_slow_hash_v1(rawData.data(), rawData.size(), hash);
-				}
-				elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-				std::cout << "cn_turtle_slow_hash_v1: " << (o_iterations_long / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
+        std::cout << std::endl;
 
-				startTimer = std::chrono::high_resolution_clock::now();
-				for (auto i = 0; i < o_iterations_long; i++)
-				{
-					cn_turtle_slow_hash_v2(rawData.data(), rawData.size(), hash);
-				}
-				elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-				std::cout << "cn_turtle_slow_hash_v2: " << (o_iterations_long / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
-			}
+        for (uint64_t height = 0; height <= 8192; height += 512)
+        {
+            TEST_HASH_FUNCTION_WITH_HEIGHT(cn_soft_shell_slow_hash_v0, CN_SOFT_SHELL_V0[height / 512], height);
+        }
 
-			startTimer = std::chrono::high_resolution_clock::now();
-			for (auto i = 0; i < o_iterations_long; i++)
-			{
-				cn_turtle_lite_slow_hash_v0(rawData.data(), rawData.size(), hash);
-			}
-			elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-			std::cout << "cn_turtle_lite_slow_hash_v0: " << (o_iterations_long / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
+        std::cout << std::endl;
 
-			if (rawData.size() >= 43)
-			{
-				startTimer = std::chrono::high_resolution_clock::now();
-				for (auto i = 0; i < o_iterations_long; i++)
-				{
-					cn_turtle_lite_slow_hash_v1(rawData.data(), rawData.size(), hash);
-				}
-				elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-				std::cout << "cn_turtle_lite_slow_hash_v1: " << (o_iterations_long / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
+        for (uint64_t height = 0; height <= 8192; height += 512)
+        {
+            TEST_HASH_FUNCTION_WITH_HEIGHT(cn_soft_shell_slow_hash_v1, CN_SOFT_SHELL_V1[height / 512], height);
+        }
 
-				startTimer = std::chrono::high_resolution_clock::now();
-				for (auto i = 0; i < o_iterations_long; i++)
-				{
-					cn_turtle_lite_slow_hash_v2(rawData.data(), rawData.size(), hash);
-				}
-				elapsedTime = std::chrono::high_resolution_clock::now() - startTimer;
-				std::cout << "cn_turtle_lite_slow_hash_v2: " << (o_iterations_long / std::chrono::duration_cast<std::chrono::seconds>(elapsedTime).count()) << " H/s\n";
-			}
-		}
-	}
-	catch (std::exception& e)
-	{
-		std::cout << "Something went terribly wrong..." << std::endl << e.what() << std::endl << std::endl;
-	}
+        std::cout << std::endl;
 
-	return 0;
+        for (uint64_t height = 0; height <= 8192; height += 512)
+        {
+            TEST_HASH_FUNCTION_WITH_HEIGHT(cn_soft_shell_slow_hash_v2, CN_SOFT_SHELL_V2[height / 512], height);
+        }
+
+        if (o_benchmark)
+        {
+            std::cout <<  "\nPerformance Tests: Please wait, this may take a while depending on your system...\n\n";
+
+            benchmarkUnderivePublicKey();
+            benchmarkGenerateKeyDerivation();
+
+            BENCHMARK(cn_slow_hash_v0, o_iterations);
+            BENCHMARK(cn_slow_hash_v1, o_iterations);
+            BENCHMARK(cn_slow_hash_v2, o_iterations);
+
+            BENCHMARK(cn_lite_slow_hash_v0, o_iterations);
+            BENCHMARK(cn_lite_slow_hash_v1, o_iterations);
+            BENCHMARK(cn_lite_slow_hash_v2, o_iterations);
+
+            BENCHMARK(cn_dark_slow_hash_v0, o_iterations);
+            BENCHMARK(cn_dark_slow_hash_v1, o_iterations);
+            BENCHMARK(cn_dark_slow_hash_v2, o_iterations);
+
+            BENCHMARK(cn_dark_lite_slow_hash_v0, o_iterations);
+            BENCHMARK(cn_dark_lite_slow_hash_v1, o_iterations);
+            BENCHMARK(cn_dark_lite_slow_hash_v2, o_iterations);
+
+            BENCHMARK(cn_turtle_slow_hash_v0, o_iterations_long);
+            BENCHMARK(cn_turtle_slow_hash_v1, o_iterations_long);
+            BENCHMARK(cn_turtle_slow_hash_v2, o_iterations_long);
+
+            BENCHMARK(cn_turtle_lite_slow_hash_v0, o_iterations_long);
+            BENCHMARK(cn_turtle_lite_slow_hash_v1, o_iterations_long);
+            BENCHMARK(cn_turtle_lite_slow_hash_v2, o_iterations_long);
+        }
+    }
+    catch (std::exception& e)
+    {
+        std::cout << "Something went terribly wrong...\n" << e.what() << "\n\n";
+    }
 }

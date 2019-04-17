@@ -57,7 +57,7 @@ public:
     case INTERNAL_NODE_ERROR: return "Internal node error";
     case REQUEST_ERROR:       return "Error in request parameters";
     case CONNECT_ERROR:       return "Can't connect to daemon";
-	case TIMEOUT:             return "Operation timed out";
+    case TIMEOUT:             return "Operation timed out";
     default:                  return "Unknown error";
     }
   }

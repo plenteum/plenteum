@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -8,8 +7,8 @@
 
 #include <Common/Util.h>
 #include "Common/StringTools.h"
-#include "crypto/crypto.h"
 #include <config/CryptoNoteConfig.h>
+#include <crypto/random.h>
 
 namespace CryptoNote {
 namespace {
@@ -38,7 +37,7 @@ bool parsePeersAndAddToPeerListContainer(const std::vector<std::string> peerList
   for (const std::string& peer : peerList)
   {
     PeerlistEntry peerListEntry = PeerlistEntry();
-    peerListEntry.id = Crypto::rand<uint64_t>();
+    peerListEntry.id = Random::randomValue<uint64_t>();
     if (!parsePeerFromString(peerListEntry.adr, peer))
     {
       return false;
@@ -108,10 +107,6 @@ bool NetNodeConfig::init(const std::string interface, const int port, const int 
   return true;
 }
 
-void NetNodeConfig::setTestnet(bool isTestnet) {
-  testnet = isTestnet;
-}
-
 std::string NetNodeConfig::getP2pStateFilename() const {
   if (testnet) {
     return "testnet_" + p2pStateFilename;
@@ -163,50 +158,5 @@ bool NetNodeConfig::getHideMyPort() const {
 std::string NetNodeConfig::getConfigFolder() const {
   return configFolder;
 }
-
-void NetNodeConfig::setP2pStateFilename(const std::string& filename) {
-  p2pStateFilename = filename;
-}
-
-void NetNodeConfig::setBindIp(const std::string& ip) {
-  bindIp = ip;
-}
-
-void NetNodeConfig::setBindPort(uint16_t port) {
-  bindPort = port;
-}
-
-void NetNodeConfig::setExternalPort(uint16_t port) {
-  externalPort = port;
-}
-
-void NetNodeConfig::setAllowLocalIp(bool allow) {
-  allowLocalIp = allow;
-}
-
-void NetNodeConfig::setPeers(const std::vector<PeerlistEntry>& peerList) {
-  peers = peerList;
-}
-
-void NetNodeConfig::setPriorityNodes(const std::vector<NetworkAddress>& addresses) {
-  priorityNodes = addresses;
-}
-
-void NetNodeConfig::setExclusiveNodes(const std::vector<NetworkAddress>& addresses) {
-  exclusiveNodes = addresses;
-}
-
-void NetNodeConfig::setSeedNodes(const std::vector<NetworkAddress>& addresses) {
-  seedNodes = addresses;
-}
-
-void NetNodeConfig::setHideMyPort(bool hide) {
-  hideMyPort = hide;
-}
-
-void NetNodeConfig::setConfigFolder(const std::string& folder) {
-  configFolder = folder;
-}
-
 
 } //namespace nodetool

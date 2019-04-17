@@ -1,36 +1,35 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
-
-#include "Common/SignalHandler.h"
-
-#include "Logging/LoggerGroup.h"
-#include "Logging/ConsoleLogger.h"
-#include "Logging/LoggerRef.h"
 
 #include "MinerManager.h"
 
 #include <System/Dispatcher.h>
 
-int main(int argc, char** argv) {
-  try {
-    CryptoNote::MiningConfig config;
-    config.parse(argc, argv);
+int main(int argc, char **argv)
+{
+    while (true)
+    {
+        CryptoNote::MiningConfig config;
+        config.parse(argc, argv);
 
-    Logging::LoggerGroup loggerGroup;
-    Logging::ConsoleLogger consoleLogger(static_cast<Logging::Level>(config.logLevel));
-    loggerGroup.addLogger(consoleLogger);
+        try
+        {
+            System::Dispatcher dispatcher;
 
-    System::Dispatcher dispatcher;
-    Miner::MinerManager app(dispatcher, config, loggerGroup);
+            auto httpClient = std::make_shared<httplib::Client>(
+                config.daemonHost.c_str(), config.daemonPort, 10 /* 10 second timeout */
+            );
 
-    app.start();
-  } catch (std::exception& e) {
-    std::cerr << "Fatal: " << e.what() << std::endl;
-    return 1;
-  }
+            Miner::MinerManager app(dispatcher, config, httpClient);
 
-  return 0;
+            app.start();
+        }
+        catch (const std::exception& e)
+        {
+            std::cout << "Unhandled exception caught: " << e.what()
+                      << "\nAttempting to relaunch..." << std::endl;
+        }
+    }
 }

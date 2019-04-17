@@ -78,7 +78,7 @@ rm ~/.Crypto/Plenteum/wallet-service
 cp miner ~/.Crypto/Plenteum/miner
 cp zedwallet ~/.Crypto/Plenteum/zedwallet
 cp Plenteumd ~/.Crypto/Plenteum/Plenteumd
-cp turtle-service ~/.Crypto/Plenteum/wallet-service
+cp wallet-service ~/.Crypto/Plenteum/wallet-service
 
 
 

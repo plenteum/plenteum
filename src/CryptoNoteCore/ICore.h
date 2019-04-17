@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <optional>
 #include <CryptoNote.h>
 
 #include "AddBlockErrors.h"
@@ -57,11 +58,15 @@ public:
                                uint32_t& startIndex, uint32_t& currentIndex, uint32_t& fullOffset,
                                std::vector<BlockShortInfo>& entries) const = 0;
   virtual bool queryBlocksDetailed(const std::vector<Crypto::Hash>& knownBlockHashes, uint64_t timestamp,
-							  uint64_t& startIndex, uint64_t& currentIndex, uint64_t& fullOffset,
-							  std::vector<BlockDetails>& entries, uint32_t blockCount) const = 0;
+                              uint64_t& startIndex, uint64_t& currentIndex, uint64_t& fullOffset,
+                              std::vector<BlockDetails>& entries, uint32_t blockCount) const = 0;
 
-  virtual bool getWalletSyncData(const std::vector<Crypto::Hash> &knownBlockHashes, uint64_t startHeight,
-                                 uint64_t startTimestamp, std::vector<WalletTypes::WalletBlockInfo> &blocks) const = 0;
+  virtual bool getWalletSyncData(
+	  const std::vector<Crypto::Hash> &knownBlockHashes,
+	  const uint64_t startHeight,
+	  const uint64_t startTimestamp,
+	  const uint64_t blockCount,
+	  std::vector<WalletTypes::WalletBlockInfo> &blocks) const = 0;
 
   virtual bool getTransactionsStatus(
     std::unordered_set<Crypto::Hash> transactionHashes,
@@ -70,6 +75,12 @@ public:
     std::unordered_set<Crypto::Hash> &transactionsUnknown) const = 0;
 
   virtual bool hasTransaction(const Crypto::Hash& transactionHash) const = 0;
+  /*!
+   * \brief getTransaction Queries a single transaction details blob from the chain or transaction pool
+   * \param hash The hash of the transaction
+   * \return The binary blob of the queried transaction, or none if the transaction does not exist.
+   */
+  virtual std::optional<BinaryArray> getTransaction(const Crypto::Hash& hash) const = 0;
   virtual void getTransactions(const std::vector<Crypto::Hash>& transactionHashes,
                                std::vector<BinaryArray>& transactions,
                                std::vector<Crypto::Hash>& missedHashes) const = 0;
@@ -95,6 +106,7 @@ public:
   virtual bool addTransactionToPool(const BinaryArray& transactionBinaryArray) = 0;
 
   virtual std::vector<Crypto::Hash> getPoolTransactionHashes() const = 0;
+  virtual std::tuple<bool, CryptoNote::BinaryArray> getPoolTransaction(const Crypto::Hash& transactionHash) const = 0;
   virtual bool getPoolChanges(const Crypto::Hash& lastBlockHash, const std::vector<Crypto::Hash>& knownHashes,
                               std::vector<BinaryArray>& addedTransactions,
                               std::vector<Crypto::Hash>& deletedTransactions) const = 0;
@@ -112,7 +124,6 @@ public:
 
   virtual BlockDetails getBlockDetails(const Crypto::Hash& blockHash) const = 0;
   virtual TransactionDetails getTransactionDetails(const Crypto::Hash& transactionHash) const = 0;
-  virtual std::vector<Crypto::Hash> getAlternativeBlockHashesByIndex(uint32_t blockIndex) const = 0;
   virtual std::vector<Crypto::Hash> getBlockHashesByTimestamps(uint64_t timestampBegin, size_t secondsCount) const = 0;
   virtual std::vector<Crypto::Hash> getTransactionHashesByPaymentId(const Crypto::Hash& paymentId) const = 0;
 };

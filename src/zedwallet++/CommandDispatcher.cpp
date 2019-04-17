@@ -1,5 +1,4 @@
 // Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
 
@@ -7,8 +6,12 @@
 #include <zedwallet++/CommandDispatcher.h>
 //////////////////////////////////////////
 
+#include <iostream>
+
+#include <Utilities/ColouredMsg.h>
+#include <Utilities/Input.h>
+
 #include <zedwallet++/AddressBook.h>
-#include <zedwallet++/ColouredMsg.h>
 #include <zedwallet++/CommandImplementations.h>
 #include <zedwallet++/Open.h>
 #include <zedwallet++/Transfer.h>
@@ -76,6 +79,10 @@ bool handleCommand(
     {
         changePassword(walletBackend);
     }
+    else if (command == "get_tx_private_key")
+    {
+        getTxPrivateKey(walletBackend);
+    }
     else if (command == "make_integrated_address")
     {
         createIntegratedAddress();
@@ -100,7 +107,7 @@ bool handleCommand(
                      "send large amounts at once.\n"
                   << WarningMsg("This may take a very long time!\n");
 
-        if (!ZedUtilities::confirm("Do you want to proceed?"))
+        if (!Utilities::confirm("Do you want to proceed?"))
         {
             std::cout << WarningMsg("Cancelling optimization.") << std::endl;
         }
@@ -138,10 +145,10 @@ bool handleCommand(
     {
         status(walletBackend);
     }
-	else if (command == "swap_node")
-	{
-		swapNode(walletBackend);
-	}
+    else if (command == "swap_node")
+    {
+        swapNode(walletBackend);
+    }
     /* This should never happen */
     else
     {

@@ -1,5 +1,4 @@
 // Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
 
@@ -7,14 +6,31 @@
 
 #include <memory>
 
-#include <NodeRpcProxy/NodeRpcProxy.h>
+#include <Nigel/Nigel.h>
+
+#include <SubWallets/SubWallets.h>
 
 #include <WalletBackend/EventHandler.h>
 #include <WalletBackend/ThreadSafeQueue.h>
-#include <WalletBackend/SubWallets.h>
 #include <WalletBackend/SynchronizationStatus.h>
 
 #include <WalletTypes.h>
+
+/* Used to store the data we have accumulating when scanning a specific
+   block. We can't add the items directly, because we may stop midway
+   through. If so, we need to not add anything. */
+struct BlockScanTmpInfo
+{
+    /* Transactions that belong to us */
+    std::vector<WalletTypes::Transaction> transactionsToAdd;
+
+    /* The corresponding inputs to the transactions, indexed by public key
+       (i.e., the corresponding subwallet to add the input to) */
+    std::vector<std::tuple<Crypto::PublicKey, WalletTypes::TransactionInput>> inputsToAdd;
+
+    /* Need to mark these as spent so we don't include them later */
+    std::vector<std::tuple<Crypto::PublicKey, Crypto::KeyImage>> keyImagesToMarkSpent;
+};
 
 class WalletSynchronizer
 {
@@ -28,7 +44,7 @@ class WalletSynchronizer
 
         /* Parameterized constructor */
         WalletSynchronizer(
-            const std::shared_ptr<CryptoNote::NodeRpcProxy> daemon,
+            const std::shared_ptr<Nigel> daemon,
             const uint64_t startTimestamp,
             const uint64_t startHeight,
             const Crypto::SecretKey privateViewKey,
@@ -57,19 +73,23 @@ class WalletSynchronizer
 
         void stop();
 
-        json toJson() const;
+        /* Converts the class to a json object */
+        void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const;
 
-        void fromJson(const json &j);
+        /* Initializes the class from a json string */
+        void fromJSON(const JSONObject &j);
 
         void initializeAfterLoad(
-            const std::shared_ptr<CryptoNote::NodeRpcProxy> daemon,
+            const std::shared_ptr<Nigel> daemon,
             const std::shared_ptr<EventHandler> eventHandler);
 
         void reset(uint64_t startHeight);
 
         uint64_t getCurrentScanHeight() const;
 
-		void swapNode(const std::shared_ptr<CryptoNote::NodeRpcProxy> daemon);
+        void swapNode(const std::shared_ptr<Nigel> daemon);
+
+        void setSyncStart(const uint64_t startTimestamp, const uint64_t startHeight);
 
         /////////////////////////////
         /* Public member variables */
@@ -84,82 +104,50 @@ class WalletSynchronizer
         /* Private member functions */
         //////////////////////////////
 
-        void monitorLockedTransactions();
+        void mainLoop();
 
-        void downloadBlocks();
+        std::vector<WalletTypes::WalletBlockInfo> downloadBlocks();
 
-        void findTransactionsInBlocks();
+        std::vector<std::tuple<Crypto::PublicKey, WalletTypes::TransactionInput>> processBlockOutputs(
+            const WalletTypes::WalletBlockInfo &block) const;
 
-        /* Remove transactions from this height and above, they occured
-           on a forked chain */
-        void removeForkedTransactions(uint64_t forkHeight);
+        void processBlock(const WalletTypes::WalletBlockInfo &block);
 
-        /* Process the transaction inputs to find transactions which we spent */
-        uint64_t processTransactionInputs(
-            const std::vector<CryptoNote::KeyInput> keyInputs,
-            std::unordered_map<Crypto::PublicKey, int64_t> &transfers,
-            const uint64_t blockHeight);
+        BlockScanTmpInfo processBlockTransactions(
+            const WalletTypes::WalletBlockInfo &block,
+            const std::vector<std::tuple<Crypto::PublicKey, WalletTypes::TransactionInput>> &inputs) const;
 
-        /* Process the transaction outputs to find incoming transactions */
-        std::tuple<bool, uint64_t> processTransactionOutputs(
-            const WalletTypes::RawCoinbaseTransaction &tx,
-            std::unordered_map<Crypto::PublicKey, int64_t> &transfers,
-            const uint64_t blockHeight);
+        std::optional<WalletTypes::Transaction> processCoinbaseTransaction(
+            const WalletTypes::WalletBlockInfo &block,
+            const std::vector<std::tuple<Crypto::PublicKey, WalletTypes::TransactionInput>> &inputs) const;
 
-        /* Process a coinbase transaction to see if it belongs to us */
-        void processCoinbaseTransaction(
-            const WalletTypes::RawCoinbaseTransaction rawTX,
-            const uint64_t blockTimestamp,
-            const uint64_t blockHeight);
+        std::tuple<std::optional<WalletTypes::Transaction>, std::vector<std::tuple<Crypto::PublicKey, Crypto::KeyImage>>> processTransaction(
+            const WalletTypes::WalletBlockInfo &block,
+            const std::vector<std::tuple<Crypto::PublicKey, WalletTypes::TransactionInput>> &inputs,
+            const WalletTypes::RawTransaction &tx) const;
 
-        /* Process a transaction to see if it belongs to us */
-        void processTransaction(
-            const WalletTypes::RawTransaction rawTX,
-            const uint64_t blockTimestamp,
-            const uint64_t blockHeight);
+        std::vector<std::tuple<Crypto::PublicKey, WalletTypes::TransactionInput>> processTransactionOutputs(
+            const WalletTypes::RawCoinbaseTransaction &rawTX,
+            const uint64_t blockHeight) const;
 
-        std::vector<uint64_t> getGlobalIndexes(
-            const uint64_t blockHeight,
-            const Crypto::Hash transactionHash);
+        std::unordered_map<Crypto::Hash, std::vector<uint64_t>> getGlobalIndexes(
+            const uint64_t blockHeight) const;
+
+        void removeForkedTransactions(const uint64_t forkHeight);
+
+        void checkLockedTransactions();
 
         //////////////////////////////
         /* Private member variables */
         //////////////////////////////
 
         /* The thread ID of the block downloader thread */
-        std::thread m_blockDownloaderThread;
-
-        /* The thread ID of the transaction synchronizer thread */
-        std::thread m_transactionSynchronizerThread;
-
-        /* The thread ID of the pool watcher thread */
-        std::thread m_poolWatcherThread;
+        std::thread m_syncThread;
 
         /* An atomic bool to signal if we should stop the sync thread */
         std::atomic<bool> m_shouldStop;
 
-        /* We have two threads, the block downloader thread (the producer),
-           which grabs blocks from a daemon, and pushes them into the work
-           queue, and the transaction syncher thread, which takes blocks from
-           the work queue, and searches for transactions belonging to the
-           user.
-           
-           We need to store the status that they are both at, since we need
-           both to provide the last known block hashes to the node, to get
-           the next newest blocks, and we need to be able to resume the sync
-           progress from where we have decrypted transactions from, rather
-           than simply where we have downloaded blocks to.
-           
-           If we stored the block download status, if the queue was not empty
-           when closing the program, we could miss transactions which had
-           been downloaded, but not processed. */
-        SynchronizationStatus m_blockDownloaderStatus;
-
-        SynchronizationStatus m_transactionSynchronizerStatus;
-
-        /* Blocks to be processed are added to the front, and are removed
-           from the back */
-        ThreadSafeQueue<WalletTypes::WalletBlockInfo> m_blockProcessingQueue;
+        SynchronizationStatus m_syncStatus;
 
         /* The timestamp to start scanning downloading block data from */
         uint64_t m_startTimestamp;
@@ -174,9 +162,5 @@ class WalletSynchronizer
         std::shared_ptr<EventHandler> m_eventHandler;
 
         /* The daemon connection */
-        std::shared_ptr<CryptoNote::NodeRpcProxy> m_daemon;
-
-        /* Have we launched the pool watcher thread yet (we launched it when
-           synced) */
-        bool m_hasPoolWatcherThreadLaunched = false;
+        std::shared_ptr<Nigel> m_daemon;
 };

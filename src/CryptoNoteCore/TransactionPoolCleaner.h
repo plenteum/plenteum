@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
 
@@ -27,7 +27,7 @@ public:
   TransactionPoolCleanWrapper(
     std::unique_ptr<ITransactionPool>&& transactionPool,
     std::unique_ptr<ITimeProvider>&& timeProvider,
-    Logging::ILogger& logger,
+    std::shared_ptr<Logging::ILogger> logger,
     uint64_t timeout);
 
   TransactionPoolCleanWrapper(const TransactionPoolCleanWrapper&) = delete;
@@ -48,6 +48,7 @@ public:
 
   virtual const TransactionValidatorState& getPoolTransactionValidationState() const override;
   virtual std::vector<CachedTransaction> getPoolTransactions() const override;
+  virtual std::tuple<std::vector<CachedTransaction>, std::vector<CachedTransaction>> getPoolTransactionsForBlockTemplate() const override;
 
   virtual uint64_t getTransactionReceiveTime(const Crypto::Hash& hash) const override;
   virtual std::vector<Crypto::Hash> getTransactionHashesByPaymentId(const Crypto::Hash& paymentId) const override;

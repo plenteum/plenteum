@@ -1,5 +1,4 @@
 // Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
 
@@ -9,11 +8,16 @@
 
 #include <config/WalletConfig.h>
 
+#include <Errors/ValidateParameters.h>
+
 #include <fstream>
 
-#include <WalletBackend/ValidateParameters.h>
+#include <iostream>
 
-#include <zedwallet++/ColouredMsg.h>
+#include <Utilities/ColouredMsg.h>
+#include <Utilities/Input.h>
+#include <Utilities/String.h>
+
 #include <zedwallet++/GetInput.h>
 #include <zedwallet++/Transfer.h>
 #include <zedwallet++/Utilities.h>
@@ -29,7 +33,7 @@ const std::string getAddressBookName(const std::vector<AddressBookEntry> address
 
         std::getline(std::cin, friendlyName);
 
-        ZedUtilities::trim(friendlyName);
+        Utilities::trim(friendlyName);
 
         const auto it = std::find(addressBook.begin(), addressBook.end(),
                                   AddressBookEntry(friendlyName));
@@ -120,7 +124,7 @@ const std::tuple<bool, AddressBookEntry> getAddressBookEntry(
 
         std::getline(std::cin, friendlyName);
 
-        ZedUtilities::trim(friendlyName);
+        Utilities::trim(friendlyName);
 
         /* \n == no-op */
         if (friendlyName == "")
@@ -153,6 +157,19 @@ const std::tuple<bool, AddressBookEntry> getAddressBookEntry(
 
             return {false, addressBook[selectionNum]};
         }
+        catch (const std::out_of_range &)
+        {
+            const int numCommands = static_cast<int>(addressBook.size());
+
+            std::cout << WarningMsg("Bad input, expected a friendly name, ")
+                      << WarningMsg("or number from ")
+                      << InformationMsg("1")
+                      << WarningMsg(" to ")
+                      << InformationMsg(numCommands)
+                      << "\n\n";
+
+            continue;
+        }
         /* Input isn't a number */
         catch (const std::invalid_argument &)
         {
@@ -171,7 +188,7 @@ const std::tuple<bool, AddressBookEntry> getAddressBookEntry(
                       << std::endl << std::endl;
         }
 
-        const bool list = ZedUtilities::confirm(
+        const bool list = Utilities::confirm(
             "Would you like to list everyone in your address book?"
         );
 
@@ -257,7 +274,7 @@ void deleteFromAddressBook()
 
         std::getline(std::cin, friendlyName);
 
-        ZedUtilities::trim(friendlyName);
+        Utilities::trim(friendlyName);
 
         if (friendlyName == "cancel")
         {
@@ -287,7 +304,7 @@ void deleteFromAddressBook()
                   << InformationMsg(friendlyName)
                   << WarningMsg(" in your address book!\n\n");
 
-        const bool list = ZedUtilities::confirm(
+        const bool list = Utilities::confirm(
             "Would you like to list everyone in your address book?"
         );
 

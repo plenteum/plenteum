@@ -1,5 +1,5 @@
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
 
@@ -7,7 +7,9 @@
 #include <zedwallet++/TransactionMonitor.h>
 ///////////////////////////////////////////
 
-#include <zedwallet++/ColouredMsg.h>
+#include <iostream>
+
+#include <Utilities/ColouredMsg.h>
 #include <zedwallet++/CommandImplementations.h>
 #include <zedwallet++/GetInput.h>
 
@@ -23,7 +25,7 @@ void TransactionMonitor::start()
 
     while (!m_shouldStop)
     {
-        const auto tx = m_queuedTransactions.pop();
+        const auto tx = m_queuedTransactions.peek();
 
         /* Make sure we're not printing a garbage tx */
         if (m_shouldStop)
@@ -47,6 +49,8 @@ void TransactionMonitor::start()
                like it's not. */
             std::cout << InformationMsg(prompt) << std::flush;
         }
+
+        m_queuedTransactions.deleteFront();
     }
 
     m_walletBackend->m_eventHandler->onTransaction.unsubscribe();
