@@ -1,18 +1,17 @@
 ![logo_small_flat](https://user-images.githubusercontent.com/38456463/43392866-43c69cf4-93f5-11e8-81e2-3e3f81b6ca1d.png)
 
-[![Build status](https://ci.appveyor.com/api/projects/status/b5v5l8ta4rcqgt8r?svg=true)](https://ci.appveyor.com/project/plenteum/plenteum) 
-[![Build status](https://travis-ci.com/plenteum/plenteum.svg?branch=master)](https://travis-ci.com/plenteum/plenteum)
-
-### What is Plenteum
-
-Plenteum is a cryptonote based coin that aims to solve (at least) two significant problems in current implementations. 
-  1. Sustainability of future mining rewards
-  2. Dust bloat in the blockchain and user wallets
-
-How do we do this? By removing fees from the blockchain, and accumulating a "DustFund" from transaction dust, instead of fees, we sustain the future viability of mining rewards, and lighten the chain for current transactions. 
-Further info is available on our website and social channels!
-
 ### How To Compile
+
+#### OpenSSL Support
+
+Both zedwallet++ (zedwallet-beta) and wallet-api now support connecting to a node using SSL. To enable it during compilation, you will need to pass `-DENABLE_SSL=1` in the any of the CMake commands below.
+
+**Note:** If you compile with SSL support, it will link OpenSSL as a shared library.
+
+If you enable SSL support but OpenSSL is not found on your system, you can tell CMake where it is located with the `-DOPENSSL_ROOT_DIR=<path>` option.
+
+Ex. `-DOPENSSL_ROOT_DIR=/usr/lib/openssl` or `-DOPENSSL_ROOT_DIR=C:/OpenSSL-Win64/include`
+
 
 #### Linux
 
@@ -165,9 +164,6 @@ The binaries will be in the `src` folder when you are complete.
 - `cd build`
 - `set PATH="C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin";%PATH%`
 - `cmake -G "Visual Studio 15 2017 Win64" .. -DBOOST_ROOT=D:/local/boost_1_68_0`
-
-If you have errors on this step about not being able to find the following static libraries, you may need to update your cmake. Open 'Visual Studio Installer' and click 'Update'.
-
 - `MSBuild Plenteum.sln /p:Configuration=Release /m`
 
 The binaries will be in the `src/Release` folder when you are complete.
@@ -201,27 +197,20 @@ The binaries will be in the `src` folder when you are complete.
 - `cd src`
 - `./Plenteumd --version`
 
-### Mining
-
-Read the guide by [@Charlie](https://virtopia.ca/how-to-mine-plenteum/)
-
-### Support
-
-Join our discord [here](http://chat.plenteum.com) or email us on support AT plenteum.com
-
 #### Thanks
-
-Cryptonote Developers, Bytecoin Developers, Monero Developers, Forknote Project, TurtleCoin Developers and TurtleCoin Community
+Cryptonote Developers, Bytecoin Developers, Monero Developers, Forknote Project, Plenteum Community
 
 ### Copypasta for license when editing files
 
-Hi Plenteum contributor, thanks for forking and sending back Pull Requests. We are working on more comprehensive documentation, for now this is the bit we need to get into all the files we touch. Please add it to the top of the files, see src/CryptoNoteConfig.h for an example.
+Hi Plenteum contributor, thanks for forking and sending back Pull Requests. Extensive docs about contributing are in the works or elsewhere. For now this is the bit we need to get into all the files we touch. Please add it to the top of the files, see [src/CryptoNoteConfig.h](https://github.com/plenteum/plenteum/commit/28cfef2575f2d767f6e512f2a4017adbf44e610e) for an example.
+
+Should you choose to contribute to Plenteum, please ensure your Pull Requests are submitted against out [testnet repo](https://github.com/plenteum/testnet)
 
 ```
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero Project
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
 ```

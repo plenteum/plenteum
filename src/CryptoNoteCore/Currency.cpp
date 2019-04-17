@@ -1,8 +1,8 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero Project
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
-// 
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
+//
 // Please see the included LICENSE file for more information.
 
 #include "Currency.h"
@@ -103,21 +103,36 @@ bool Currency::generateGenesisBlock() {
   return true;
 }
 
-size_t Currency::difficultyWindowByBlockVersion(uint8_t blockMajorVersion) const {
-    return m_difficultyWindow;
+size_t Currency::difficultyWindowByHeight(uint32_t height) const {
+	if (height >= CryptoNote::parameters::LWMA_2_DIFFICULTY_BLOCK_INDEX_V3) {
+		return m_difficultyWindow; 
+	}
+	else {
+		return CryptoNote::parameters::DIFFICULTY_WINDOW_V1;
+	}
 }
 
-size_t Currency::difficultyLagByBlockVersion(uint8_t blockMajorVersion) const {
-    return m_difficultyLag;
+size_t Currency::difficultyLagByHeight(uint32_t height) const {
+	if (height >= CryptoNote::parameters::LWMA_2_DIFFICULTY_BLOCK_INDEX_V3) {
+		return m_difficultyLag;
+	}
+	else {
+		return CryptoNote::parameters::DIFFICULTY_LAG_V1;
+	}
 }
 
-size_t Currency::difficultyCutByBlockVersion(uint8_t blockMajorVersion) const {
-    return m_difficultyCut;
+size_t Currency::difficultyCutByHeight(uint32_t height) const {
+	if (height >= CryptoNote::parameters::LWMA_2_DIFFICULTY_BLOCK_INDEX_V3) {
+		return m_difficultyCut;
+	}
+	else {
+		return CryptoNote::parameters::DIFFICULTY_CUT_V1;
+	}
 }
 
-size_t Currency::difficultyBlocksCountByBlockVersion(uint8_t blockMajorVersion, uint32_t height) const
+size_t Currency::difficultyBlocksCountByHeight(uint32_t height) const
 {
-    return difficultyWindowByBlockVersion(blockMajorVersion) + difficultyLagByBlockVersion(blockMajorVersion);
+	return difficultyWindowByHeight(height) + difficultyLagByHeight(height);
 }
 
 size_t Currency::blockGrantedFullRewardZoneByBlockVersion(uint8_t blockMajorVersion) const {
@@ -137,10 +152,9 @@ uint32_t Currency::upgradeHeight(uint8_t majorVersion) const {
   } else if (majorVersion == BLOCK_MAJOR_VERSION_3) {
     return m_upgradeHeightV4;
   } else if (majorVersion == BLOCK_MAJOR_VERSION_4) {
-	  return m_upgradeHeightV6; //height of fix for tx sizes
-  }
-  else if (majorVersion == BLOCK_MAJOR_VERSION_5) {
-	  return m_upgradeHeightV7;
+	return m_upgradeHeightV6; //height of fix for tx sizes
+  } else if (majorVersion == BLOCK_MAJOR_VERSION_5) {
+	return m_upgradeHeightV7; //cn turtle
   } else {
     return static_cast<uint32_t>(-1);
   }
@@ -154,7 +168,6 @@ bool Currency::getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size
   uint64_t baseReward = (m_moneySupply - alreadyGeneratedCoins) >> m_emissionSpeedFactor;
   if (alreadyGeneratedCoins == 0 && m_genesisBlockReward != 0) {
     baseReward = m_genesisBlockReward;
-    //std::cout << "Genesis block reward: " << baseReward << std::endl;
   }
 
   size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
@@ -325,7 +338,7 @@ bool Currency::isAmountApplicableInFusionTransactionInput(uint64_t amount, uint6
   auto it = std::lower_bound(PRETTY_AMOUNTS.begin(), PRETTY_AMOUNTS.end(), amount);
   if (it == PRETTY_AMOUNTS.end() || amount != *it) {
     return false;
-  } 
+  }
 
   amountPowerOfTen = static_cast<uint8_t>(std::distance(PRETTY_AMOUNTS.begin(), it) / 9);
   return true;
@@ -363,13 +376,13 @@ std::string Currency::formatAmount(uint64_t amount) const {
 }
 
 std::string Currency::formatAmount(int64_t amount) const {
-	std::string s = formatAmount(static_cast<uint64_t>(std::abs(amount)));
+  std::string s = formatAmount(static_cast<uint64_t>(std::abs(amount)));
 
-	if (amount < 0) {
-		s.insert(0, "-");
-	}
+  if (amount < 0) {
+    s.insert(0, "-");
+  }
 
-	return s;
+  return s;
 }
 
 bool Currency::parseAmount(const std::string& str, uint64_t& amount) const {
@@ -407,28 +420,30 @@ bool Currency::parseAmount(const std::string& str, uint64_t& amount) const {
   return Common::fromString(strAmount, amount);
 }
 
-uint64_t Currency::getNextDifficulty(uint8_t version, uint32_t blockIndex, std::vector<uint64_t> timestamps, std::vector<uint64_t> cumulativeDifficulties) const
+uint64_t Currency::getNextDifficulty(uint32_t blockIndex, std::vector<uint64_t> timestamps, std::vector<uint64_t> cumulativeDifficulties) const
 {
-    /* nextDifficultyV3 and above are defined in src/CryptoNoteCore/Difficulty.cpp */
 	if (blockIndex < CryptoNote::parameters::LWMA_2_DIFFICULTY_BLOCK_INDEX)
 	{
-		return nextDifficulty(version, blockIndex, timestamps, cumulativeDifficulties);
+		return nextDifficulty(blockIndex, timestamps, cumulativeDifficulties);
 	}
 	else if (blockIndex < CryptoNote::parameters::LWMA_2_DIFFICULTY_BLOCK_INDEX_V2)
 	{
 		return nextDifficultyV3(timestamps, cumulativeDifficulties);
 	}
-	//current default difficulty is v4, we will likely skip over v% and go straight to V6
-	return nextDifficultyV4(timestamps, cumulativeDifficulties);
+	else if (blockIndex < CryptoNote::parameters::LWMA_2_DIFFICULTY_BLOCK_INDEX_V3)
+	{
+		return nextDifficultyV4(timestamps, cumulativeDifficulties);
+	}
+	return nextDifficultyV5(timestamps, cumulativeDifficulties);
 }
 
-uint64_t Currency::nextDifficulty(uint8_t version, uint32_t blockIndex, std::vector<uint64_t> timestamps,
+uint64_t Currency::nextDifficulty(uint32_t blockIndex, std::vector<uint64_t> timestamps,
   std::vector<uint64_t> cumulativeDifficulties) const {
 
 std::vector<uint64_t> timestamps_o(timestamps);
 std::vector<uint64_t> cumulativeDifficulties_o(cumulativeDifficulties);
-  size_t c_difficultyWindow = difficultyWindowByBlockVersion(version);
-  size_t c_difficultyCut = difficultyCutByBlockVersion(version);
+  uint64_t c_difficultyWindow = difficultyWindowByHeight(blockIndex);
+  uint64_t c_difficultyCut = difficultyCutByHeight(blockIndex);
 
   assert(c_difficultyWindow >= 2);
 
@@ -470,11 +485,11 @@ std::vector<uint64_t> cumulativeDifficulties_o(cumulativeDifficulties);
     return 0;
   }
 
-  uint8_t c_zawyDifficultyBlockVersion = m_zawyDifficultyBlockVersion;
+  uint8_t c_zawyDifficultyBlockHeight = m_zawyDifficultyBlockHeight;
   if (m_zawyDifficultyV2) {
-    c_zawyDifficultyBlockVersion = 2;
+    c_zawyDifficultyBlockHeight = 2;
   }
-  if (version >= c_zawyDifficultyBlockVersion && c_zawyDifficultyBlockVersion) {
+  if (blockIndex >= c_zawyDifficultyBlockHeight && c_zawyDifficultyBlockHeight) {
     if (high != 0) {
       return 0;
     }
@@ -557,18 +572,16 @@ bool Currency::checkProofOfWorkV1(const CachedBlock& block, uint64_t currentDiff
 bool Currency::checkProofOfWorkV2(const CachedBlock& cachedBlock, uint64_t currentDifficulty) const {
   const auto& block = cachedBlock.getBlock();
   if (block.majorVersion < BLOCK_MAJOR_VERSION_1) {
-	  logger(ERROR) << "Invalid major version";
     return false;
   }
 
   if (!check_hash(cachedBlock.getBlockLongHash(), currentDifficulty)) {
-	  logger(ERROR) << "Failed hash check for version: " << block.majorVersion << "( " << cachedBlock.getBlockLongHash() << ")";
     return false;
   }
 
   TransactionExtraMergeMiningTag mmTag;
   if (!getMergeMiningTagFromExtra(block.parentBlock.baseTransaction.extra, mmTag)) {
-	  logger(ERROR) << "merge mining tag wasn't found in extra of the parent block miner transaction";
+    logger(ERROR) << "merge mining tag wasn't found in extra of the parent block miner transaction";
     return false;
   }
 
@@ -677,14 +690,14 @@ m_txPoolFileName(currency.m_txPoolFileName),
 m_genesisBlockReward(currency.m_genesisBlockReward),
 m_zawyDifficultyBlockIndex(currency.m_zawyDifficultyBlockIndex),
 m_zawyDifficultyV2(currency.m_zawyDifficultyV2),
-m_zawyDifficultyBlockVersion(currency.m_zawyDifficultyBlockVersion),
+m_zawyDifficultyBlockHeight(currency.m_zawyDifficultyBlockHeight),
 m_testnet(currency.m_testnet),
 genesisBlockTemplate(std::move(currency.genesisBlockTemplate)),
 cachedGenesisBlock(new CachedBlock(genesisBlockTemplate)),
 logger(currency.logger) {
 }
 
-CurrencyBuilder::CurrencyBuilder(Logging::ILogger& log) : m_currency(log) {
+CurrencyBuilder::CurrencyBuilder(std::shared_ptr<Logging::ILogger> log) : m_currency(log) {
   maxBlockNumber(parameters::CRYPTONOTE_MAX_BLOCK_NUMBER);
   maxBlockBlobSize(parameters::CRYPTONOTE_MAX_BLOCK_BLOB_SIZE);
   maxTxSize(parameters::CRYPTONOTE_MAX_TX_SIZE);
@@ -699,9 +712,9 @@ CurrencyBuilder::CurrencyBuilder(Logging::ILogger& log) : m_currency(log) {
 genesisBlockReward(parameters::GENESIS_BLOCK_REWARD);
 
   rewardBlocksWindow(parameters::CRYPTONOTE_REWARD_BLOCKS_WINDOW);
-zawyDifficultyBlockIndex(parameters::ZAWY_DIFFICULTY_BLOCK_INDEX);
-zawyDifficultyV2(parameters::ZAWY_DIFFICULTY_V2);
-zawyDifficultyBlockVersion(parameters::ZAWY_DIFFICULTY_DIFFICULTY_BLOCK_VERSION);
+  zawyDifficultyBlockIndex(parameters::ZAWY_DIFFICULTY_BLOCK_INDEX);
+  zawyDifficultyV2(parameters::ZAWY_DIFFICULTY_V2);
+  zawyDifficultyBlockHeight(parameters::ZAWY_DIFFICULTY_DIFFICULTY_BLOCK_HEIGHT);
   blockGrantedFullRewardZone(parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE);
   minerTxBlobReservedSize(parameters::CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE);
 
@@ -737,7 +750,7 @@ zawyDifficultyBlockVersion(parameters::ZAWY_DIFFICULTY_DIFFICULTY_BLOCK_VERSION)
   upgradeHeightV5(parameters::UPGRADE_HEIGHT_V5);
   upgradeHeightV6(parameters::UPGRADE_HEIGHT_V6);
   upgradeHeightV7(parameters::UPGRADE_HEIGHT_V7);
-  upgradeVotingThreshold(parameters::UPGRADE_VOTING_THRESHOLD);
+    upgradeVotingThreshold(parameters::UPGRADE_VOTING_THRESHOLD);
   upgradeVotingWindow(parameters::UPGRADE_VOTING_WINDOW);
   upgradeWindow(parameters::UPGRADE_WINDOW);
 
@@ -757,7 +770,7 @@ Transaction CurrencyBuilder::generateGenesisTransaction() {
 }
  Transaction CurrencyBuilder::generateGenesisTransaction(const std::vector<AccountPublicAddress>& targets) {
     assert(!targets.empty());
- 
+
     CryptoNote::Transaction tx;
     tx.inputs.clear();
     tx.outputs.clear();
@@ -786,7 +799,6 @@ Transaction CurrencyBuilder::generateGenesisTransaction() {
       tk.key = outEphemeralPubKey;
       TransactionOutput out;
       out.amount = (i == 0) ? first_target_amount : target_amount;
-      std::cout << "outs: " << std::to_string(out.amount) << std::endl;
       out.target = tk;
       tx.outputs.push_back(out);
     }

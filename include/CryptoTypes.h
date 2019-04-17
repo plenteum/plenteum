@@ -25,6 +25,12 @@
 
 #include <iterator>
 
+#include "json.hpp"
+
+#include "rapidjson/document.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
+
 namespace Crypto
 {
     struct Hash
@@ -42,6 +48,21 @@ namespace Crypto
         }
         
         uint8_t data[32];
+
+        /* Converts the class to a json object */
+        void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        {
+            writer.String(Common::podToHex(data));
+        }
+
+        /* Initializes the class from a json string */
+        void fromString(const std::string &s)
+        {
+            if (!Common::podFromHex(s, data))
+            {
+                throw std::invalid_argument("Error parsing JSON Hash, wrong length or not hex");
+            }
+        }
     };
 
     struct PublicKey
@@ -68,6 +89,21 @@ namespace Crypto
             return !(*this == other);
         }
 
+        /* Converts the class to a json object */
+        void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        {
+            writer.String(Common::podToHex(data));
+        }
+
+        /* Initializes the class from a json string */
+        void fromString(const std::string &s)
+        {
+            if (!Common::podFromHex(s, data))
+            {
+                throw std::invalid_argument("Error parsing JSON PublicKey, wrong length or not hex");
+            }
+        }
+        
         uint8_t data[32];
     };
 
@@ -93,6 +129,21 @@ namespace Crypto
         bool operator!=(const SecretKey &other) const
         {
             return !(*this == other);
+        }
+
+        /* Converts the class to a json object */
+        void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        {
+            writer.String(Common::podToHex(data));
+        }
+
+        /* Initializes the class from a json string */
+        void fromString(const std::string &s)
+        {
+            if (!Common::podFromHex(s, data))
+            {
+                throw std::invalid_argument("Error parsing JSON SecretKey, wrong length or not hex");
+            }
         }
 
         uint8_t data[32];
@@ -122,6 +173,22 @@ namespace Crypto
             return !(*this == other);
         }
 
+        /* Converts the class to a json object */
+        void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        {
+            writer.String(Common::podToHex(data));
+        }
+
+        /* Initializes the class from a json string */
+        void fromString(const std::string &s)
+        {
+            if (!Common::podFromHex(s, data))
+            {
+                throw std::invalid_argument("Error parsing JSON KeyDerivation, wrong length or not hex");
+            }
+
+        }
+
         uint8_t data[32];
     };
 
@@ -147,6 +214,21 @@ namespace Crypto
         bool operator!=(const KeyImage &other) const
         {
             return !(*this == other);
+        }
+
+        /* Converts the class to a json object */
+        void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+        {
+            writer.String(Common::podToHex(data));
+        }
+
+        /* Initializes the class from a json string */
+        void fromString(const std::string &s)
+        {
+            if (!Common::podFromHex(s, data))
+            {
+                throw std::invalid_argument("Error parsing JSON keyimage, wrong length or not hex");
+            }
         }
 
         uint8_t data[32];
@@ -204,6 +286,91 @@ namespace Crypto
     {
         return reinterpret_cast<const size_t &>(keyImage);
     } 
+
+    inline void to_json(nlohmann::json &j, const Hash &h)
+    {
+        j = Common::podToHex(h);
+    }
+
+    inline void from_json(const nlohmann::json &j, Hash &h)
+    {
+        if (!Common::podFromHex(j.get<std::string>(), h.data))
+        {
+            const auto err = nlohmann::detail::parse_error::create(
+                100, 0, "Wrong length or not hex!"
+            );
+
+            throw nlohmann::json::parse_error(err);
+        }
+    }
+
+    inline void to_json(nlohmann::json &j, const PublicKey &p)
+    {
+        j = Common::podToHex(p);
+    }
+
+    inline void from_json(const nlohmann::json &j, PublicKey &p)
+    {
+        if (!Common::podFromHex(j.get<std::string>(), p.data))
+        {
+            const auto err = nlohmann::detail::parse_error::create(
+                100, 0, "Wrong length or not hex!"
+            );
+
+            throw nlohmann::json::parse_error(err);
+        }
+    }
+
+    inline void to_json(nlohmann::json &j, const SecretKey &s)
+    {
+        j = Common::podToHex(s);
+    }
+
+    inline void from_json(const nlohmann::json &j, SecretKey &s)
+    {
+        if (!Common::podFromHex(j.get<std::string>(), s.data))
+        {
+            const auto err = nlohmann::detail::parse_error::create(
+                100, 0, "Wrong length or not hex!"
+            );
+
+            throw nlohmann::json::parse_error(err);
+        }
+    }
+    
+    inline void to_json(nlohmann::json &j, const KeyDerivation &k)
+    {
+        j = Common::podToHex(k);
+    }
+
+    inline void from_json(const nlohmann::json &j, KeyDerivation &k)
+    {
+        if (!Common::podFromHex(j.get<std::string>(), k.data))
+        {
+            const auto err = nlohmann::detail::parse_error::create(
+                100, 0, "Wrong length or not hex!"
+            );
+
+            throw nlohmann::json::parse_error(err);
+        }
+    }
+
+    inline void to_json(nlohmann::json &j, const KeyImage &k)
+    {
+        j = Common::podToHex(k);
+    }
+
+    inline void from_json(const nlohmann::json &j, KeyImage &k)
+    {
+        if (!Common::podFromHex(j.get<std::string>(), k.data))
+        {
+            const auto err = nlohmann::detail::parse_error::create(
+                100, 0, "Wrong length or not hex!"
+            );
+
+            throw nlohmann::json::parse_error(err);
+        }
+    }
 }
 
 namespace std

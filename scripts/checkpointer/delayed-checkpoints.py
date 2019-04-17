@@ -19,7 +19,7 @@ def lastknownblock():
 
 
 def height():
-    base_url = 'http://localhost:11898/getheight'
+    base_url = 'http://localhost:44016/getheight'
     resp = requests.get(base_url).json()
     if 'height' not in resp:
         print ('Unexpected response, make sure Plenteumd is running',
@@ -30,7 +30,7 @@ def height():
 
 
 def rpc(method, params={}):
-    base_url = 'http://localhost:11898/json_rpc'
+    base_url = 'http://localhost:44016/json_rpc'
     payload = {
         'jsonrpc': '2.0',
         'id': 'block_info',
@@ -56,7 +56,7 @@ def get_block_info(from_height):
     return resp['blocks']
 
 
-stop_height = lastknownblock() + 1
+stop_height = lastknownblock()
 
 current_height = height() - topbuffer
 all_blocks = []
@@ -64,7 +64,7 @@ while current_height > stop_height:
     try:
         blocks = get_block_info(current_height)
         for b in blocks:
-            print '%(height)s,%(hash)s' % b
+            print `%(height)s,%(hash)s` % b
             all_blocks.append('%(height)s,%(hash)s' % b)
             current_height = b['height'] - 1
             if current_height < stop_height:

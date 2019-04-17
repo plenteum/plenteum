@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2014-2018, The Monero Project
+// Copyright (c) 2018-2019, The TurtleCoin Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -32,6 +32,7 @@
 #include "Common/StdOutputStream.h"
 #include "Common/Util.h"
 #include "crypto/crypto.h"
+#include <crypto/random.h>
 
 #include "ConnectionContext.h"
 #include "LevinProtocol.h"
@@ -51,7 +52,7 @@ size_t get_random_index_with_fixed_probability(size_t max_index) {
   //divide by zero workaround
   if (!max_index)
     return 0;
-  size_t x = Crypto::rand<size_t>() % (max_index + 1);
+  size_t x = Random::randomValue<size_t>() % (max_index + 1);
   return (x*x*x) / (max_index*max_index); //parabola \/
 }
 
@@ -88,10 +89,6 @@ void addPortMapping(Logging::LoggerRef& logger, uint32_t port) {
   } else {
     logger(INFO) << "No IGD was found.";
   }
-}
-
-bool parse_peer_from_string(NetworkAddress& pe, const std::string& node_addr) {
-  return Common::parseIpAddressAndPort(pe.ip, pe.port, node_addr);
 }
 
 }
@@ -178,7 +175,7 @@ std::string print_peerlist_to_string(const std::list<PeerlistEntry>& pl) {
     return ret;
   }
 
-  NodeServer::NodeServer(System::Dispatcher& dispatcher, CryptoNote::CryptoNoteProtocolHandler& payload_handler, Logging::ILogger& log) :
+  NodeServer::NodeServer(System::Dispatcher& dispatcher, CryptoNote::CryptoNoteProtocolHandler& payload_handler, std::shared_ptr<Logging::ILogger> log) :
     m_dispatcher(dispatcher),
     m_workingContextGroup(dispatcher),
     m_payload_handler(payload_handler),
@@ -301,9 +298,22 @@ std::string print_peerlist_to_string(const std::list<PeerlistEntry>& pl) {
   }
 
   //-----------------------------------------------------------------------------------
+  void NodeServer::externalRelayNotifyToList(int command, const BinaryArray& data_buff, const std::list<boost::uuids::uuid> relayList) {
+    m_dispatcher.remoteSpawn([this, command, data_buff, relayList] {
+      forEachConnection([&](P2pConnectionContext& conn) {
+        if (std::find(relayList.begin(), relayList.end(), conn.m_connection_id) != relayList.end()) {
+          if (conn.peerId && (conn.m_state == CryptoNoteConnectionContext::state_normal ||
+               conn.m_state == CryptoNoteConnectionContext::state_synchronizing)) {
+            conn.pushMessage(P2pMessage(P2pMessage::NOTIFY, command, data_buff));
+          }
+        }
+      });
+    });
+  }
+  //-----------------------------------------------------------------------------------
   bool NodeServer::make_default_config()
   {
-    m_config.m_peer_id  = Crypto::rand<uint64_t>();
+    m_config.m_peer_id = Random::randomValue<uint64_t>();
     logger(INFO, BRIGHT_WHITE) << "Generated new peer ID: " << m_config.m_peer_id;
     return true;
   }
@@ -774,7 +784,7 @@ std::string print_peerlist_to_string(const std::list<PeerlistEntry>& pl) {
 
     if(!m_peerlist.get_white_peers_count() && m_seed_nodes.size()) {
       size_t try_count = 0;
-      size_t current_index = Crypto::rand<size_t>() % m_seed_nodes.size();
+      size_t current_index = Random::randomValue<size_t>() % m_seed_nodes.size();
 
       while(true) {
         if(try_to_connect_and_handshake_with_new_peer(m_seed_nodes[current_index], true))
@@ -868,7 +878,7 @@ std::string print_peerlist_to_string(const std::list<PeerlistEntry>& pl) {
     {
       if(be.last_seen > uint64_t(local_time))
       {
-        logger(ERROR) << "FOUND FUTURE peerlist for entry " << be.adr << " last_seen: " << be.last_seen << ", local_time(on remote node):" << local_time;
+        logger(DEBUGGING) << "FOUND FUTURE peerlist for entry " << be.adr << " last_seen: " << be.last_seen << ", local_time(on remote node):" << local_time;
         return false;
       }
       be.last_seen += delta;
@@ -1191,13 +1201,6 @@ std::string print_peerlist_to_string(const std::list<PeerlistEntry>& pl) {
   {
     logger(TRACE) << context << "CLOSE CONNECTION";
     m_payload_handler.onConnectionClosed(context);
-  }
-
-  bool NodeServer::is_priority_node(const NetworkAddress& na)
-  {
-    return
-      (std::find(m_priority_peers.begin(), m_priority_peers.end(), na) != m_priority_peers.end()) ||
-      (std::find(m_exclusive_peers.begin(), m_exclusive_peers.end(), na) != m_exclusive_peers.end());
   }
 
   bool NodeServer::connect_to_peerlist(const std::vector<NetworkAddress>& peers)

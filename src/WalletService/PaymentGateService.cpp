@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -45,12 +45,12 @@ PaymentGateService::PaymentGateService() :
   stopEvent(nullptr),
   config(),
   service(nullptr),
-  logger(),
-  currencyBuilder(logger),
   fileLogger(Logging::TRACE),
-  consoleLogger(Logging::INFO) {
-  consoleLogger.setPattern("%D %T %L ");
-  fileLogger.setPattern("%D %T %L ");
+  consoleLogger(Logging::INFO)
+{
+    currencyBuilder = std::make_shared<CryptoNote::CurrencyBuilder>(logger);
+    consoleLogger.setPattern("%D %T %L ");
+    fileLogger.setPattern("%D %T %L ");
 }
 
 bool PaymentGateService::init(int argc, char** argv) {
@@ -58,14 +58,13 @@ bool PaymentGateService::init(int argc, char** argv) {
     return false;
   }
 
-  logger.setMaxLevel(static_cast<Logging::Level>(config.serviceConfig.logLevel));
-  logger.setPattern("%D %T %L ");
-  logger.addLogger(consoleLogger);
-
-  Logging::LoggerRef log(logger, "main");
+  logger->setMaxLevel(static_cast<Logging::Level>(config.serviceConfig.logLevel));
+  logger->setPattern("%D %T %L ");
+  logger->addLogger(consoleLogger);
 
   if (!config.serviceConfig.serverRoot.empty()) {
     changeDirectory(config.serviceConfig.serverRoot);
+    Logging::LoggerRef log(logger, "main");
     log(Logging::INFO) << "Current working directory now is " << config.serviceConfig.serverRoot;
   }
 
@@ -76,7 +75,7 @@ bool PaymentGateService::init(int argc, char** argv) {
   }
 
   fileLogger.attachToStream(fileStream);
-  logger.addLogger(fileLogger);
+  logger->addLogger(fileLogger);
 
   return true;
 }
@@ -94,7 +93,7 @@ WalletConfiguration PaymentGateService::getWalletConfig() const {
 }
 
 const CryptoNote::Currency PaymentGateService::getCurrency() {
-  return currencyBuilder.currency();
+  return currencyBuilder->currency();
 }
 
 void PaymentGateService::run() {
@@ -131,7 +130,7 @@ void PaymentGateService::stop() {
 
 void PaymentGateService::runRpcProxy(Logging::LoggerRef& log) {
   log(Logging::INFO) << "Starting Payment Gate with remote node";
-  CryptoNote::Currency currency = currencyBuilder.currency();
+  CryptoNote::Currency currency = currencyBuilder->currency();
 
   std::unique_ptr<CryptoNote::INode> node(
     PaymentService::NodeFactory::createNode(

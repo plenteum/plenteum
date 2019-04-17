@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -24,14 +24,6 @@ public:
   uint64_t getWriteBufferSize() const; //Bytes
   uint64_t getReadCacheSize() const; //Bytes
   bool getTestnet() const;
-
-  void setConfigFolderDefaulted(bool defaulted);
-  void setDataDir(const std::string& dataDir);
-  void setBackgroundThreadsCount(uint16_t backgroundThreadsCount);
-  void setMaxOpenFiles(uint32_t maxOpenFiles);
-  void setWriteBufferSize(uint64_t writeBufferSize); //Bytes
-  void setReadCacheSize(uint64_t readCacheSize); //Bytes
-  void setTestnet(bool testnet);
 
 private:
   bool configFolderDefaulted;

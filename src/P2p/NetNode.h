@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -74,7 +74,7 @@ namespace CryptoNote
     uint64_t peerId;
     System::TcpConnection connection;
 
-    P2pConnectionContext(System::Dispatcher& dispatcher, Logging::ILogger& log, System::TcpConnection&& conn) :
+    P2pConnectionContext(System::Dispatcher& dispatcher, std::shared_ptr<Logging::ILogger> log, System::TcpConnection&& conn) :
       context(nullptr),
       peerId(0),
       connection(std::move(conn)),
@@ -111,7 +111,7 @@ namespace CryptoNote
   class NodeServer :  public IP2pEndpoint
   {
   public:
-    NodeServer(System::Dispatcher& dispatcher, CryptoNote::CryptoNoteProtocolHandler& payload_handler, Logging::ILogger& log);
+    NodeServer(System::Dispatcher& dispatcher, CryptoNote::CryptoNoteProtocolHandler& payload_handler, std::shared_ptr<Logging::ILogger> log);
 
     bool run();
     bool init(const NetNodeConfig& config);
@@ -163,6 +163,7 @@ namespace CryptoNote
     virtual bool invoke_notify_to_peer(int command, const BinaryArray& req_buff, const CryptoNoteConnectionContext& context) override;
     virtual void for_each_connection(std::function<void(CryptoNote::CryptoNoteConnectionContext&, uint64_t)> f) override;
     virtual void externalRelayNotifyToAll(int command, const BinaryArray& data_buff, const boost::uuids::uuid* excludeConnection) override;
+    virtual void externalRelayNotifyToList(int command, const BinaryArray& data_buff, const std::list<boost::uuids::uuid> relayList) override;
 
     //-----------------------------------------------------------------------------------------------
     bool handleConfig(const NetNodeConfig& config);
@@ -181,7 +182,6 @@ namespace CryptoNote
     bool is_addr_connected(const NetworkAddress& peer);  
     bool try_ping(basic_node_data& node_data, P2pConnectionContext& context);
     bool make_expected_connections_count(bool white_list, size_t expected_connections);
-    bool is_priority_node(const NetworkAddress& na);
 
     bool connect_to_peerlist(const std::vector<NetworkAddress>& peers);
 

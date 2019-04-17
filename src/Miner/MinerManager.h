@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero Project
 // Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -18,51 +17,54 @@
 #include "MinerEvent.h"
 #include "MiningConfig.h"
 
-namespace System {
-class Dispatcher;
+namespace System
+{
+    class Dispatcher;
 }
 
 namespace Miner {
 
-class MinerManager {
-public:
-  MinerManager(System::Dispatcher& dispatcher, const CryptoNote::MiningConfig& config, Logging::ILogger& logger);
-  ~MinerManager();
+class MinerManager
+{
+    public:
+        MinerManager(
+            System::Dispatcher& dispatcher,
+            const CryptoNote::MiningConfig& config,
+            const std::shared_ptr<httplib::Client> httpClient);
 
-  void start();
+        void start();
 
-private:
-  System::Dispatcher& m_dispatcher;
-  Logging::LoggerRef m_logger;
-  System::ContextGroup m_contextGroup;
-  CryptoNote::MiningConfig m_config;
-  CryptoNote::Miner m_miner;
-  BlockchainMonitor m_blockchainMonitor;
+    private:
+        System::ContextGroup m_contextGroup;
+        CryptoNote::MiningConfig m_config;
+        CryptoNote::Miner m_miner;
+        BlockchainMonitor m_blockchainMonitor;
 
-  System::Event m_eventOccurred;
-  System::Event m_httpEvent;
-  std::queue<MinerEvent> m_events;
-  bool isRunning;
+        System::Event m_eventOccurred;
+        std::queue<MinerEvent> m_events;
+        bool isRunning;
 
-  CryptoNote::BlockTemplate m_minedBlock;
+        CryptoNote::BlockTemplate m_minedBlock;
 
-  uint64_t m_lastBlockTimestamp;
+        uint64_t m_lastBlockTimestamp;
 
-  void eventLoop();
-  MinerEvent waitEvent();
-  void pushEvent(MinerEvent&& event);
-  void printHashRate();
+        std::shared_ptr<httplib::Client> m_httpClient = nullptr;
 
-  void startMining(const CryptoNote::BlockMiningParameters& params);
-  void stopMining();
+        void eventLoop();
+        MinerEvent waitEvent();
+        void pushEvent(MinerEvent&& event);
+        void printHashRate();
 
-  void startBlockchainMonitoring();
-  void stopBlockchainMonitoring();
+        void startMining(const CryptoNote::BlockMiningParameters& params);
+        void stopMining();
 
-  bool submitBlock(const CryptoNote::BlockTemplate& minedBlock, const std::string& daemonHost, uint16_t daemonPort);
-  CryptoNote::BlockMiningParameters requestMiningParameters(System::Dispatcher& dispatcher, const std::string& daemonHost, uint16_t daemonPort, const std::string& miningAddress);
+        void startBlockchainMonitoring();
+        void stopBlockchainMonitoring();
 
-  void adjustBlockTemplate(CryptoNote::BlockTemplate& blockTemplate) const;
+        bool submitBlock(const CryptoNote::BlockTemplate& minedBlock);
+        CryptoNote::BlockMiningParameters requestMiningParameters();
+
+        void adjustBlockTemplate(CryptoNote::BlockTemplate& blockTemplate) const;
 };
 
 } //namespace Miner

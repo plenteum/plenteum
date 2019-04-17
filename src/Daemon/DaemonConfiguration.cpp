@@ -1,5 +1,5 @@
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -18,7 +18,7 @@
 using nlohmann::json;
 
 namespace DaemonConfig{
-  
+
   DaemonConfiguration initConfiguration(const char* path)
   {
     DaemonConfiguration config;
@@ -33,6 +33,8 @@ namespace DaemonConfig{
     options.add_options("Core")
       ("help", "Display this help message", cxxopts::value<bool>()->implicit_value("true"))
       ("os-version", "Output Operating System version information", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))
+      ("resync", "Forces the daemon to delete the blockchain data and start resyncing", cxxopts::value<bool>(config.resync)->default_value("false")->implicit_value("true"))
+      ("rewind", "Rewinds the local blockchain cache to the specified height.", cxxopts::value<uint32_t>(), "#")
       ("version","Output daemon version information",cxxopts::value<bool>()->default_value("false")->implicit_value("true"));
 
     options.add_options("Genesis Block")
@@ -48,7 +50,8 @@ namespace DaemonConfig{
       ("log-file", "Specify the <path> to the log file", cxxopts::value<std::string>()->default_value(config.logFile), "<path>")
       ("log-level", "Specify log level", cxxopts::value<int>()->default_value(std::to_string(config.logLevel)), "#")
       ("no-console", "Disable daemon console commands", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))
-      ("save-config", "Save the configuration to the specified <file>", cxxopts::value<std::string>(), "<file>");
+      ("save-config", "Save the configuration to the specified <file>", cxxopts::value<std::string>(), "<file>")
+      ("sqlite", "Use SQLite3 for local cache files", cxxopts::value<bool>(config.useSqliteForLocalCaches)->default_value("false")->implicit_value("true"));
 
     options.add_options("RPC")
       ("enable-blockexplorer", "Enable the Blockchain Explorer RPC", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))
@@ -112,6 +115,21 @@ namespace DaemonConfig{
         config.osVersion = cli["os-version"].as<bool>();
       }
 
+      if (cli.count("rewind") > 0)
+      {
+        uint32_t rewindHeight = cli["rewind"].as<uint32_t>();
+        if (rewindHeight == 0)
+        {
+          std::cout << CryptoNote::getProjectCLIHeader()
+            << "Please use the `--resync` option instead of `--rewind 0` to completely reset the synchronization state." << std::endl;
+          exit(1);
+        }
+        else
+        {
+          config.rewindToHeight = rewindHeight;
+        }
+      }
+
       if (cli.count("print-genesis-tx") > 0)
       {
         config.printGenesisTx = cli["print-genesis-tx"].as<bool>();
@@ -140,6 +158,11 @@ namespace DaemonConfig{
       if (cli.count("log-level") > 0)
       {
         config.logLevel = cli["log-level"].as<int>();
+      }
+
+      if (cli.count("sqlite") > 0)
+      {
+        config.useSqliteForLocalCaches = cli["sqlite"].as<bool>();
       }
 
       if (cli.count("no-console") > 0)
@@ -286,7 +309,7 @@ namespace DaemonConfig{
     std::vector<std::string> peers;
     std::vector<std::string> cors;
     bool updated = false;
-    
+
     for (std::string line; std::getline(data, line);)
     {
       if (line.empty() || std::regex_match(line, item, cfgComment))
@@ -300,7 +323,7 @@ namespace DaemonConfig{
         {
           continue;
         }
-        
+
         cfgKey = item[1].str();
         cfgValue = item[2].str();
 
@@ -324,16 +347,21 @@ namespace DaemonConfig{
           try
           {
             config.logLevel = std::stoi(cfgValue);
-            updated = true;  
+            updated = true;
           }
           catch(std::exception& e)
           {
             throw std::runtime_error(std::string(e.what()) + " - Invalid value for " + cfgKey );
           }
         }
+        else if (cfgKey.compare("sqlite") == 0)
+        {
+          config.useSqliteForLocalCaches = cfgValue.at(0) == '1';
+          updated = true;
+        }
         else if (cfgKey.compare("no-console") == 0)
         {
-          config.noConsole = cfgValue.at(0) == '1' ? true : false;
+          config.noConsole = cfgValue.at(0) == '1';
           updated = true;
         }
         else if (cfgKey.compare("db-max-open-files") == 0)
@@ -386,12 +414,12 @@ namespace DaemonConfig{
         }
         else if (cfgKey.compare("allow-local-ip") == 0)
         {
-          config.localIp =  cfgValue.at(0) == '1' ? true : false;
+          config.localIp =  cfgValue.at(0) == '1';
           updated = true;
         }
         else if (cfgKey.compare("hide-my-port") == 0)
         {
-          config.hideMyPort =  cfgValue.at(0) == '1' ? true : false;
+          config.hideMyPort =  cfgValue.at(0) == '1';
           updated = true;
         }
         else if (cfgKey.compare("p2p-bind-ip") == 0)
@@ -442,7 +470,7 @@ namespace DaemonConfig{
         }
         else if (cfgKey.compare("add-exclusive-node") == 0)
         {
-          
+
           exclusiveNodes.push_back(cfgValue);
           config.exclusiveNodes = exclusiveNodes;
           updated = true;
@@ -467,7 +495,7 @@ namespace DaemonConfig{
         }
         else if (cfgKey.compare("enable-blockexplorer") == 0)
         {
-          config.enableBlockExplorer =  cfgValue.at(0) == '1' ? true : false;
+          config.enableBlockExplorer =  cfgValue.at(0) == '1';
           updated = true;
         }
         else if (cfgKey.compare("enable-cors") == 0)
@@ -495,9 +523,9 @@ namespace DaemonConfig{
         }
         else
         {
-          for (auto c: cfgKey) 
+          for (auto c: cfgKey)
           {
-            if (static_cast<unsigned char>(c) > 127) 
+            if (static_cast<unsigned char>(c) > 127)
             {
               throw std::runtime_error("Bad/invalid config file");
             }
@@ -555,6 +583,11 @@ namespace DaemonConfig{
     if (j.find("log-level") != j.end())
     {
       config.logLevel = j["log-level"].get<int>();
+    }
+
+    if (j.find("sqlite") != j.end())
+    {
+      config.useSqliteForLocalCaches = j["sqlite"].get<bool>();
     }
 
     if (j.find("no-console") != j.end())
@@ -666,6 +699,7 @@ namespace DaemonConfig{
       {"log-file", config.logFile},
       {"log-level", config.logLevel},
       {"no-console", config.noConsole},
+      {"sqlite", config.useSqliteForLocalCaches},
       {"db-max-open-files", config.dbMaxOpenFiles},
       {"db-read-buffer-size", (config.dbReadCacheSizeMB)},
       {"db-threads", config.dbThreads},

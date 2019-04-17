@@ -1,13 +1,15 @@
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
 
 #pragma once
 
+#include <iostream>
+
 #include <WalletBackend/WalletBackend.h>
 
-#include <zedwallet++/ColouredMsg.h>
+#include <Utilities/ColouredMsg.h>
 #include <zedwallet++/ParseArguments.h>
 
 std::tuple<bool, bool, std::shared_ptr<WalletBackend>> selectionScreen(const Config &config);
@@ -40,11 +42,31 @@ std::string parseCommand(
             continue;
         }
 
+        int selectionNum;
+        
+        bool isNumericInput;
+
         try
         {
             /* Input is in 1 based indexing, we need 0 based indexing */
-            const int selectionNum = std::stoi(selection) - 1;
+            selectionNum = std::stoi(selection) - 1;
+            isNumericInput = true;
+        }
+        catch (const std::out_of_range &)
+        {
+            /* Set to minus one so it triggers the selectionNum < 0 check,
+               and warns them the input is too large */
+            selectionNum = -1;
+            isNumericInput = true;
+        }
+        /* Input ain't a number */
+        catch (const std::invalid_argument &)
+        {
+            isNumericInput = false;
+        }
 
+        if (isNumericInput)
+        {
             const int numCommands = static_cast<int>(availableCommands.size());
 
             /* Must be in the bounds of the vector */
@@ -65,8 +87,7 @@ std::string parseCommand(
 
             return availableCommands[selectionNum].commandName;
         }
-        /* Input ain't a number */
-        catch (const std::invalid_argument &)
+        else
         {
             /* Find the command by command name */
             auto it = std::find_if(availableCommands.begin(), availableCommands.end(),
@@ -86,9 +107,9 @@ std::string parseCommand(
 
                 continue;
             }
-        }
 
-        return selection;
+            return selection;
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -26,10 +26,8 @@ public:
   virtual uint32_t getLastKnownBlockHeight() const override { return 0; }
   virtual uint32_t getLocalBlockCount() const override { return 0; }
   virtual uint32_t getKnownBlockCount() const override { return 0; }
-  virtual uint64_t getLastLocalBlockTimestamp() const override { return 0; }
   virtual uint64_t getNodeHeight() const override { return 0; }
 
-  virtual std::string getInfo() override { return std::string(); }
   virtual void getFeeInfo() override { }
 
   virtual void getBlockHashesByTimestamps(uint64_t timestampBegin, size_t secondsCount, std::vector<Crypto::Hash>& blockHashes, const Callback& callback) override {
@@ -46,10 +44,7 @@ public:
   virtual void getRandomOutsByAmounts(std::vector<uint64_t>&& amounts, uint16_t outsCount,
     std::vector<CryptoNote::RandomOuts>& result, const Callback& callback) override {
   }
-  virtual void getNewBlocks(std::vector<Crypto::Hash>&& knownBlockIds, std::vector<CryptoNote::RawBlock>& newBlocks, uint32_t& startHeight, const Callback& callback) override {
-    startHeight = 0;
-    callback(std::error_code());
-  }
+
   virtual void getTransactionOutsGlobalIndices(const Crypto::Hash& transactionHash, std::vector<uint32_t>& outsGlobalIndices, const Callback& callback) override { }
 
   virtual void getGlobalIndexesForRange(
@@ -135,7 +130,7 @@ NodeFactory::NodeFactory() {
 NodeFactory::~NodeFactory() {
 }
 
-CryptoNote::INode* NodeFactory::createNode(const std::string& daemonAddress, uint16_t daemonPort, Logging::ILogger& logger) {
+CryptoNote::INode* NodeFactory::createNode(const std::string& daemonAddress, uint16_t daemonPort, std::shared_ptr<Logging::ILogger> logger) {
   std::unique_ptr<CryptoNote::INode> node(new CryptoNote::NodeRpcProxy(daemonAddress, daemonPort, logger));
 
   NodeInitObserver initObserver;

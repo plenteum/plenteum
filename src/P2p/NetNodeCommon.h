@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -22,6 +22,7 @@ namespace CryptoNote {
     virtual void for_each_connection(std::function<void(CryptoNote::CryptoNoteConnectionContext&, uint64_t)> f) = 0;
     // can be called from external threads
     virtual void externalRelayNotifyToAll(int command, const BinaryArray& data_buff, const boost::uuids::uuid* excludeConnection) = 0;
+    virtual void externalRelayNotifyToList(int command, const BinaryArray& data_buff, const std::list<boost::uuids::uuid> relayList) = 0;
   };
 
   struct p2p_endpoint_stub: public IP2pEndpoint {
@@ -30,5 +31,6 @@ namespace CryptoNote {
     virtual void for_each_connection(std::function<void(CryptoNote::CryptoNoteConnectionContext&, uint64_t)> f) override {}
     virtual uint64_t get_connections_count() override { return 0; }   
     virtual void externalRelayNotifyToAll(int command, const BinaryArray& data_buff, const boost::uuids::uuid* excludeConnection) override {}
+    virtual void externalRelayNotifyToList(int command, const BinaryArray& data_buff, const std::list<boost::uuids::uuid> relayList) override {}
   };
 }

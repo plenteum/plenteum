@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -18,6 +17,7 @@
 #include <System/TcpConnector.h>
 
 #include <config/CryptoNoteConfig.h>
+#include <crypto/random.h>
 #include "Common/StdInputStream.h"
 #include "Common/StdOutputStream.h"
 #include "Serialization/BinaryInputStreamSerializer.h"
@@ -66,7 +66,7 @@ private:
       return 0;
     }
 
-    size_t x = Crypto::rand<size_t>() % (maxIndex + 1);
+    size_t x = Random::randomValue<size_t>() % (maxIndex + 1);
     return (x * x * x) / (maxIndex * maxIndex);
   }
 
@@ -107,7 +107,7 @@ void doWithTimeoutAndThrow(System::Dispatcher& dispatcher, std::chrono::nanoseco
 
 }
 
-P2pNode::P2pNode(const P2pNodeConfig& cfg, Dispatcher& dispatcher, Logging::ILogger& log, const Crypto::Hash& genesisHash, uint64_t peerId) :
+P2pNode::P2pNode(const P2pNodeConfig& cfg, Dispatcher& dispatcher, std::shared_ptr<Logging::ILogger> log, const Crypto::Hash& genesisHash, uint64_t peerId) :
   logger(log, "P2pNode:" + std::to_string(cfg.getBindPort())),
   m_stopRequested(false),
   m_cfg(cfg),
@@ -127,21 +127,6 @@ P2pNode::P2pNode(const P2pNodeConfig& cfg, Dispatcher& dispatcher, Logging::ILog
 P2pNode::~P2pNode() {
   assert(m_contexts.empty());
   assert(m_connectionQueue.empty());
-}
-
-std::unique_ptr<IP2pConnection> P2pNode::receiveConnection() {
-  while (m_connectionQueue.empty()) {
-    m_queueEvent.wait();
-    m_queueEvent.clear();
-    if (m_stopRequested) {
-      throw InterruptedException();
-    }
-  }
-
-  auto connection = std::move(m_connectionQueue.front());
-  m_connectionQueue.pop_front();
-
-  return connection;
 }
 
 void P2pNode::start() {

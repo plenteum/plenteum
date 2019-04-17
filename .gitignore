@@ -4,6 +4,7 @@
 /tags
 .idea
 .ycm_extra_conf.py
+.vs
 .ycm_extra_conf.pyc
 Release
 Debug
@@ -15,3 +16,4 @@ src/cmake_install.cmake
 *.swp
 notes.txt
 .vs
+COMMIT TRACKING.txt

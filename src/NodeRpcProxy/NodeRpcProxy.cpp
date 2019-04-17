@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -23,9 +23,11 @@
 #include <CryptoNoteCore/TransactionApi.h>
 
 #include "Common/StringTools.h"
-#include "Common/FormatTools.h"
 #include "CryptoNoteCore/CryptoNoteBasicImpl.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
+
+#include <Logging/DummyLogger.h>
+
 #include "Rpc/CoreRpcServerCommandsDefinitions.h"
 #include "Rpc/HttpClient.h"
 #include "Rpc/JsonRpc.h"
@@ -54,8 +56,22 @@ std::error_code interpretResponseStatus(const std::string& status) {
 
 }
 
-NodeRpcProxy::NodeRpcProxy(const std::string& nodeHost, unsigned short nodePort, Logging::ILogger& logger) :
+NodeRpcProxy::NodeRpcProxy(const std::string& nodeHost, unsigned short nodePort, std::shared_ptr<Logging::ILogger> logger) :
   m_logger(logger, "NodeRpcProxy"),
+  m_rpcTimeout(10000),
+  m_pullInterval(5000),
+  m_nodeHost(nodeHost),
+  m_nodePort(nodePort),
+  m_connected(true),
+  m_peerCount(0),
+  m_networkHeight(0),
+  m_nodeHeight(0)
+{
+  resetInternalState();
+}
+
+NodeRpcProxy::NodeRpcProxy(const std::string& nodeHost, unsigned short nodePort) :
+  m_logger(std::make_shared<Logging::DummyLogger>(), "NodeRpcProxy"),
   m_rpcTimeout(10000),
   m_pullInterval(5000),
   m_nodeHost(nodeHost),
@@ -137,23 +153,23 @@ void NodeRpcProxy::workerThread(const INode::Callback& initialized_callback) {
       m_cv_initialized.notify_all();
     }
 
-	std::future<void> init = std::async(std::launch::async, [this]
-	{
-		updateNodeStatus();
-	});
+    std::future<void> init = std::async(std::launch::async, [this]
+    {
+        updateNodeStatus();
+    });
 
-	/* Init succeeded */
-	if (init.wait_for(std::chrono::seconds(10)) == std::future_status::ready) {
-		initialized_callback(std::error_code());
-		/* Timed out initting */
-	}
-	else {
-		initialized_callback(make_error_code(NodeError::TIMEOUT));
-	}
-	/* Wait for the init to actually complete so we're not doing stuff twice */
-	init.get();
+    /* Init succeeded */
+    if (init.wait_for(std::chrono::seconds(10)) == std::future_status::ready) {
+        initialized_callback(std::error_code());
+    /* Timed out initting */
+    } else {
+        initialized_callback(make_error_code(NodeError::TIMEOUT));
+    }
 
-	getFeeInfo();
+    /* Wait for the init to actually complete so we're not doing stuff twice */
+    init.get();
+
+    getFeeInfo();
 
     contextGroup.spawn([this]() {
       Timer pullTimer(*m_dispatcher);
@@ -311,19 +327,6 @@ uint32_t NodeRpcProxy::feeAmount() {
   return m_fee_amount;
 }
 
-std::string NodeRpcProxy::getInfo() {
-  CryptoNote::COMMAND_RPC_GET_INFO::request ireq;
-  CryptoNote::COMMAND_RPC_GET_INFO::response iresp;
-
-  std::error_code ec = jsonCommand("/getinfo", ireq, iresp);
-
-  if (ec || iresp.status != CORE_RPC_STATUS_OK) {
-    return std::string("Problem retrieving information from RPC server.");
-  }
-
-  return Common::get_status_string(iresp);
-}
-
 std::vector<Crypto::Hash> NodeRpcProxy::getKnownTxsVector() const {
   return std::vector<Crypto::Hash>(m_knownTxs.begin(), m_knownTxs.end());
 }
@@ -368,11 +371,6 @@ uint32_t NodeRpcProxy::getKnownBlockCount() const {
 
 uint64_t NodeRpcProxy::getNodeHeight() const {
   return m_nodeHeight.load(std::memory_order_relaxed);
-}
-
-uint64_t NodeRpcProxy::getLastLocalBlockTimestamp() const {
-  std::lock_guard<std::mutex> lock(m_mutex);
-  return lastLocalBlockHeaderInfo.timestamp;
 }
 
 BlockHeaderInfo NodeRpcProxy::getLastLocalBlockHeaderInfo() const {
@@ -437,20 +435,6 @@ void NodeRpcProxy::getRandomOutsByAmounts(std::vector<uint64_t>&& amounts, uint1
 
   scheduleRequest(std::bind(&NodeRpcProxy::doGetRandomOutsByAmounts, this, std::move(amounts), outsCount, std::ref(outs)),
     callback);
-}
-
-void NodeRpcProxy::getNewBlocks(std::vector<Crypto::Hash>&& knownBlockIds,
-                                std::vector<CryptoNote::RawBlock>& newBlocks,
-                                uint32_t& startHeight,
-                                const Callback& callback) {
-  std::lock_guard<std::mutex> lock(m_mutex);
-  if (m_state != STATE_INITIALIZED) {
-    callback(make_error_code(NodeError::NOT_INITIALIZED));
-    return;
-  }
-
-  scheduleRequest(std::bind(&NodeRpcProxy::doGetNewBlocks, this, std::move(knownBlockIds), std::ref(newBlocks),
-    std::ref(startHeight)), callback);
 }
 
 void NodeRpcProxy::getTransactionOutsGlobalIndices(const Crypto::Hash& transactionHash,
@@ -614,33 +598,6 @@ std::error_code NodeRpcProxy::doGetRandomOutsByAmounts(std::vector<uint64_t>& am
     outs = std::move(rsp.outs);
   } else {
     m_logger(TRACE) << "getrandom_outs failed: " << ec << ", " << ec.message();
-  }
-
-  return ec;
-}
-
-static inline void serialize(COMMAND_RPC_GET_BLOCKS_FAST::response& response, ISerializer &s) {
-  KV_MEMBER(response.blocks)
-  KV_MEMBER(response.start_height)
-  KV_MEMBER(response.current_height)
-  KV_MEMBER(response.status)
-}
-
-std::error_code NodeRpcProxy::doGetNewBlocks(std::vector<Crypto::Hash>& knownBlockIds,
-                                             std::vector<CryptoNote::RawBlock>& newBlocks,
-                                             uint32_t& startHeight) {
-  CryptoNote::COMMAND_RPC_GET_BLOCKS_FAST::request req = AUTO_VAL_INIT(req);
-  CryptoNote::COMMAND_RPC_GET_BLOCKS_FAST::response rsp = AUTO_VAL_INIT(rsp);
-  req.block_ids = std::move(knownBlockIds);
-
-  m_logger(TRACE) << "Send getblocks request";
-  std::error_code ec = jsonCommand("/getblocks", req, rsp);
-  if (!ec) {
-    m_logger(TRACE) << "getblocks complete, start_height " << rsp.start_height << ", block count " << rsp.blocks.size();
-    newBlocks = std::move(rsp.blocks);
-    startHeight = static_cast<uint32_t>(rsp.start_height);
-  } else {
-    m_logger(TRACE) << "getblocks failed: " << ec << ", " << ec.message();
   }
 
   return ec;

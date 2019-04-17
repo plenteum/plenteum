@@ -1,5 +1,5 @@
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
 
@@ -9,7 +9,7 @@
 
 #include <Common/StringTools.h>
 
-#include <zedwallet/ColouredMsg.h>
+#include <Utilities/ColouredMsg.h>
 #include <zedwallet/CommandImplementations.h>
 #include <zedwallet/GetInput.h>
 #include <zedwallet/Tools.h>

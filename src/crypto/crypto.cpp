@@ -1,8 +1,7 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero Project
 // Copyright (c) 2016-2018, The Karbowanec developers
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
 // 
 // Please see the included LICENSE file for more information.
 
@@ -13,29 +12,21 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
-#include <mutex>
 
 #include "Common/Varint.h"
 #include "crypto.h"
 #include "hash.h"
+#include "random.h"
 
 namespace Crypto {
 
-  using std::abort;
-  using std::int32_t;
-  using std::lock_guard;
-  using std::mutex;
-
   extern "C" {
 #include "crypto-ops.h"
-#include "random.h"
   }
-
-  mutex random_lock;
 
   static inline void random_scalar(EllipticCurveScalar &res) {
     unsigned char tmp[64];
-    generate_random_bytes(64, tmp);
+    Random::randomBytes(64, tmp);
     sc_reduce(tmp);
     memcpy(&res, tmp, 32);
   }
@@ -46,7 +37,6 @@ namespace Crypto {
   }
 
   void crypto_ops::generate_keys(PublicKey &pub, SecretKey &sec) {
-    lock_guard<mutex> lock(random_lock);
     ge_p3 point;
     random_scalar(reinterpret_cast<EllipticCurveScalar&>(sec));
     ge_scalarmult_base(&point, reinterpret_cast<unsigned char*>(&sec));
@@ -54,7 +44,6 @@ namespace Crypto {
   }
 
   void crypto_ops::generate_deterministic_keys(PublicKey &pub, SecretKey &sec, SecretKey& second) {
-    lock_guard<mutex> lock(random_lock);
     ge_p3 point;
 	sec = second;
     sc_reduce32(reinterpret_cast<unsigned char*>(&sec)); // reduce in case second round of keys (sendkeys)
@@ -63,7 +52,6 @@ namespace Crypto {
   }
 
   SecretKey crypto_ops::generate_m_keys(PublicKey &pub, SecretKey &sec, const SecretKey& recovery_key, bool recover) {
-    lock_guard<mutex> lock(random_lock);
     ge_p3 point;
     SecretKey rng;
     if (recover)
@@ -265,7 +253,6 @@ namespace Crypto {
   };
 
   void crypto_ops::generate_signature(const Hash &prefix_hash, const PublicKey &pub, const SecretKey &sec, Signature &sig) {
-    lock_guard<mutex> lock(random_lock);
     ge_p3 tmp3;
     EllipticCurveScalar k;
     s_comm buf;
@@ -350,12 +337,6 @@ namespace Crypto {
     ge_tobytes(reinterpret_cast<unsigned char*>(&image), &point2);
   }
   
-  void crypto_ops::generate_incomplete_key_image(const PublicKey &pub, EllipticCurvePoint &incomplete_key_image) {
-    ge_p3 point;
-    hash_to_ec(pub, point);
-    ge_p3_tobytes(reinterpret_cast<unsigned char*>(&incomplete_key_image), &point);
-  }
-
 #ifdef _MSC_VER
 #pragma warning(disable: 4200)
 #endif
@@ -379,8 +360,6 @@ namespace Crypto {
         uint64_t realOutput)
     {
         std::vector<Signature> signatures(publicKeys.size());
-
-        lock_guard<mutex> lock(random_lock);
 
         ge_p3 image_unp;
         ge_dsmp image_pre;
@@ -470,46 +449,88 @@ namespace Crypto {
         return {true, signatures};
     }
 
-  bool crypto_ops::check_ring_signature(const Hash &prefix_hash, const KeyImage &image,
-    const PublicKey *const *pubs, size_t pubs_count,
-    const Signature *sig, bool checkKeyImage) {
-    size_t i;
-    ge_p3 image_unp;
-    ge_dsmp image_pre;
-    EllipticCurveScalar sum, h;
-    rs_comm *const buf = reinterpret_cast<rs_comm *>(alloca(rs_comm_size(pubs_count)));
-#if !defined(NDEBUG)
-    for (i = 0; i < pubs_count; i++) {
-      assert(check_key(*pubs[i]));
+    bool crypto_ops::checkRingSignature(
+        const Hash &prefix_hash,
+        const KeyImage &image,
+        const std::vector<PublicKey> pubs,
+        const std::vector<Signature> signatures) {
+
+        ge_p3 image_unp;
+
+        ge_dsmp image_pre;
+
+        EllipticCurveScalar sum, h;
+
+        rs_comm *const buf = reinterpret_cast<rs_comm *>(alloca(rs_comm_size(pubs.size())));
+
+        if (ge_frombytes_vartime(&image_unp, reinterpret_cast<const unsigned char*>(&image)) != 0)
+        {
+            return false;
+        }
+
+        ge_dsm_precomp(image_pre, &image_unp);
+
+        if (ge_check_subgroup_precomp_vartime(image_pre) != 0)
+        {
+            return false;
+        }
+
+        sc_0(reinterpret_cast<unsigned char*>(&sum));
+
+        buf->h = prefix_hash;
+
+        for (size_t i = 0; i < pubs.size(); i++)
+        {
+            ge_p2 tmp2;
+            ge_p3 tmp3;
+
+            if (sc_check(reinterpret_cast<const unsigned char*>(&signatures[i])) != 0 
+             || sc_check(reinterpret_cast<const unsigned char*>(&signatures[i]) + 32) != 0)
+            {
+                return false;
+            }
+
+            if (ge_frombytes_vartime(&tmp3, reinterpret_cast<const unsigned char*>(&pubs[i])) != 0)
+            {
+                return false;
+            }
+
+            ge_double_scalarmult_base_vartime(
+                &tmp2,
+                reinterpret_cast<const unsigned char*>(&signatures[i]),
+                &tmp3,
+                reinterpret_cast<const unsigned char*>(&signatures[i]) + 32
+            );
+
+            ge_tobytes(reinterpret_cast<unsigned char*>(&buf->ab[i].a), &tmp2);
+
+            hash_to_ec(pubs[i], tmp3);
+
+            ge_double_scalarmult_precomp_vartime(
+                &tmp2,
+                reinterpret_cast<const unsigned char*>(&signatures[i]) + 32,
+                &tmp3,
+                reinterpret_cast<const unsigned char*>(&signatures[i]),
+                image_pre
+            );
+
+            ge_tobytes(reinterpret_cast<unsigned char*>(&buf->ab[i].b), &tmp2);
+
+            sc_add(
+                reinterpret_cast<unsigned char*>(&sum),
+                reinterpret_cast<unsigned char*>(&sum),
+                reinterpret_cast<const unsigned char*>(&signatures[i])
+            );
+        }
+
+        hash_to_scalar(buf, rs_comm_size(pubs.size()), h);
+
+        sc_sub(
+            reinterpret_cast<unsigned char*>(&h),
+            reinterpret_cast<unsigned char*>(&h),
+            reinterpret_cast<unsigned char*>(&sum)
+        );
+
+        return sc_isnonzero(reinterpret_cast<unsigned char*>(&h)) == 0;
     }
-#endif
-    if (ge_frombytes_vartime(&image_unp, reinterpret_cast<const unsigned char*>(&image)) != 0) {
-      return false;
-    }
-    ge_dsm_precomp(image_pre, &image_unp);
-    if (checkKeyImage && ge_check_subgroup_precomp_vartime(image_pre) != 0) {
-      return false;
-    }
-    sc_0(reinterpret_cast<unsigned char*>(&sum));
-    buf->h = prefix_hash;
-    for (i = 0; i < pubs_count; i++) {
-      ge_p2 tmp2;
-      ge_p3 tmp3;
-      if (sc_check(reinterpret_cast<const unsigned char*>(&sig[i])) != 0 || sc_check(reinterpret_cast<const unsigned char*>(&sig[i]) + 32) != 0) {
-        return false;
-      }
-      if (ge_frombytes_vartime(&tmp3, reinterpret_cast<const unsigned char*>(&*pubs[i])) != 0) {
-        return false;
-      }
-      ge_double_scalarmult_base_vartime(&tmp2, reinterpret_cast<const unsigned char*>(&sig[i]), &tmp3, reinterpret_cast<const unsigned char*>(&sig[i]) + 32);
-      ge_tobytes(reinterpret_cast<unsigned char*>(&buf->ab[i].a), &tmp2);
-      hash_to_ec(*pubs[i], tmp3);
-      ge_double_scalarmult_precomp_vartime(&tmp2, reinterpret_cast<const unsigned char*>(&sig[i]) + 32, &tmp3, reinterpret_cast<const unsigned char*>(&sig[i]), image_pre);
-      ge_tobytes(reinterpret_cast<unsigned char*>(&buf->ab[i].b), &tmp2);
-      sc_add(reinterpret_cast<unsigned char*>(&sum), reinterpret_cast<unsigned char*>(&sum), reinterpret_cast<const unsigned char*>(&sig[i]));
-    }
-    hash_to_scalar(buf, rs_comm_size(pubs_count), h);
-    sc_sub(reinterpret_cast<unsigned char*>(&h), reinterpret_cast<unsigned char*>(&h), reinterpret_cast<unsigned char*>(&sum));
-    return sc_isnonzero(reinterpret_cast<unsigned char*>(&h)) == 0;
-  }
 }

@@ -1,5 +1,5 @@
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
 
@@ -11,9 +11,11 @@
 
 #include <config/WalletConfig.h>
 
+#include <iostream>
+
 #include <thread>
 
-#include <zedwallet++/ColouredMsg.h>
+#include <Utilities/ColouredMsg.h>
 #include <zedwallet++/CommandImplementations.h>
 
 void syncWallet(const std::shared_ptr<WalletBackend> walletBackend)

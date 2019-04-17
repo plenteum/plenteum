@@ -1,5 +1,4 @@
 // Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
 
@@ -9,7 +8,7 @@
 
 #include <config/CliHeader.h>
 
-#include <zedwallet++/ColouredMsg.h>
+#include <Utilities/ColouredMsg.h>
 #include <zedwallet++/Menu.h>
 #include <zedwallet++/ParseArguments.h>
 #include <zedwallet++/Sync.h>
@@ -52,40 +51,47 @@ void shutdown(
 }
 
 void cleanup(
-	std::thread &txMonitorThread,
-	std::thread &ctrlCWatcher,
-	std::atomic<bool> &stop,
-	std::shared_ptr<TransactionMonitor> txMonitor)
+    std::thread &txMonitorThread,
+    std::thread &ctrlCWatcher,
+    std::atomic<bool> &stop,
+    std::shared_ptr<TransactionMonitor> txMonitor)
 {
-	/* Stop the transaction monitor */
-	txMonitor->stop();
-	/* Signal the ctrlCWatcher to stop */
-	stop = true;
-	/* Wait for the transaction monitor to stop */
-	if (txMonitorThread.joinable())
-	{
-		txMonitorThread.join();
-	}
-	/* Wait for the ctrlCWatcher to stop */
-	if (ctrlCWatcher.joinable())
-	{
-		ctrlCWatcher.join();
-	}
+    /* Stop the transaction monitor */
+    txMonitor->stop();
+
+    /* Signal the ctrlCWatcher to stop */
+    stop = true;
+
+    /* Wait for the transaction monitor to stop */
+    if (txMonitorThread.joinable())
+    {
+        txMonitorThread.join();
+    }
+
+    /* Wait for the ctrlCWatcher to stop */
+    if (ctrlCWatcher.joinable())
+    {
+        ctrlCWatcher.join();
+    }
 }
 
 int main(int argc, char **argv)
 {
     Config config = parseArguments(argc, argv);
 
+    Logger::logger.setLogLevel(config.logLevel);
+
     std::cout << InformationMsg(CryptoNote::getProjectCLIHeader()) << std::endl;
 
-	/* Declare outside the try/catch, so if an exception is thrown, it doesn't
-   cause the threads to go out of scope, calling std::terminate
-   (since we didn't join them) */
-	std::thread ctrlCWatcher, txMonitorThread;
-	std::shared_ptr<TransactionMonitor> txMonitor(nullptr);
-	/* Atomic bool to signal if ctrl_c is used */
-	std::atomic<bool> ctrl_c(false), stop(false);
+    /* Declare outside the try/catch, so if an exception is thrown, it doesn't
+       cause the threads to go out of scope, calling std::terminate
+       (since we didn't join them) */
+    std::thread ctrlCWatcher, txMonitorThread;
+
+    std::shared_ptr<TransactionMonitor> txMonitor(nullptr);
+
+    /* Atomic bool to signal if ctrl_c is used */
+    std::atomic<bool> ctrl_c(false), stop(false);
 
     try
     {
@@ -97,9 +103,11 @@ int main(int argc, char **argv)
             return 0;
         }
 
-		ctrlCWatcher = std::thread(
-			shutdown, std::ref(ctrl_c), std::ref(stop), std::ref(walletBackend)
-		);
+        /* Launch the thread which watches for the shutdown signal */
+        ctrlCWatcher = std::thread([&ctrl_c, &stop, &walletBackend = walletBackend]
+        {
+            shutdown(ctrl_c, stop, walletBackend);
+        });
 
         /* Trigger the shutdown signal if ctrl+c is used
            We do the actual handling in a separate thread to handle stuff not
@@ -113,16 +121,17 @@ int main(int argc, char **argv)
         }
 
         /* Init the transaction monitor */
-		txMonitor = std::make_shared<TransactionMonitor>(walletBackend);
+        txMonitor = std::make_shared<TransactionMonitor>(walletBackend);
 
         /* Launch the transaction monitor in another thread */
-		txMonitorThread = std::thread(&TransactionMonitor::start, txMonitor.get());
+        txMonitorThread = std::thread(&TransactionMonitor::start, txMonitor.get());
 
         /* Launch the wallet interface */
-		mainLoop(walletBackend, txMonitor->getMutex());
-		/* Cleanup the threads */
-		cleanup(txMonitorThread, ctrlCWatcher, stop, txMonitor);
+        mainLoop(walletBackend, txMonitor->getMutex());
 
+        /* Cleanup the threads */
+        cleanup(txMonitorThread, ctrlCWatcher, stop, txMonitor);
+        
         std::cout << InformationMsg("\nSaving and shutting down...\n");
 
         /* Wallet backend destructor gets called here, which saves */
@@ -138,8 +147,8 @@ int main(int argc, char **argv)
 
         getchar();
 
-		/* Cleanup the threads */
-		cleanup(txMonitorThread, ctrlCWatcher, stop, txMonitor);
+        /* Cleanup the threads */
+        cleanup(txMonitorThread, ctrlCWatcher, stop, txMonitor);
     }
         
     std::cout << "Thanks for stopping by..." << std::endl;

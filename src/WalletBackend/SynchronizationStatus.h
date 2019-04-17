@@ -1,5 +1,4 @@
 // Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
 // 
 // Please see the included LICENSE file for more information.
 
@@ -10,6 +9,8 @@
 #include <deque>
 
 #include "json.hpp"
+
+#include "JsonHelper.h"
 
 #include <vector>
 
@@ -29,9 +30,11 @@ class SynchronizationStatus
 
         std::vector<Crypto::Hash> getBlockHashCheckpoints() const;
 
-        json toJson() const;
+        /* Converts the class to a json object */
+        void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const;
 
-        void fromJson(const json &j);
+        /* Initializes the class from a json string */
+        void fromJSON(const JSONObject &j);
 
         uint64_t getHeight() const;
 

@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -25,7 +25,6 @@
 #include <Logging/LoggerMessage.h>
 #include "MessageQueue.h"
 #include "TransactionValidatiorState.h"
-#include "SwappedVector.h"
 
 #include <System/ContextGroup.h>
 
@@ -35,7 +34,7 @@ namespace CryptoNote {
 
 class Core : public ICore, public ICoreInformation {
 public:
-  Core(const Currency& currency, Logging::ILogger& logger, Checkpoints&& checkpoints, System::Dispatcher& dispatcher,
+  Core(const Currency& currency, std::shared_ptr<Logging::ILogger> logger, Checkpoints&& checkpoints, System::Dispatcher& dispatcher,
        std::unique_ptr<IBlockchainCacheFactory>&& blockchainCacheFactory, std::unique_ptr<IMainChainStorage>&& mainChainStorage);
   virtual ~Core();
 
@@ -62,12 +61,13 @@ public:
   virtual bool queryBlocksLite(const std::vector<Crypto::Hash>& knownBlockHashes, uint64_t timestamp,
     uint32_t& startIndex, uint32_t& currentIndex, uint32_t& fullOffset, std::vector<BlockShortInfo>& entries) const override;
   virtual bool queryBlocksDetailed(const std::vector<Crypto::Hash>& knownBlockHashes, uint64_t timestamp,
-	  uint64_t& startIndex, uint64_t& currentIndex, uint64_t& fullOffset, std::vector<BlockDetails>& entries, uint32_t blockCount) const override;
+    uint64_t& startIndex, uint64_t& currentIndex, uint64_t& fullOffset, std::vector<BlockDetails>& entries, uint32_t blockCount) const override;
 
   virtual bool getWalletSyncData(
     const std::vector<Crypto::Hash> &knownBlockHashes,
     const uint64_t startHeight,
     const uint64_t startTimestamp,
+	const uint64_t blockCount,
     std::vector<WalletTypes::WalletBlockInfo> &walletBlocks) const override;
 
   virtual bool getTransactionsStatus(
@@ -77,6 +77,7 @@ public:
     std::unordered_set<Crypto::Hash> &transactionsUnknown) const override;
 
   virtual bool hasTransaction(const Crypto::Hash& transactionHash) const override;
+  virtual std::optional<BinaryArray> getTransaction(const Crypto::Hash& transactionHash) const override;
   virtual void getTransactions(const std::vector<Crypto::Hash>& transactionHashes, std::vector<BinaryArray>& transactions, std::vector<Crypto::Hash>& missedHashes) const override;
 
   virtual uint64_t getBlockDifficulty(uint32_t blockIndex) const override;
@@ -98,6 +99,7 @@ public:
   virtual bool addTransactionToPool(const BinaryArray& transactionBinaryArray) override;
 
   virtual std::vector<Crypto::Hash> getPoolTransactionHashes() const override;
+  virtual std::tuple<bool, BinaryArray> getPoolTransaction(const Crypto::Hash& transactionHash) const override;
   virtual bool getPoolChanges(const Crypto::Hash& lastBlockHash, const std::vector<Crypto::Hash>& knownHashes, std::vector<BinaryArray>& addedTransactions,
     std::vector<Crypto::Hash>& deletedTransactions) const override;
   virtual bool getPoolChangesLite(const Crypto::Hash& lastBlockHash, const std::vector<Crypto::Hash>& knownHashes, std::vector<TransactionPrefixInfo>& addedTransactions,
@@ -113,8 +115,6 @@ public:
   virtual size_t getPoolTransactionCount() const override;
   virtual size_t getBlockchainTransactionCount() const override;
   virtual size_t getAlternativeBlockCount() const override;
-  virtual uint64_t getTotalGeneratedAmount() const override;
-  virtual std::vector<BlockTemplate> getAlternativeBlocks() const override;
   virtual std::vector<Transaction> getPoolTransactions() const override;
 
   const Currency& getCurrency() const;
@@ -125,7 +125,6 @@ public:
   virtual BlockDetails getBlockDetails(const Crypto::Hash& blockHash) const override;
   BlockDetails getBlockDetails(const uint32_t blockHeight) const;
   virtual TransactionDetails getTransactionDetails(const Crypto::Hash& transactionHash) const override;
-  virtual std::vector<Crypto::Hash> getAlternativeBlockHashesByIndex(uint32_t blockIndex) const override;
   virtual std::vector<Crypto::Hash> getBlockHashesByTimestamps(uint64_t timestampBegin, size_t secondsCount) const override;
   virtual std::vector<Crypto::Hash> getTransactionHashesByPaymentId(const Crypto::Hash& paymentId) const override;
 
@@ -194,7 +193,8 @@ private:
 
   uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
   size_t calculateCumulativeBlocksizeLimit(uint32_t height) const;
-  void fillBlockTemplate(BlockTemplate& block, size_t medianSize, size_t maxCumulativeSize, size_t& transactionsSize, uint64_t& fee) const;
+  bool validateBlockTemplateTransaction(const CachedTransaction &cachedTransaction, const uint64_t blockHeight) const;
+  void fillBlockTemplate( BlockTemplate& block, const size_t medianSize, const size_t maxCumulativeSize, const uint64_t height, size_t& transactionsSize, uint64_t& fee) const;
   void deleteAlternativeChains();
   void deleteLeaf(size_t leafIndex);
   void mergeMainChainSegments();

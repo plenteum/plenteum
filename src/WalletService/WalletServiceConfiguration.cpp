@@ -1,5 +1,5 @@
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 #include "WalletServiceConfiguration.h"
@@ -32,7 +32,7 @@ namespace PaymentService {
     options.add_options("Service")
       ("c,config", "Specify the configuration <file> to use instead of CLI arguments", cxxopts::value<std::string>(), "<file>")
       ("dump-config", "Prints the current configuration to the screen", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))
-      ("log-file", "Specify log <file> location", cxxopts::value<std::string>()->default_value(config.logFile), "<file>")
+      ("l,log-file", "Specify log <file> location", cxxopts::value<std::string>()->default_value(config.logFile), "<file>")
       ("log-level", "Specify log level", cxxopts::value<int>()->default_value(std::to_string(config.logLevel)), "#")
       ("server-root", "The service will use this <path> as the working directory", cxxopts::value<std::string>(), "<path>")
       ("save-config", "Save the configuration to the specified <file>", cxxopts::value<std::string>(), "<file>");

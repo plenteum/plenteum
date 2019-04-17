@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
 // Copyright (c) 2018, The Karai Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -15,6 +14,7 @@
 #include "Common/StdInputStream.h"
 #include "Common/PathTools.h"
 #include "Common/Util.h"
+#include "Common/FileSystemShim.h"
 #include "crypto/hash.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
 #include "CryptoNoteCore/Core.h"
@@ -22,6 +22,7 @@
 #include "CryptoNoteCore/DatabaseBlockchainCache.h"
 #include "CryptoNoteCore/DatabaseBlockchainCacheFactory.h"
 #include "CryptoNoteCore/MainChainStorage.h"
+#include "CryptoNoteCore/MainChainStorageSqlite.h"
 #include "CryptoNoteCore/RocksDBWrapper.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
 #include "P2p/NetNode.h"
@@ -32,6 +33,8 @@
 
 #include <config/CryptoNoteCheckpoints.h>
 #include <Logging/LoggerManager.h>
+
+#include <Common/FileSystemShim.h>
 
 #if defined(WIN32)
 #include <crtdbg.h>
@@ -45,7 +48,7 @@ using namespace CryptoNote;
 using namespace Logging;
 using namespace DaemonConfig;
 
-void print_genesis_tx_hex(const std::vector<std::string> rewardAddresses, const bool blockExplorerMode, LoggerManager& logManager)
+void print_genesis_tx_hex(const std::vector<std::string> rewardAddresses, const bool blockExplorerMode, std::shared_ptr<LoggerManager> logManager)
 {
   std::vector<CryptoNote::AccountPublicAddress> rewardTargets;
 
@@ -78,7 +81,7 @@ void print_genesis_tx_hex(const std::vector<std::string> rewardAddresses, const 
   }
   else
   {
-    transaction = CryptoNote::CurrencyBuilder(logManager).generateGenesisTransaction();
+    transaction = CryptoNote::CurrencyBuilder(logManager).generateGenesisTransaction(rewardTargets);
   }
 
   std::string transactionHex = Common::toHex(CryptoNote::toBinaryArray(transaction));
@@ -108,32 +111,16 @@ JsonValue buildLoggerConfiguration(Level level, const std::string& logfile) {
   return loggerConfiguration;
 }
 
-/* Wait for input so users can read errors before the window closes if they
-   launch from a GUI rather than a terminal */
-void pause_for_input(int argc) {
-  /* if they passed arguments they're probably in a terminal so the errors will
-     stay visible */
-  if (argc == 1) {
-    #if defined(WIN32)
-    if (_isatty(_fileno(stdout)) && _isatty(_fileno(stdin))) {
-    #else
-    if(isatty(fileno(stdout)) && isatty(fileno(stdin))) {
-    #endif
-      std::cout << "Press any key to close the program: ";
-      getchar();
-    }
-  }
-}
-
 int main(int argc, char* argv[])
 {
-  DaemonConfiguration config = initConfiguration(argv[0]);
+  fs::path temp = fs::path(argv[0]).filename();
+  DaemonConfiguration config = initConfiguration(temp.string().c_str());
 
 #ifdef WIN32
   _CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 #endif
 
-  LoggerManager logManager;
+  const auto logManager = std::make_shared<LoggerManager>();
   LoggerRef logger(logManager, "daemon");
 
   // Initial loading of CLI parameters
@@ -202,27 +189,53 @@ int main(int argc, char* argv[])
     }
   }
 
+  /* If we were given the resync arg, we're deleting everything */
+  if (config.resync)
+  {
+    std::error_code ec;
+
+    std::vector<std::string> removablePaths = {
+      config.dataDirectory + "/" + CryptoNote::parameters::CRYPTONOTE_BLOCKS_FILENAME,
+      config.dataDirectory + "/" + CryptoNote::parameters::CRYPTONOTE_BLOCKINDEXES_FILENAME,
+      config.dataDirectory + "/" + CryptoNote::parameters::P2P_NET_DATA_FILENAME,
+      config.dataDirectory + "/" + CryptoNote::parameters::CRYPTONOTE_BLOCKS_FILENAME + ".sqlite3",
+      config.dataDirectory + "/DB"
+    };
+
+    for (const auto path : removablePaths)
+    {
+      fs::remove_all(fs::path(path), ec);
+
+      if (ec)
+      {
+        std::cout << "Could not delete data path: " << path << std::endl;
+        exit(1);
+      }
+    }
+  }
+
   try
   {
-    auto modulePath = Common::NativePathToGeneric(argv[0]);
-    auto cfgLogFile = Common::NativePathToGeneric(config.logFile);
+    fs::path cwdPath = fs::current_path();
+    auto modulePath = cwdPath / temp;
+    auto cfgLogFile = fs::path(config.logFile);
 
     if (cfgLogFile.empty()) {
-      cfgLogFile = Common::ReplaceExtenstion(modulePath, ".log");
+      cfgLogFile = modulePath.replace_extension(".log");
     } else {
-      if (!Common::HasParentPath(cfgLogFile)) {
-  cfgLogFile = Common::CombinePath(Common::GetPathDirectory(modulePath), cfgLogFile);
+      if (!cfgLogFile.has_parent_path()) {
+        cfgLogFile = modulePath.parent_path() / cfgLogFile;
       }
     }
 
     Level cfgLogLevel = static_cast<Level>(static_cast<int>(Logging::ERROR) + config.logLevel);
 
     // configure logging
-    logManager.configure(buildLoggerConfiguration(cfgLogLevel, cfgLogFile));
+    logManager->configure(buildLoggerConfiguration(cfgLogLevel, cfgLogFile.string()));
 
     logger(INFO, BRIGHT_GREEN) << getProjectCLIHeader() << std::endl;
 
-    logger(INFO) << "Program Working Directory: " << argv[0];
+    logger(INFO) << "Program Working Directory: " << cwdPath;
 
     //create objects and link them
     CryptoNote::CurrencyBuilder currencyBuilder(logManager);
@@ -235,6 +248,30 @@ int main(int argc, char* argv[])
       return 1;
     }
     CryptoNote::Currency currency = currencyBuilder.currency();
+
+    /* If we were told to rewind the blockchain to a certain height
+       we will remove blocks until we're back at the height specified */
+    if (config.rewindToHeight > 0)
+    {
+      logger(INFO) << "Rewinding blockchain to: " << config.rewindToHeight << std::endl;
+      std::unique_ptr<IMainChainStorage> mainChainStorage;
+
+      if (config.useSqliteForLocalCaches)
+      {
+        mainChainStorage = createSwappedMainChainStorageSqlite(config.dataDirectory, currency);
+      }
+      else
+      {
+        mainChainStorage = createSwappedMainChainStorage(config.dataDirectory, currency);
+      }
+
+      while(mainChainStorage->getBlockCount() >= config.rewindToHeight)
+      {
+        mainChainStorage->popBlock();
+      }
+
+      logger(INFO) << "Blockchain rewound to: " << config.rewindToHeight << std::endl;
+    }
 
     bool use_checkpoints = !config.checkPoints.empty();
     CryptoNote::Checkpoints checkpoints(logManager);
@@ -267,19 +304,9 @@ int main(int argc, char* argv[])
     DataBaseConfig dbConfig;
     dbConfig.init(config.dataDirectory, config.dbThreads, config.dbMaxOpenFiles, config.dbWriteBufferSizeMB, config.dbReadCacheSizeMB);
 
-    if (dbConfig.isConfigFolderDefaulted())
+    if (!Tools::create_directories_if_necessary(dbConfig.getDataDir()))
     {
-      if (!Tools::create_directories_if_necessary(dbConfig.getDataDir()))
-      {
-        throw std::runtime_error("Can't create directory: " + dbConfig.getDataDir());
-      }
-    }
-    else
-    {
-      if (!Tools::directoryExists(dbConfig.getDataDir()))
-      {
-        throw std::runtime_error("Directory does not exist: " + dbConfig.getDataDir());
-      }
+      throw std::runtime_error("Can't create directory: " + dbConfig.getDataDir());
     }
 
     RocksDBWrapper database(logManager);
@@ -305,7 +332,10 @@ int main(int argc, char* argv[])
       std::move(checkpoints),
       dispatcher,
       std::unique_ptr<IBlockchainCacheFactory>(new DatabaseBlockchainCacheFactory(database, logger.getLogger())),
-      createSwappedMainChainStorage(config.dataDirectory, currency));
+      (config.useSqliteForLocalCaches) ?
+        createSwappedMainChainStorageSqlite(config.dataDirectory, currency) :
+        createSwappedMainChainStorage(config.dataDirectory, currency)
+    );
 
     ccore.load();
     logger(INFO) << "Core initialized OK";
@@ -338,9 +368,9 @@ int main(int argc, char* argv[])
     rpcServer.start(config.rpcInterface, config.rpcPort);
     logger(INFO) << "Core rpc server started ok";
 
-    Tools::SignalHandler::install([&dch, &p2psrv] {
-      dch.stop_handling();
-      p2psrv.sendStopSignal();
+    Tools::SignalHandler::install([&dch] {
+       dch.exit({});
+       dch.stop_handling();
     });
 
     logger(INFO) << "Starting p2p net loop...";

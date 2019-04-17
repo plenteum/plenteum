@@ -1,5 +1,5 @@
-// Copyright (c) 2018, The TurtleCoin Developers
-// Copyright (c) 2018, The Plenteum Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -29,6 +29,7 @@ namespace DaemonConfig {
       dbReadCacheSizeMB = CryptoNote::DATABASE_READ_BUFFER_MB_DEFAULT_SIZE;
       dbThreads = CryptoNote::DATABASE_DEFAULT_BACKGROUND_THREADS_COUNT;
       dbWriteBufferSizeMB = CryptoNote::DATABASE_WRITE_BUFFER_MB_DEFAULT_SIZE;
+      rewindToHeight = 0;
       p2pInterface = "0.0.0.0";
       p2pPort = CryptoNote::P2P_DEFAULT_PORT;
       p2pExternalPort = 0;
@@ -42,7 +43,9 @@ namespace DaemonConfig {
       version = false;
       osVersion = false;
       printGenesisTx = false;
-      dumpConfig = false; 
+      dumpConfig = false;
+      useSqliteForLocalCaches = false;
+      resync = false;
     }
 
     std::string dataDirectory;
@@ -67,11 +70,14 @@ namespace DaemonConfig {
     int dbMaxOpenFiles;
     int dbWriteBufferSizeMB;
     int dbReadCacheSizeMB;
+    
+    uint32_t rewindToHeight;
 
     bool noConsole;
     bool enableBlockExplorer;
     bool localIp;
     bool hideMyPort;
+    bool resync;
 
     std::string configFile;
     std::string outputFile;
@@ -81,6 +87,7 @@ namespace DaemonConfig {
     bool osVersion;
     bool printGenesisTx;
     bool dumpConfig;
+    bool useSqliteForLocalCaches;
   };
 
   DaemonConfiguration initConfiguration(const char* path);
