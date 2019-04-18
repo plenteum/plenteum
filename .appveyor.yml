@@ -39,7 +39,7 @@ deploy:
     auth_token:
       secure: OIpVlIUPKnoTdNlscdoby66Mdci8gld8A4gSSCd0A4UiqNcEPzgi0PY3FD2RQ3/1
     artifact: PlenteumRelease
-    draft: false
+    draft: true
     prerelease: false
     on:
       appveyor_repo_name: plenteum/plenteum
