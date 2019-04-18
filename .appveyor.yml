@@ -37,7 +37,7 @@ artifacts:
 deploy:
   - provider: GitHub
     auth_token:
-      secure: ZX7Fi2/O/49+ch63DJPBUf2SlUuK2usUYzVEr7z7kVygwD4gt3lFlDIxeQknxJ2g
+      secure: OIpVlIUPKnoTdNlscdoby66Mdci8gld8A4gSSCd0A4UiqNcEPzgi0PY3FD2RQ3/1
     artifact: PlenteumRelease
     draft: false
     prerelease: false
