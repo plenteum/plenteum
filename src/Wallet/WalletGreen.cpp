@@ -325,6 +325,8 @@ void WalletGreen::initWithKeys(const std::string& path, const std::string& passw
   prefix->version = static_cast<uint8_t>(WalletSerializerV2::SERIALIZATION_VERSION);
   prefix->nextIv = Crypto::randomChachaIV();
 
+  Crypto::generate_chacha8_key(password, m_key);
+
   uint64_t creationTimestamp;
 
   if (newAddress)
