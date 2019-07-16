@@ -25,7 +25,10 @@ namespace CryptoNote {
 
 uint64_t getDefaultMixinByHeight(const uint64_t height)
 {
-	return CryptoNote::parameters::DEFAULT_MIXIN;
+	if (height >= CryptoNote::parameters::MIXIN_LIMITS_V1_HEIGHT)
+		return CryptoNote::parameters::DEFAULT_MIXIN;
+	else
+		return CryptoNote::parameters::DEFAULT_MIXIN_V1;
 }
 
 void throwIfKeysMismatch(const Crypto::SecretKey& secretKey, const Crypto::PublicKey& expectedPublicKey, const std::string& message) {

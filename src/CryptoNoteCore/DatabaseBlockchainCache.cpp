@@ -19,16 +19,17 @@
 #include "crypto/hash.h"
 
 #include <CryptoNoteCore/BlockchainStorage.h>
-#include <CryptoNoteCore/CryptoNoteTools.h>
 #include <CryptoNoteCore/CryptoNoteBasicImpl.h>
-#include "CryptoNoteCore/TransactionExtra.h"
+
+#include <Common/TransactionExtra.h>
+#include <Common/CryptoNoteTools.h>
 
 namespace CryptoNote {
 
 namespace {
 
 const uint32_t ONE_DAY_SECONDS = 60 * 60 * 24;
-const CachedBlockInfo NULL_CACHED_BLOCK_INFO {NULL_HASH, 0, 0, 0, 0, 0};
+const CachedBlockInfo NULL_CACHED_BLOCK_INFO {Constants::NULL_HASH, 0, 0, 0, 0, 0};
 
 bool requestPackedOutputs(IBlockchainCache::Amount amount, Common::ArrayView<uint32_t> globalIndexes, IDataBase& database, std::vector<PackedOutIndex>& result) {
   BlockchainReadBatch readBatch;
@@ -1642,6 +1643,46 @@ std::vector<Crypto::Hash> DatabaseBlockchainCache::getBlockHashesByTimestamps(ui
   }
 
   return blockHashes;
+}
+
+std::vector<RawBlock> DatabaseBlockchainCache::getNonEmptyBlocks(
+    const uint64_t startHeight,
+    const size_t blockCount) const
+{
+    std::vector<RawBlock> orderedBlocks;
+
+    const uint32_t storageBlockCount = getBlockCount();
+
+    uint64_t height = startHeight;
+
+    while (orderedBlocks.size() < blockCount && height < storageBlockCount)
+    {
+        uint64_t startHeight = height;
+
+        /* Lets try taking the amount we need *2, to try and balance not needing
+           multiple DB requests to get the amount we need of non empty blocks, with
+           not taking too many */
+        uint64_t endHeight = startHeight + (blockCount * 2);
+
+        auto blockBatch = BlockchainReadBatch().requestRawBlocks(startHeight, endHeight);
+        const auto rawBlocks = readDatabase(blockBatch).getRawBlocks();
+
+        while (orderedBlocks.size() < blockCount && height < startHeight + rawBlocks.size())
+        {
+            const auto block = rawBlocks.at(height);
+            
+            height++;
+
+            if (block.transactions.empty())
+            {
+                continue;
+            }
+
+            orderedBlocks.push_back(block);
+        }
+    }
+
+    return orderedBlocks;
 }
 
 std::vector<RawBlock> DatabaseBlockchainCache::getBlocksByHeight(

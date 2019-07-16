@@ -21,7 +21,7 @@ uint64_t nextDifficultyV5(std::vector<uint64_t> timestamps, std::vector<uint64_t
 	/* If we are starting up, returning a difficulty guess. If you are a
 	   new coin, you might want to set this to a decent estimate of your
 	   hashrate */
-	if (timestamps.size() < static_cast<uint64_t>(N + 1))
+	if (timestamps.size() < static_cast<uint64_t>(N+1)) //N =60, timeStamp size should also be 60
 	{
 		return 50000; //50k
 	}

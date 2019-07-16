@@ -6,8 +6,7 @@
 #include <SubWallets/SubWallet.h>
 /////////////////////////////////
 
-#include <CryptoNoteCore/Account.h>
-#include <CryptoNoteCore/CryptoNoteBasicImpl.h>
+#include <config/Constants.h>
 
 #include <Logger/Logger.h>
 
@@ -31,7 +30,7 @@ SubWallet::SubWallet(
     m_address(address),
     m_syncStartHeight(scanHeight),
     m_syncStartTimestamp(scanTimestamp),
-    m_privateSpendKey(Constants::BLANK_SECRET_KEY),
+    m_privateSpendKey(Constants::NULL_SECRET_KEY),
     m_isPrimaryAddress(isPrimaryAddress)
 {
 }
@@ -253,16 +252,30 @@ void SubWallet::markInputAsLocked(const Crypto::KeyImage keyImage)
     m_unspentInputs.erase(it);
 }
 
-void SubWallet::removeForkedInputs(const uint64_t forkHeight)
+std::vector<Crypto::KeyImage> SubWallet::removeForkedInputs(
+    const uint64_t forkHeight,
+    const bool isViewWallet)
 {
+    std::vector<Crypto::KeyImage> keyImagesToRemove;
+
+    for (const auto input : m_lockedInputs)
+    {
+        keyImagesToRemove.push_back(input.keyImage);
+    }
+
     /* Both of these will be resolved by the wallet in time */
     m_lockedInputs.clear();
     m_unconfirmedIncomingAmounts.clear();
 
     /* Unspent inputs which we recieved in a block after the fork. Remove them. */
     auto it = std::remove_if(m_unspentInputs.begin(), m_unspentInputs.end(),
-    [forkHeight](const auto input)
+    [forkHeight, &keyImagesToRemove](const auto input)
     {
+        if (input.blockHeight >= forkHeight)
+        {
+            keyImagesToRemove.push_back(input.keyImage);
+        }
+
         return input.blockHeight >= forkHeight;
     });
 
@@ -294,6 +307,13 @@ void SubWallet::removeForkedInputs(const uint64_t forkHeight)
     {
         m_spentInputs.erase(it, m_spentInputs.end());
     }
+
+    if (isViewWallet)
+    {
+        return {};
+    }
+
+    return keyImagesToRemove;
 }
 
 /* Cancelled transactions are transactions we sent, but got cancelled and not

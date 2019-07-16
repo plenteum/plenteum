@@ -4,13 +4,15 @@
 
 #include "MainChainStorageSqlite.h"
 
+#include <Common/CryptoNoteTools.h>
 #include <Common/FileSystemShim.h>
 
-#include "json.hpp"
-
-#include "CryptoNoteTools.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
 
 #include "sqlite3.h"
+
+using namespace rapidjson;
 
 namespace CryptoNote
 {
@@ -67,9 +69,10 @@ namespace CryptoNote
         sqlite3_stmt *stmt;
 
         /* Convert the RawBlock to a json structure for easier storage */
-        nlohmann::json rawBlockJson = rawBlock;
-
-        std::string rawBlockHex = rawBlockJson.dump();
+        StringBuffer sb;
+        Writer<StringBuffer> writer(sb);
+        rawBlock.toJSON(writer);
+        std::string rawBlockHex = sb.GetString();
 
         /* We get the current count of blocks which, as we're a 0-based index
            technically gives us the next blockIndex that we're pushing into
@@ -108,12 +111,44 @@ namespace CryptoNote
             throw std::runtime_error("Failed to pop the last block off the database");
         }
     }
+    
+    void MainChainStorageSqlite::rewindTo(const uint32_t index) const
+    {
+        uint32_t maxBlocks = getBlockCount();
+        if( index >= maxBlocks ) {
+            return;
+        }
+        
+        sqlite3_stmt *stmt;
+        int resultCode = sqlite3_prepare_v2(
+            m_db, 
+            "DELETE FROM rawBlocks WHERE blockIndex >= ?1",
+            -1,
+            &stmt,
+            NULL
+        );
+        
+        sqlite3_bind_int(stmt, 1, index);
+        
+        if (resultCode != SQLITE_OK)
+        {
+            sqlite3_close(m_db);
+            throw std::runtime_error("Failed to prepare rewind statement");
+        }
+        
+        resultCode = sqlite3_step(stmt);
+        if(resultCode != SQLITE_DONE) {
+            sqlite3_close(m_db);
+            throw std::runtime_error("Failed to perform rewind operation");
+        }
+        
+        sqlite3_finalize(stmt);
+    }
 
     RawBlock MainChainStorageSqlite::getBlockByIndex(uint32_t index) const
     {
         sqlite3_stmt *stmt;
-        RawBlock rawBlock = {};
-
+        
         /* Go get how many blocks we have in the local blockchain cache */
         const uint32_t maxBlocks = getBlockCount();
 
@@ -137,14 +172,17 @@ namespace CryptoNote
         }
 
         bool found = false;
-
+        
         /* Loop through the results to see if we got a block back */
+        RawBlock rawBlock;
+        Document doc;
         while((resultCode = sqlite3_step(stmt)) == SQLITE_ROW)
         {
-            const std::string rawBlockString = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0)));
-            auto j = nlohmann::json::parse(rawBlockString);
-            rawBlock = j.get<RawBlock>();
-            found = true;
+            if ( !doc.Parse<0>(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0)) ).HasParseError() )
+            {
+                rawBlock.fromJSON(doc);
+                found = true;
+            }
         }
 
         if (resultCode != SQLITE_DONE)

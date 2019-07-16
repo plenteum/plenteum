@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018-2019, The TurtleCoin Developers
-// Copyright (c) 2018-2019, The Plenteum Developers
+// Copyright (c) 2018, The TurtleCoin Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -24,7 +23,7 @@
 
 #include "Common/StringTools.h"
 #include "CryptoNoteCore/CryptoNoteBasicImpl.h"
-#include "CryptoNoteCore/CryptoNoteTools.h"
+#include "Common/CryptoNoteTools.h"
 
 #include <Logging/DummyLogger.h>
 
@@ -56,12 +55,13 @@ std::error_code interpretResponseStatus(const std::string& status) {
 
 }
 
-NodeRpcProxy::NodeRpcProxy(const std::string& nodeHost, unsigned short nodePort, std::shared_ptr<Logging::ILogger> logger) :
+NodeRpcProxy::NodeRpcProxy(const std::string& nodeHost, unsigned short nodePort, unsigned int initTimeout, std::shared_ptr<Logging::ILogger> logger) :
   m_logger(logger, "NodeRpcProxy"),
   m_rpcTimeout(10000),
   m_pullInterval(5000),
   m_nodeHost(nodeHost),
   m_nodePort(nodePort),
+  m_initTimeout(initTimeout),
   m_connected(true),
   m_peerCount(0),
   m_networkHeight(0),
@@ -70,12 +70,13 @@ NodeRpcProxy::NodeRpcProxy(const std::string& nodeHost, unsigned short nodePort,
   resetInternalState();
 }
 
-NodeRpcProxy::NodeRpcProxy(const std::string& nodeHost, unsigned short nodePort) :
+NodeRpcProxy::NodeRpcProxy(const std::string& nodeHost, unsigned short nodePort, unsigned int initTimeout) :
   m_logger(std::make_shared<Logging::DummyLogger>(), "NodeRpcProxy"),
   m_rpcTimeout(10000),
   m_pullInterval(5000),
   m_nodeHost(nodeHost),
   m_nodePort(nodePort),
+  m_initTimeout(initTimeout),
   m_connected(true),
   m_peerCount(0),
   m_networkHeight(0),
@@ -99,8 +100,8 @@ void NodeRpcProxy::resetInternalState() {
   lastLocalBlockHeaderInfo.majorVersion = 0;
   lastLocalBlockHeaderInfo.minorVersion = 0;
   lastLocalBlockHeaderInfo.timestamp = 0;
-  lastLocalBlockHeaderInfo.hash = CryptoNote::NULL_HASH;
-  lastLocalBlockHeaderInfo.prevHash = CryptoNote::NULL_HASH;
+  lastLocalBlockHeaderInfo.hash = Constants::NULL_HASH;
+  lastLocalBlockHeaderInfo.prevHash = Constants::NULL_HASH;
   lastLocalBlockHeaderInfo.nonce = 0;
   lastLocalBlockHeaderInfo.isAlternative = false;
   lastLocalBlockHeaderInfo.depth = 0;
@@ -159,7 +160,7 @@ void NodeRpcProxy::workerThread(const INode::Callback& initialized_callback) {
     });
 
     /* Init succeeded */
-    if (init.wait_for(std::chrono::seconds(10)) == std::future_status::ready) {
+    if (init.wait_for(std::chrono::seconds(m_initTimeout)) == std::future_status::ready) {
         initialized_callback(std::error_code());
     /* Timed out initting */
     } else {

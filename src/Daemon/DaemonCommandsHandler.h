@@ -64,4 +64,12 @@ private:
   bool start_mining(const std::vector<std::string>& args);
   bool stop_mining(const std::vector<std::string>& args);
   bool status(const std::vector<std::string>& args);
+  //// ip banning
+  //bool ip_ban(const std::vector<std::string>& args);
+  //bool ip_unban(const std::vector<std::string>& args);
+  //bool ip_unban_all(const std::vector<std::string>& args);
+
+  //// tx threshold
+  //bool tx_threshold(const std::vector<std::string>& args);
+  //bool tx_threshold_set(const std::vector<std::string>& args);
 };

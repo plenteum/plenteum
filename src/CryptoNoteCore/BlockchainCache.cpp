@@ -17,12 +17,13 @@
 #include "Common/ShuffleGenerator.h"
 
 #include "CryptoNoteCore/CryptoNoteBasicImpl.h"
-#include "CryptoNoteCore/CryptoNoteSerialization.h"
-#include "CryptoNoteCore/CryptoNoteTools.h"
+#include "Common/CryptoNoteTools.h"
 #include "CryptoNoteCore/BlockchainStorage.h"
-#include "CryptoNoteCore/TransactionExtra.h"
+#include "Common/TransactionExtra.h"
 
+#include "Serialization/CryptoNoteSerialization.h"
 #include "Serialization/SerializationOverloads.h"
+
 #include "TransactionValidatiorState.h"
 
 namespace CryptoNote {
@@ -593,6 +594,45 @@ size_t BlockchainCache::getTransactionCount() const {
 
   count += transactions.size();
   return count;
+}
+
+std::vector<RawBlock> BlockchainCache::getNonEmptyBlocks(
+    const uint64_t startHeight,
+    const size_t blockCount) const
+{
+    std::vector<RawBlock> blocks;
+
+    if (startHeight < startIndex)
+    {
+        blocks = parent->getNonEmptyBlocks(startHeight, blockCount);
+
+        if (blocks.size() == blockCount)
+        {
+            return blocks;
+        }
+    }
+
+    uint64_t startOffset = std::max(startHeight, static_cast<uint64_t>(startIndex));
+
+    uint64_t storageBlockCount = storage->getBlockCount();
+
+    uint64_t i = startOffset;
+
+    while (blocks.size() < blockCount && i < startIndex + storageBlockCount)
+    {
+        auto block = storage->getBlockByIndex(i - startIndex);
+
+        i++;
+
+        if (block.transactions.empty())
+        {
+            continue;
+        }
+
+        blocks.push_back(block);
+    }
+
+    return blocks;
 }
 
 std::vector<RawBlock> BlockchainCache::getBlocksByHeight(

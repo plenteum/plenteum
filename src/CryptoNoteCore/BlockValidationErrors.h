@@ -56,8 +56,8 @@ public:
       case BlockValidationError::CHECKPOINT_BLOCK_HASH_MISMATCH: return "Checkpoint block hash mismatch";
       case BlockValidationError::PROOF_OF_WORK_TOO_WEAK: return "Proof of work is too weak";
       case BlockValidationError::TRANSACTION_ABSENT_IN_POOL: return "Block's transaction is absent in transaction pool";
-	  case BlockValidationError::TRANSACTION_DUPLICATES: return "Block contains duplicate transaction hashes";
-	  case BlockValidationError::TRANSACTION_INCONSISTENCY: return "Block contains inconsisten transaction hashes";
+      case BlockValidationError::TRANSACTION_DUPLICATES: return "Block contains duplicate transaction hashes";
+      case BlockValidationError::TRANSACTION_INCONSISTENCY: return "Block contains inconsistent transaction hashes";
       default: return "Unknown error";
     }
   }

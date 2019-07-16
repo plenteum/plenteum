@@ -21,6 +21,7 @@
 #include <ostream>
 #include <unordered_set>
 #include <optional>
+#include <deque>
 
 #include <boost/uuid/uuid.hpp>
 #include "Common/StringTools.h"
@@ -49,6 +50,7 @@ struct CryptoNoteConnectionContext {
   };
 
   state m_state = state_befor_handshake;
+  std::deque<std::pair<uint64_t, size_t>> m_pushed_transactions;
   std::optional<PendingLiteBlock> m_pending_lite_block;
   std::list<Crypto::Hash> m_needed_objects;
   std::unordered_set<Crypto::Hash> m_requested_objects;

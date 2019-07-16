@@ -109,8 +109,13 @@ bool saveStringToFile(const std::string& filepath, const std::string& buf);
 
 
 std::string ipAddressToString(uint32_t ip);
+bool parseIpAddress(uint32_t& ip, const std::string& addr);
 bool parseIpAddressAndPort(uint32_t& ip, uint32_t& port, const std::string& addr);
 
 std::string timeIntervalToString(uint64_t intervalInSeconds);
+
+void trim(std::string &str);
+void leftTrim(std::string &str);
+void rightTrim(std::string &str);
 
 }

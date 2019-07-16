@@ -14,7 +14,7 @@
 #include <config/WalletConfig.h>
 
 #include <CryptoNoteCore/Account.h>
-#include <CryptoNoteCore/TransactionExtra.h>
+#include <Common/TransactionExtra.h>
 
 #ifndef MSVC
 #include <fstream>
@@ -22,10 +22,11 @@
 
 #include <Mnemonics/Mnemonics.h>
 
+#include <Utilities/ColouredMsg.h>
 #include <Utilities/FormatTools.h>
+#include <Utilities/ParseExtra.h>
 
 #include <zedwallet/AddressBook.h>
-#include <Utilities/ColouredMsg.h>
 #include <zedwallet/Commands.h>
 #include <zedwallet/Fusion.h>
 #include <zedwallet/Menu.h>
@@ -79,7 +80,7 @@ void printPrivateKeys(CryptoNote::WalletGreen &wallet, bool viewWallet)
 
     Crypto::SecretKey derivedPrivateViewKey;
 
-    CryptoNote::AccountBase::generateViewFromSpend(privateSpendKey,
+    Crypto::crypto_ops::generateViewFromSpend(privateSpendKey,
                                                    derivedPrivateViewKey);
 
     const bool deterministicPrivateKeys
@@ -117,7 +118,7 @@ void balance(CryptoNote::INode &node, CryptoNote::WalletGreen &wallet,
 
     /* We can make a better approximation of the view wallet balance if we
        ignore fusion transactions.
-       See https://github.com/plenteum/plenteum/issues/531 */
+       See https://github.com/turtlecoin/turtlecoin/issues/531 */
     if (viewWallet)
     {
         /* Not sure how to verify if a transaction is unlocked or not via
@@ -436,7 +437,7 @@ void printOutgoingTransfer(CryptoNote::WalletTransaction t,
               << WarningMsg("Total Spent: " + formatAmount(-t.totalAmount))
               << std::endl;
 
-    const std::string paymentID = getPaymentIDFromExtra(t.extra);
+    const std::string paymentID = Utilities::getPaymentIDFromExtra(Common::asBinaryArray(t.extra));
 
     if (paymentID != "")
     {
@@ -468,7 +469,7 @@ void printIncomingTransfer(CryptoNote::WalletTransaction t,
     std::cout << SuccessMsg("Amount: " + formatAmount(t.totalAmount))
               << std::endl;
 
-    const std::string paymentID = getPaymentIDFromExtra(t.extra);
+    const std::string paymentID = Utilities::getPaymentIDFromExtra(Common::asBinaryArray(t.extra));
 
     if (paymentID != "")
     {

@@ -56,9 +56,9 @@ int main(int argc, char **argv)
     System::Dispatcher localDispatcher;
     System::Dispatcher *dispatcher = &localDispatcher;
 
-    /* Our connection to plenteumd */
+    /* Our connection to Plenteumd */
     std::unique_ptr<CryptoNote::INode> node(
-        new CryptoNote::NodeRpcProxy(config.host, config.port, logManager)
+        new CryptoNote::NodeRpcProxy(config.host, config.port, 10, logManager)
     );
 
     std::promise<std::error_code> errorPromise;

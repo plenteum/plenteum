@@ -2,6 +2,7 @@
 .vscode
 /build
 /tags
+/out
 .idea
 .ycm_extra_conf.py
 .vs

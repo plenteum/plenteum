@@ -15,6 +15,10 @@
 
 #include "json.hpp"
 
+#include <JsonHelper.h>
+#include "rapidjson/document.h"
+#include "rapidjson/writer.h"
+
 namespace CryptoNote {
 
 struct BaseInput {
@@ -100,6 +104,31 @@ using BinaryArray = std::vector<uint8_t>;
 struct RawBlock {
   BinaryArray block; //BlockTemplate
   std::vector<BinaryArray> transactions;
+  
+  void toJSON(rapidjson::Writer<rapidjson::StringBuffer> &writer) const
+  {
+      writer.StartObject();
+      writer.Key("block");
+      writer.String(Common::toHex(block));
+      
+      writer.Key("transactions");
+      writer.StartArray();
+      for (auto transaction : transactions)
+      {
+          writer.String(Common::toHex(transaction));
+      }
+      writer.EndArray();
+      writer.EndObject();
+  }
+  
+  void fromJSON(const JSONValue &j)
+  {
+      block = Common::fromHex(getStringFromJSON(j, "block"));
+      for (const auto &tx : getArrayFromJSON(j, "transactions"))
+      {
+        transactions.push_back(Common::fromHex(tx.GetString()));
+      }
+  }
 };
 
 inline void to_json(nlohmann::json &j, const CryptoNote::KeyInput &k)
@@ -114,7 +143,10 @@ inline void to_json(nlohmann::json &j, const CryptoNote::KeyInput &k)
 inline void from_json(const nlohmann::json &j, CryptoNote::KeyInput &k)
 {
     k.amount = j.at("amount").get<uint64_t>();
-    k.outputIndexes = j.at("key_offsets").get<std::vector<uint32_t>>();
+    if (j.find("key_offsets") != j.end())
+    {
+        k.outputIndexes = j.at("key_offsets").get<std::vector<uint32_t>>();
+    }
     k.keyImage = j.at("k_image").get<Crypto::KeyImage>();
 }
 

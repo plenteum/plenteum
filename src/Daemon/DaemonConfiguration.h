@@ -1,17 +1,18 @@
 // Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2019, The CyprusCoin Developers
 // Copyright (c) 2018-2019, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 
 #pragma once
 
-#include <json.hpp>
+#include <rapidjson/document.h>
 #include <config/CryptoNoteConfig.h>
 #include <Logging/ILogger.h>
 #include "Common/PathTools.h"
 #include "Common/Util.h"
 
-using nlohmann::json;
+using namespace rapidjson;
 
 namespace DaemonConfig {
   struct DaemonConfiguration
@@ -39,12 +40,15 @@ namespace DaemonConfig {
       enableBlockExplorer = false;
       localIp = false;
       hideMyPort = false;
+      p2pResetPeerstate = false;
       help = false;
       version = false;
       osVersion = false;
       printGenesisTx = false;
       dumpConfig = false;
       useSqliteForLocalCaches = false;
+      useRocksdbForLocalCaches = false;
+      enableDbCompression = false;
       resync = false;
     }
 
@@ -70,7 +74,7 @@ namespace DaemonConfig {
     int dbMaxOpenFiles;
     int dbWriteBufferSizeMB;
     int dbReadCacheSizeMB;
-    
+
     uint32_t rewindToHeight;
 
     bool noConsole;
@@ -78,6 +82,7 @@ namespace DaemonConfig {
     bool localIp;
     bool hideMyPort;
     bool resync;
+    bool p2pResetPeerstate;
 
     std::string configFile;
     std::string outputFile;
@@ -88,6 +93,15 @@ namespace DaemonConfig {
     bool printGenesisTx;
     bool dumpConfig;
     bool useSqliteForLocalCaches;
+    bool useRocksdbForLocalCaches;
+    bool enableDbCompression;
+
+	// tx threshold
+	uint64_t txThresholdCount = 10;
+	uint64_t txThresholdInterval = 5 * 60;
+
+	// banning
+	std::string banImportFile{ "" };
   };
 
   DaemonConfiguration initConfiguration(const char* path);
@@ -97,5 +111,5 @@ namespace DaemonConfig {
   void handleSettings(const std::string configFile, DaemonConfiguration& config);
   void asFile(const DaemonConfiguration& config, const std::string& filename);
   std::string asString(const DaemonConfiguration& config);
-  json asJSON(const DaemonConfiguration& config);
+  Document asJSON(const DaemonConfiguration& config);
 }

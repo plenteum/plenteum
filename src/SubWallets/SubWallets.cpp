@@ -8,8 +8,6 @@
 
 #include <config/CryptoNoteConfig.h>
 
-#include <CryptoNoteCore/Currency.h>
-
 #include <ctime>
 
 #include <mutex>
@@ -547,7 +545,7 @@ std::tuple<std::vector<WalletTypes::TxInputAndOwner>, uint64_t, uint64_t>
 
     /* Get an approximation of the max amount of inputs we can include in this
        transaction */
-    uint64_t maxInputsToTake = CryptoNote::Currency::getApproximateMaximumInputCount(
+    uint64_t maxInputsToTake = Utilities::getApproximateMaximumInputCount(
         CryptoNote::parameters::FUSION_TX_MAX_SIZE,
         CryptoNote::parameters::FUSION_TX_MIN_IN_OUT_COUNT_RATIO,
         mixin
@@ -564,7 +562,7 @@ std::tuple<std::vector<WalletTypes::TxInputAndOwner>, uint64_t, uint64_t>
     {
         /* Find out how many digits the amount has, i.e. 1337 has 4 digits,
            420 has 3 digits */
-        int numberOfDigits = log10(walletAmount.input.amount);
+        int numberOfDigits = floor(log10(walletAmount.input.amount)) + 1;
 
         /* Insert the amount into the correct bucket */
         buckets[numberOfDigits].push_back(walletAmount);
@@ -728,7 +726,7 @@ void SubWallets::markInputAsLocked(
 }
 
 /* Remove transactions and key images that occured on a forked chain */
-void SubWallets::removeForkedTransactions(uint64_t forkHeight)
+void SubWallets::removeForkedTransactions(const uint64_t forkHeight)
 {
     std::scoped_lock lock(m_mutex);
 
@@ -744,10 +742,18 @@ void SubWallets::removeForkedTransactions(uint64_t forkHeight)
         m_transactions.erase(it, m_transactions.end());
     }
 
+    std::vector<Crypto::KeyImage> keyImagesToRemove;
+
     /* Loop through each subwallet */
     for (auto & [publicKey, subWallet] : m_subWallets)
     {
-        subWallet.removeForkedInputs(forkHeight);
+        const auto toRemove = subWallet.removeForkedInputs(forkHeight, m_isViewWallet);
+        keyImagesToRemove.insert(keyImagesToRemove.end(), toRemove.begin(), toRemove.end());
+    }
+
+    for (const auto keyImage : keyImagesToRemove)
+    {
+        m_keyImageOwners.erase(keyImage);
     }
 }
 

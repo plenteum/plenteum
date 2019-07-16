@@ -10,6 +10,8 @@
 
 #include <Rpc/CoreRpcServerCommandsDefinitions.h>
 
+#include <config/CryptoNoteConfig.h>
+
 #include <string>
 
 #include <thread>
@@ -47,6 +49,10 @@ class Nigel
 
         void swapNode(const std::string daemonHost, const uint16_t daemonPort, const bool daemonSSL);
 
+        void decreaseRequestedBlockCount();
+
+        void resetRequestedBlockCount();
+
         /* Returns whether we've received info from the daemon at some point */
         bool isOnline() const;
 
@@ -62,10 +68,15 @@ class Nigel
 
         std::tuple<std::string, uint16_t, bool> nodeAddress() const;
 
-        std::tuple<bool, std::vector<WalletTypes::WalletBlockInfo>> getWalletSyncData(
+        std::tuple<
+            bool,
+            std::vector<WalletTypes::WalletBlockInfo>,
+            std::optional<WalletTypes::TopBlock>
+        > getWalletSyncData(
             const std::vector<Crypto::Hash> blockHashCheckpoints,
-            uint64_t startHeight,
-            uint64_t startTimestamp) const;
+            const uint64_t startHeight,
+            const uint64_t startTimestamp,
+            const bool skipCoinbaseTransactions) const;
 
         /* Returns a bool on success or not */
         bool getTransactionsStatus(
@@ -115,6 +126,9 @@ class Nigel
         /* If we should stop the background thread */
         std::atomic<bool> m_shouldStop = false;
 
+        /* Stores how many blocks we'll try to sync */
+        std::atomic<uint64_t> m_blockCount = CryptoNote::BLOCKS_SYNCHRONIZING_DEFAULT_COUNT;
+
         /* The amount of blocks the daemon we're connected to has */
         std::atomic<uint64_t> m_localDaemonBlockCount = 0;
 
@@ -126,6 +140,10 @@ class Nigel
 
         /* The hashrate (based on the last local block the daemon has synced) */
         std::atomic<uint64_t> m_lastKnownHashrate = 0;
+
+        /* Whether the daemon is a blockchain cache API
+           see: https://github.com/TurtlePay/blockchain-cache-api */
+        std::atomic<bool> m_isBlockchainCache = false;
 
         /* The address to send the node fee to (May be "") */
         std::string m_nodeFeeAddress;

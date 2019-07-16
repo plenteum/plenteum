@@ -6,6 +6,8 @@
 #include <Logger/Logger.h>
 //////////////////////////
 
+#include <algorithm>
+
 #include <ctime>
 
 #include <iomanip>
@@ -43,6 +45,36 @@ namespace Logger
                 return "Fatal";
             }
         }
+    }
+
+    LogLevel stringToLogLevel(std::string level)
+    {
+        /* Convert to lower case */
+        std::transform(level.begin(), level.end(), level.begin(),
+                       ::tolower);
+
+        if (level == "disabled")
+        {
+            return DISABLED;
+        }
+        else if (level == "debug")
+        {
+            return DEBUG;
+        }
+        else if (level == "info")
+        {
+            return INFO;
+        }
+        else if (level == "warning")
+        {
+            return WARNING;
+        }
+        else if (level == "fatal")
+        {
+            return FATAL;
+        }
+
+        throw std::invalid_argument("Invalid log level given");
     }
 
     std::string logCategoryToString(const LogCategory category)

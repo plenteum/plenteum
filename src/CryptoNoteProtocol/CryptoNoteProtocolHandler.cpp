@@ -14,9 +14,11 @@
 
 #include "CryptoNoteCore/CryptoNoteBasicImpl.h"
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
-#include "CryptoNoteCore/CryptoNoteTools.h"
+#include "Common/CryptoNoteTools.h"
 #include "CryptoNoteCore/Currency.h"
 #include "P2p/LevinProtocol.h"
+
+#include <Serialization/SerializationTools.h>
 
 #include <Utilities/FormatTools.h>
 
@@ -173,6 +175,10 @@ void CryptoNoteProtocolHandler::set_p2p_endpoint(IP2pEndpoint* p2p) {
 }
 
 void CryptoNoteProtocolHandler::onConnectionOpened(CryptoNoteConnectionContext& context) {
+	/*if (isBanned(context)) {
+		logger(DEBUGGING) << context << "Banned ip connected, shutting down connection.";
+		context.m_state = CryptoNoteConnectionContext::state_shutdown;
+	}*/
 }
 
 void CryptoNoteProtocolHandler::onConnectionClosed(CryptoNoteConnectionContext& context) {
@@ -348,6 +354,12 @@ int CryptoNoteProtocolHandler::handleCommand(bool is_notify, int command, const 
   int ret = 0;
   handled = true;
 
+ /* if (isBanned(ctx)) {
+	  logger(DEBUGGING) << ctx << " is trying to invoke a command but is banned, dropping connection...";
+	  ctx.m_state = CryptoNoteConnectionContext::state_shutdown;
+	  return 1;
+  }*/
+
   switch (command) {
     HANDLE_NOTIFY(NOTIFY_NEW_BLOCK, handle_notify_new_block)
     HANDLE_NOTIFY(NOTIFY_NEW_TRANSACTIONS, handle_notify_new_transactions)
@@ -419,6 +431,24 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
 	  return doPushLiteBlock(context.m_pending_lite_block->request, context, std::move(arg.txs));
   }
   else {
+
+	  /*const uint64_t currentTimestamp = time(nullptr);
+	  const auto txThresInterval = txThresholdInterval();
+	  while (!context.m_pushed_transactions.empty() && context.m_pushed_transactions.front().first + txThresInterval > currentTimestamp) {
+		  context.m_pushed_transactions.pop_front();
+	  }
+	  const size_t sumOfTransactionsPushed = std::accumulate(
+		  context.m_pushed_transactions.begin(), context.m_pushed_transactions.end(),
+		  arg.txs.size(),
+		  [](size_t acc, const auto& checkpoint) { return acc + checkpoint.second; });
+	  if (sumOfTransactionsPushed > txThreshold()) {
+		  logger(Logging::DEBUGGING) << context << "Pushed too many transactions in given interval, dropping connection.";
+		  context.m_state = CryptoNoteConnectionContext::state_shutdown;
+		  return false;
+	  }
+	  context.m_pushed_transactions.push_back(std::make_pair(currentTimestamp, arg.txs.size()));*/
+
+
 	  const auto it = std::remove_if(arg.txs.begin(), arg.txs.end(), [this, &context](const auto &tx)
 	  {
 		  bool failed = !this->m_core.addTransactionToPool(tx);
@@ -580,7 +610,56 @@ int CryptoNoteProtocolHandler::processObjects(CryptoNoteConnectionContext& conte
 
   return 0;
 }
+/*
+IP Banning & TX Threshold
+void CryptoNoteProtocolHandler::ban(uint32_t ip)
+{
+	std::lock_guard<std::mutex> _{ m_bannedMutex };
+	(void)_;
+	m_bannedIps.insert(ip);
+}
 
+void CryptoNoteProtocolHandler::unban(uint32_t ip)
+{
+	std::lock_guard<std::mutex> _{ m_bannedMutex };
+	(void)_;
+	m_bannedIps.erase(ip);
+}
+
+void CryptoNoteProtocolHandler::unbanAll()
+{
+	std::lock_guard<std::mutex> _{ m_bannedMutex };
+	(void)_;
+	m_bannedIps.clear();
+}
+
+bool CryptoNoteProtocolHandler::isBanned(CryptoNoteConnectionContext &context) const
+{
+	std::lock_guard<std::mutex> _{ m_bannedMutex };
+	(void)_;
+	return m_bannedIps.find(context.m_remote_ip) != m_bannedIps.end();
+}
+
+uint64_t CryptoNoteProtocolHandler::txThresholdInterval() const
+{
+	return m_transactionsPushedInterval.load();
+}
+
+void CryptoNoteProtocolHandler::setTxThresholdInterval(uint64_t interval)
+{
+	m_transactionsPushedInterval.store(interval);
+}
+
+size_t CryptoNoteProtocolHandler::txThreshold() const
+{
+	return m_transactionsPushedMaxInInterval.load();
+}
+
+void CryptoNoteProtocolHandler::setTxThreshold(size_t count)
+{
+	m_transactionsPushedMaxInInterval.store(count);
+}
+*/
 int CryptoNoteProtocolHandler::doPushLiteBlock(NOTIFY_NEW_LITE_BLOCK::request arg, CryptoNoteConnectionContext &context, std::vector<BinaryArray> missingTxs)
 {
 	BlockTemplate newBlockTemplate;

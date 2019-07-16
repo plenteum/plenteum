@@ -5,22 +5,31 @@
 //
 // Please see the included LICENSE file for more information.
 
+/////////////////////
 #include "Currency.h"
-#include <cctype>
+/////////////////////
+
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/lexical_cast.hpp>
-#include "../Common/Base58.h"
-#include "../Common/int-util.h"
-#include "../Common/StringTools.h"
 
-#include "Account.h"
-#include "CheckDifficulty.h"
-#include "CryptoNoteBasicImpl.h"
-#include "CryptoNoteFormatUtils.h"
-#include "CryptoNoteTools.h"
-#include "Difficulty.h"
-#include "TransactionExtra.h"
-#include "UpgradeDetector.h"
+#include <cctype>
+
+#include <Common/Base58.h>
+#include <Common/CheckDifficulty.h>
+#include <Common/CryptoNoteTools.h>
+#include <Common/int-util.h>
+#include <Common/StringTools.h>
+#include <Common/TransactionExtra.h>
+
+#include <CryptoNoteCore/Account.h>
+#include <CryptoNoteCore/CryptoNoteBasicImpl.h>
+#include <CryptoNoteCore/CryptoNoteFormatUtils.h>
+#include <CryptoNoteCore/Difficulty.h>
+#include <CryptoNoteCore/UpgradeDetector.h>
+
+#include <config/Constants.h>
+
+#include <Utilities/Addresses.h>
 
 #undef ERROR
 
@@ -28,29 +37,6 @@ using namespace Logging;
 using namespace Common;
 
 namespace CryptoNote {
-
-const std::vector<uint64_t> Currency::PRETTY_AMOUNTS = {
-  1, 2, 3, 4, 5, 6, 7, 8, 9,
-  10, 20, 30, 40, 50, 60, 70, 80, 90,
-  100, 200, 300, 400, 500, 600, 700, 800, 900,
-  1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000,
-  10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000,
-  100000, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000,
-  1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000,
-  10000000, 20000000, 30000000, 40000000, 50000000, 60000000, 70000000, 80000000, 90000000,
-  100000000, 200000000, 300000000, 400000000, 500000000, 600000000, 700000000, 800000000, 900000000,
-  1000000000, 2000000000, 3000000000, 4000000000, 5000000000, 6000000000, 7000000000, 8000000000, 9000000000,
-  10000000000, 20000000000, 30000000000, 40000000000, 50000000000, 60000000000, 70000000000, 80000000000, 90000000000,
-  100000000000, 200000000000, 300000000000, 400000000000, 500000000000, 600000000000, 700000000000, 800000000000, 900000000000,
-  1000000000000, 2000000000000, 3000000000000, 4000000000000, 5000000000000, 6000000000000, 7000000000000, 8000000000000, 9000000000000,
-  10000000000000, 20000000000000, 30000000000000, 40000000000000, 50000000000000, 60000000000000, 70000000000000, 80000000000000, 90000000000000,
-  100000000000000, 200000000000000, 300000000000000, 400000000000000, 500000000000000, 600000000000000, 700000000000000, 800000000000000, 900000000000000,
-  1000000000000000, 2000000000000000, 3000000000000000, 4000000000000000, 5000000000000000, 6000000000000000, 7000000000000000, 8000000000000000, 9000000000000000,
-  10000000000000000, 20000000000000000, 30000000000000000, 40000000000000000, 50000000000000000, 60000000000000000, 70000000000000000, 80000000000000000, 90000000000000000,
-  100000000000000000, 200000000000000000, 300000000000000000, 400000000000000000, 500000000000000000, 600000000000000000, 700000000000000000, 800000000000000000, 900000000000000000,
-  1000000000000000000, 2000000000000000000, 3000000000000000000, 4000000000000000000, 5000000000000000000, 6000000000000000000, 7000000000000000000, 8000000000000000000, 9000000000000000000,
-  10000000000000000000ull
-};
 
 bool Currency::init() {
   if (!generateGenesisBlock()) {
@@ -63,14 +49,6 @@ bool Currency::init() {
   } catch (std::exception& e) {
     logger(ERROR, BRIGHT_RED) << "Failed to get genesis block hash: " << e.what();
     return false;
-  }
-
-  if (isTestnet()) {
-    m_upgradeHeightV2 = 0;
-    m_upgradeHeightV3 = static_cast<uint32_t>(-1);
-    m_blocksFileName = "testnet_" + m_blocksFileName;
-    m_blockIndexesFileName = "testnet_" + m_blockIndexesFileName;
-    m_txPoolFileName = "testnet_" + m_txPoolFileName;
   }
 
   return true;
@@ -95,9 +73,7 @@ bool Currency::generateGenesisBlock() {
   genesisBlockTemplate.minorVersion = BLOCK_MINOR_VERSION_0;
   genesisBlockTemplate.timestamp = 0;
   genesisBlockTemplate.nonce = 70;
-  if (m_testnet) {
-    ++genesisBlockTemplate.nonce;
-  }
+
   //miner::find_nonce_for_given_block(bl, 1, 0);
   cachedGenesisBlock.reset(new CachedBlock(genesisBlockTemplate));
   return true;
@@ -166,9 +142,6 @@ bool Currency::getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size
   assert(m_emissionSpeedFactor > 0 && m_emissionSpeedFactor <= 8 * sizeof(uint64_t));
 
   uint64_t baseReward = (m_moneySupply - alreadyGeneratedCoins) >> m_emissionSpeedFactor;
-  if (alreadyGeneratedCoins == 0 && m_genesisBlockReward != 0) {
-    baseReward = m_genesisBlockReward;
-  }
 
   size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
   medianSize = std::max(medianSize, blockGrantedFullRewardZone);
@@ -335,26 +308,26 @@ bool Currency::isAmountApplicableInFusionTransactionInput(uint64_t amount, uint6
     return false;
   }
 
-  auto it = std::lower_bound(PRETTY_AMOUNTS.begin(), PRETTY_AMOUNTS.end(), amount);
-  if (it == PRETTY_AMOUNTS.end() || amount != *it) {
+  auto it = std::lower_bound(Constants::PRETTY_AMOUNTS.begin(), Constants::PRETTY_AMOUNTS.end(), amount);
+  if (it == Constants::PRETTY_AMOUNTS.end() || amount != *it) {
     return false;
   }
 
-  amountPowerOfTen = static_cast<uint8_t>(std::distance(PRETTY_AMOUNTS.begin(), it) / 9);
+  amountPowerOfTen = static_cast<uint8_t>(std::distance(Constants::PRETTY_AMOUNTS.begin(), it) / 9);
   return true;
 }
 
 std::string Currency::accountAddressAsString(const AccountBase& account) const {
-  return getAccountAddressAsStr(m_publicAddressBase58Prefix, account.getAccountKeys().address);
+  return Utilities::getAccountAddressAsStr(m_publicAddressBase58Prefix, account.getAccountKeys().address);
 }
 
 std::string Currency::accountAddressAsString(const AccountPublicAddress& accountPublicAddress) const {
-  return getAccountAddressAsStr(m_publicAddressBase58Prefix, accountPublicAddress);
+  return Utilities::getAccountAddressAsStr(m_publicAddressBase58Prefix, accountPublicAddress);
 }
 
 bool Currency::parseAccountAddressString(const std::string& str, AccountPublicAddress& addr) const {
   uint64_t prefix;
-  if (!CryptoNote::parseAccountAddressString(prefix, addr, str)) {
+  if (!Utilities::parseAccountAddressString(prefix, addr, str)) {
     return false;
   }
 
@@ -618,29 +591,6 @@ bool Currency::checkProofOfWork(const CachedBlock& block, uint64_t currentDiffic
   return false;
 }
 
-size_t Currency::getApproximateMaximumInputCount(size_t transactionSize, size_t outputCount, size_t mixinCount) {
-  const size_t KEY_IMAGE_SIZE = sizeof(Crypto::KeyImage);
-  const size_t OUTPUT_KEY_SIZE = sizeof(decltype(KeyOutput::key));
-  const size_t AMOUNT_SIZE = sizeof(uint64_t) + 2; //varint
-  const size_t GLOBAL_INDEXES_VECTOR_SIZE_SIZE = sizeof(uint8_t);//varint
-  const size_t GLOBAL_INDEXES_INITIAL_VALUE_SIZE = sizeof(uint32_t);//varint
-  const size_t GLOBAL_INDEXES_DIFFERENCE_SIZE = sizeof(uint32_t);//varint
-  const size_t SIGNATURE_SIZE = sizeof(Crypto::Signature);
-  const size_t EXTRA_TAG_SIZE = sizeof(uint8_t);
-  const size_t INPUT_TAG_SIZE = sizeof(uint8_t);
-  const size_t OUTPUT_TAG_SIZE = sizeof(uint8_t);
-  const size_t PUBLIC_KEY_SIZE = sizeof(Crypto::PublicKey);
-  const size_t TRANSACTION_VERSION_SIZE = sizeof(uint8_t);
-  const size_t TRANSACTION_UNLOCK_TIME_SIZE = sizeof(uint64_t);
-
-  const size_t outputsSize = outputCount * (OUTPUT_TAG_SIZE + OUTPUT_KEY_SIZE + AMOUNT_SIZE);
-  const size_t headerSize = TRANSACTION_VERSION_SIZE + TRANSACTION_UNLOCK_TIME_SIZE + EXTRA_TAG_SIZE + PUBLIC_KEY_SIZE;
-  const size_t inputSize = INPUT_TAG_SIZE + AMOUNT_SIZE + KEY_IMAGE_SIZE + SIGNATURE_SIZE + GLOBAL_INDEXES_VECTOR_SIZE_SIZE + GLOBAL_INDEXES_INITIAL_VALUE_SIZE +
-                            mixinCount * (GLOBAL_INDEXES_DIFFERENCE_SIZE + SIGNATURE_SIZE);
-
-  return (transactionSize - headerSize - outputsSize) / inputSize;
-}
-
 Currency::Currency(Currency&& currency) :
 m_maxBlockHeight(currency.m_maxBlockHeight),
 m_maxBlockBlobSize(currency.m_maxBlockBlobSize),
@@ -687,11 +637,9 @@ m_upgradeWindow(currency.m_upgradeWindow),
 m_blocksFileName(currency.m_blocksFileName),
 m_blockIndexesFileName(currency.m_blockIndexesFileName),
 m_txPoolFileName(currency.m_txPoolFileName),
-m_genesisBlockReward(currency.m_genesisBlockReward),
 m_zawyDifficultyBlockIndex(currency.m_zawyDifficultyBlockIndex),
 m_zawyDifficultyV2(currency.m_zawyDifficultyV2),
 m_zawyDifficultyBlockHeight(currency.m_zawyDifficultyBlockHeight),
-m_testnet(currency.m_testnet),
 genesisBlockTemplate(std::move(currency.genesisBlockTemplate)),
 cachedGenesisBlock(new CachedBlock(genesisBlockTemplate)),
 logger(currency.logger) {
@@ -709,7 +657,6 @@ CurrencyBuilder::CurrencyBuilder(std::shared_ptr<Logging::ILogger> log) : m_curr
 
   moneySupply(parameters::MONEY_SUPPLY);
   emissionSpeedFactor(parameters::EMISSION_SPEED_FACTOR);
-genesisBlockReward(parameters::GENESIS_BLOCK_REWARD);
 
   rewardBlocksWindow(parameters::CRYPTONOTE_REWARD_BLOCKS_WINDOW);
   zawyDifficultyBlockIndex(parameters::ZAWY_DIFFICULTY_BLOCK_INDEX);
@@ -758,8 +705,7 @@ genesisBlockReward(parameters::GENESIS_BLOCK_REWARD);
   blockIndexesFileName(parameters::CRYPTONOTE_BLOCKINDEXES_FILENAME);
   txPoolFileName(parameters::CRYPTONOTE_POOLDATA_FILENAME);
 
-    isBlockexplorer(false);
-  testnet(false);
+  isBlockexplorer(false);
 }
 
 Transaction CurrencyBuilder::generateGenesisTransaction() {
@@ -768,42 +714,7 @@ Transaction CurrencyBuilder::generateGenesisTransaction() {
   m_currency.constructMinerTx(1, 0, 0, 0, 0, 0, ac, tx); // zero fee in genesis
   return tx;
 }
- Transaction CurrencyBuilder::generateGenesisTransaction(const std::vector<AccountPublicAddress>& targets) {
-    assert(!targets.empty());
 
-    CryptoNote::Transaction tx;
-    tx.inputs.clear();
-    tx.outputs.clear();
-    tx.extra.clear();
-    tx.version = CURRENT_TRANSACTION_VERSION;
-    tx.unlockTime = m_currency.m_minedMoneyUnlockWindow;
-    KeyPair txkey = generateKeyPair();
-    addTransactionPublicKeyToExtra(tx.extra, txkey.publicKey);
-    BaseInput in;
-    in.blockIndex = 0;
-    tx.inputs.push_back(in);
-    uint64_t block_reward = m_currency.m_genesisBlockReward;
-    uint64_t target_amount = block_reward / targets.size();
-    uint64_t first_target_amount = target_amount + block_reward % targets.size();
-    for (size_t i = 0; i < targets.size(); ++i) {
-      Crypto::KeyDerivation derivation = boost::value_initialized<Crypto::KeyDerivation>();
-      Crypto::PublicKey outEphemeralPubKey = boost::value_initialized<Crypto::PublicKey>();
-      bool r = Crypto::generate_key_derivation(targets[i].viewPublicKey, txkey.secretKey, derivation);
-      if (r) {}
-      assert(r == true);
-//      CHECK_AND_ASSERT_MES(r, false, "while creating outs: failed to generate_key_derivation(" << targets[i].viewPublicKey << ", " << txkey.sec << ")");
-      r = Crypto::derive_public_key(derivation, i, targets[i].spendPublicKey, outEphemeralPubKey);
-      assert(r == true);
- //     CHECK_AND_ASSERT_MES(r, false, "while creating outs: failed to derive_public_key(" << derivation << ", " << i << ", " << targets[i].spendPublicKey << ")");
-      KeyOutput tk;
-      tk.key = outEphemeralPubKey;
-      TransactionOutput out;
-      out.amount = (i == 0) ? first_target_amount : target_amount;
-      out.target = tk;
-      tx.outputs.push_back(out);
-    }
-    return tx;
-}
 CurrencyBuilder& CurrencyBuilder::emissionSpeedFactor(unsigned int val) {
   if (val <= 0 || val > 8 * sizeof(uint64_t)) {
     throw std::invalid_argument("val at emissionSpeedFactor()");

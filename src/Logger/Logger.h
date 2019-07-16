@@ -30,6 +30,12 @@ namespace Logger
         DAEMON,
     };
 
+    std::string logLevelToString(const LogLevel level);
+
+    LogLevel stringToLogLevel(std::string level);
+
+    std::string logCategoryToString(const LogCategory category);
+
     class Logger
     {
         public:

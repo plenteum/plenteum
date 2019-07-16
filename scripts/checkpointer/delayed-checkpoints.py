@@ -5,7 +5,8 @@ import sys
 import json
 import requests
 
-topbuffer =  3 * 24 * 60 * 2
+topbuffer = 3 * 24 * 60 * 2
+
 
 def lastknownblock():
     try:
@@ -63,7 +64,7 @@ while current_height > stop_height:
     try:
         blocks = get_block_info(current_height)
         for b in blocks:
-            print `%(height)s,%(hash)s` % b
+            print '%(height)s,%(hash)s' % b
             all_blocks.append('%(height)s,%(hash)s' % b)
             current_height = b['height'] - 1
             if current_height < stop_height:

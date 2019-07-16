@@ -8,7 +8,7 @@
 
 #include <config/CryptoNoteConfig.h>
 
-#include <CryptoNoteCore/CryptoNoteTools.h>
+#include <Common/CryptoNoteTools.h>
 
 #include <Errors/ValidateParameters.h>
 
@@ -76,10 +76,14 @@ void Nigel::swapNode(const std::string daemonHost, const uint16_t daemonPort, co
 {
     stop();
 
+    m_blockCount = CryptoNote::BLOCKS_SYNCHRONIZING_DEFAULT_COUNT;
     m_localDaemonBlockCount = 0;
     m_networkBlockCount = 0;
     m_peerCount = 0;
     m_lastKnownHashrate = 0;
+    m_isBlockchainCache = false;
+    m_nodeFeeAddress = "";
+    m_nodeFeeAmount = 0;
 
     m_daemonHost = daemonHost;
     m_daemonPort = daemonPort;
@@ -90,10 +94,29 @@ void Nigel::swapNode(const std::string daemonHost, const uint16_t daemonPort, co
     init();
 }
 
-std::tuple<bool, std::vector<WalletTypes::WalletBlockInfo>> Nigel::getWalletSyncData(
+void Nigel::decreaseRequestedBlockCount()
+{
+    if (m_blockCount > 1)
+    {
+        m_blockCount = m_blockCount / 2;
+    }
+}
+
+void Nigel::resetRequestedBlockCount()
+{
+    m_blockCount = CryptoNote::BLOCKS_SYNCHRONIZING_DEFAULT_COUNT;
+}
+
+std::tuple<
+    bool,
+    std::vector<WalletTypes::WalletBlockInfo>,
+    std::optional<WalletTypes::TopBlock>
+> Nigel::getWalletSyncData(
+
     const std::vector<Crypto::Hash> blockHashCheckpoints,
-    uint64_t startHeight,
-    uint64_t startTimestamp) const
+    const uint64_t startHeight,
+    const uint64_t startTimestamp,
+    const bool skipCoinbaseTransactions) const
 {
     Logger::logger.log(
         "Fetching blocks from the daemon",
@@ -104,7 +127,9 @@ std::tuple<bool, std::vector<WalletTypes::WalletBlockInfo>> Nigel::getWalletSync
     json j = {
         {"blockHashCheckpoints", blockHashCheckpoints},
         {"startHeight", startHeight},
-        {"startTimestamp", startTimestamp}
+        {"startTimestamp", startTimestamp},
+        {"blockCount", m_blockCount.load()},
+        {"skipCoinbaseTransactions", skipCoinbaseTransactions}
     };
 
     auto res = m_nodeClient->Post(
@@ -119,12 +144,23 @@ std::tuple<bool, std::vector<WalletTypes::WalletBlockInfo>> Nigel::getWalletSync
 
             if (j.at("status").get<std::string>() != "OK")
             {
-                return {false, {}};
+                return {false, {}, std::nullopt};
             }
 
             const auto items = j.at("items").get<std::vector<WalletTypes::WalletBlockInfo>>();
 
-            return {true, items};
+            if (j.find("synced") != j.end() 
+             && j.find("topBlock") != j.end()
+             && j.at("synced").get<bool>())
+            {
+                return {
+                    true,
+                    items,
+                    j.at("topBlock").get<WalletTypes::TopBlock>()
+                };
+            }
+
+            return {true, items, std::nullopt};
         }
         catch (const json::exception &e)
         {
@@ -136,7 +172,7 @@ std::tuple<bool, std::vector<WalletTypes::WalletBlockInfo>> Nigel::getWalletSync
         }
     }
 
-    return {false, {}};
+    return {false, {}, std::nullopt};
 }
 
 void Nigel::stop()
@@ -203,6 +239,13 @@ bool Nigel::getDaemonInfo()
 
             m_lastKnownHashrate = j.at("difficulty").get<uint64_t>()
                                 / CryptoNote::parameters::DIFFICULTY_TARGET;
+
+            /* Look to see if the isCacheApi property exists in the response
+               and if so, set the internal value to whatever it found */
+            if (j.find("isCacheApi") != j.end())
+            {
+                m_isBlockchainCache = j.at("isCacheApi").get<bool>();
+            }
 
             return true;
         }
@@ -359,27 +402,58 @@ std::tuple<bool, std::vector<CryptoNote::RandomOuts>> Nigel::getRandomOutsByAmou
         {"outs_count", requestedOuts}
     };
 
-    auto res = m_nodeClient->Post(
-        "/getrandom_outs", j.dump(), "application/json"
-    );
-
-    if (res && res->status == 200)
+    /* The blockchain cache doesn't call it outs_count
+       it calls it mixin */
+    if (m_isBlockchainCache)
     {
-        try
-        {
-            json j = json::parse(res->body);
+        j.erase("outs_count");
+        j["mixin"] = requestedOuts;
 
-            if (j.at("status").get<std::string>() != "OK")
+        /* We also need to handle the request and response a bit
+           differently so we'll do this here */
+        auto res = m_nodeClient->Post(
+            "/randomOutputs", j.dump(), "application/json"
+        );
+
+        if (res && res->status == 200)
+        {
+            try
             {
-                return {};
+                json j = json::parse(res->body);
+
+                const auto outs = j.get<std::vector<CryptoNote::RandomOuts>>();
+
+                return {true, outs};
             }
-
-            const auto outs = j.at("outs").get<std::vector<CryptoNote::RandomOuts>>();
-
-            return {true, outs};
+            catch (const json::exception &)
+            {
+            }
         }
-        catch (const json::exception &)
+    }
+    else
+    {
+        auto res = m_nodeClient->Post(
+            "/getrandom_outs", j.dump(), "application/json"
+        );
+
+        if (res && res->status == 200)
         {
+            try
+            {
+                json j = json::parse(res->body);
+
+                if (j.at("status").get<std::string>() != "OK")
+                {
+                    return {};
+                }
+
+                const auto outs = j.at("outs").get<std::vector<CryptoNote::RandomOuts>>();
+
+                return {true, outs};
+            }
+            catch (const json::exception &)
+            {
+            }
         }
     }
 
@@ -423,6 +497,14 @@ std::tuple<bool, std::unordered_map<Crypto::Hash, std::vector<uint64_t>>>
         const uint64_t startHeight,
         const uint64_t endHeight) const
 {
+    /* Blockchain cache API does not support this method and we
+       don't need it to because it returns the global indexes
+       with the key outputs when we get the wallet sync data */
+    if (m_isBlockchainCache)
+    {
+      return {false, {}};
+    }
+
     json j = {
         {"startHeight", startHeight},
         {"endHeight", endHeight}

@@ -22,6 +22,11 @@
 #include <zedwallet++/Transfer.h>
 #include <zedwallet++/Utilities.h>
 
+#include <rapidjson/istreamwrapper.h>
+#include <rapidjson/ostreamwrapper.h>
+#include <rapidjson/prettywriter.h>
+
+
 const std::string getAddressBookName(const std::vector<AddressBookEntry> addressBook)
 {
     while (true)
@@ -359,40 +364,37 @@ std::vector<AddressBookEntry> getAddressBook()
     /* If file exists, read current values */
     if (input)
     {
-        json j;
-        input >> j;
-
-        addressBook = j.get<std::vector<AddressBookEntry>>();
+        rapidjson::IStreamWrapper isw(input);
+        rapidjson::Document j;
+        if(!j.ParseStream(isw).HasParseError())
+        {
+            for (auto& v : j.GetArray())
+            {
+                AddressBookEntry entry;
+                entry.fromJSON(v);
+                addressBook.push_back(entry);
+            }
+        }
     }
 
     return addressBook;
 }
 
-void to_json(json &j, const AddressBookEntry &a)
-{
-    j = {
-        {"friendlyName", a.friendlyName},
-        {"address", a.address},
-        {"paymentID", a.paymentID},
-    };
-}
-
-void from_json(const json &j, AddressBookEntry &a)
-{
-    a.friendlyName = j.at("friendlyName").get<std::string>();
-    a.address = j.at("address").get<std::string>();
-    a.paymentID = j.at("paymentID").get<std::string>();
-}
-
 bool saveAddressBook(const std::vector<AddressBookEntry> addressBook)
 {
-    json addressBookJson = addressBook;
-
     std::ofstream output(WalletConfig::addressBookFilename);
 
     if (output)
     {
-        output << std::setw(4) << addressBookJson << std::endl;
+        rapidjson::OStreamWrapper osw(output);
+        rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
+        writer.StartArray();
+        for(auto &entry : addressBook)
+        {
+            entry.toJSON(writer);
+        }
+        writer.EndArray();
+        writer.Flush();
     }
     else
     {

@@ -13,6 +13,7 @@
 #include <limits>
 #include <initializer_list>
 #include <boost/uuid/uuid.hpp>
+#include <crypto/hash.h>
 
 namespace CryptoNote {
 	namespace parameters {
@@ -37,7 +38,7 @@ namespace CryptoNote {
 
 		const uint64_t LWMA_2_DIFFICULTY_BLOCK_INDEX = 2;
 		const uint64_t LWMA_2_DIFFICULTY_BLOCK_INDEX_V2 = 3;
-		const uint64_t LWMA_2_DIFFICULTY_BLOCK_INDEX_V3 = 205000; //diff adjustment
+		const uint64_t LWMA_2_DIFFICULTY_BLOCK_INDEX_V3 = 280000; //diff adjustment
 
 		const unsigned EMISSION_SPEED_FACTOR = 22;
 		static_assert(EMISSION_SPEED_FACTOR <= 8 * sizeof(uint64_t), "Bad EMISSION_SPEED_FACTOR");
@@ -88,16 +89,19 @@ namespace CryptoNote {
 
 		const uint64_t MINIMUM_FEE = UINT64_C(0); //0
 
-		const uint64_t MINIMUM_MIXIN = 0;
-		const uint64_t MAXIMUM_MIXIN = 7;
+		const uint64_t MINIMUM_MIXIN = 3;
+		const uint64_t MAXIMUM_MIXIN = 12;
+
+		const uint64_t MINIMUM_MIXIN_V1 = 0;
+		const uint64_t MAXIMUM_MIXIN_V1 = 7;
 
 		/* The heights to activate the mixin limits at */
-		const uint32_t MIXIN_LIMITS_V1_HEIGHT = 0;
-		const uint32_t MIXIN_LIMITS_V2_HEIGHT = 1;
+		const uint32_t MIXIN_LIMITS_V1_HEIGHT = 400000; //height at which new Mixin Limits Kick in
 
 		/* The mixin to use by default with zedwallet and wallet-service */
-		/* DEFAULT_MIXIN_V0 is the mixin used before MIXIN_LIMITS_V1_HEIGHT is started */
+		/* DEFAULT_MIXIN_V1 is the mixin used before MIXIN_LIMITS_V1_HEIGHT is started */
 		const uint64_t DEFAULT_MIXIN = MINIMUM_MIXIN;
+		const uint64_t DEFAULT_MIXIN_V1 = MINIMUM_MIXIN_V1;
 
 		const uint64_t DEFAULT_DUST_THRESHOLD = UINT64_C(0);
 		const uint64_t DEFAULT_DUST_THRESHOLD_V2 = UINT64_C(0);
@@ -108,11 +112,11 @@ namespace CryptoNote {
 		const uint64_t EXPECTED_NUMBER_OF_BLOCKS_PER_DAY = 24 * 60 * 60 / DIFFICULTY_TARGET;
 		const size_t   DIFFICULTY_WINDOW = 60;
 		const size_t   DIFFICULTY_WINDOW_V1 = 720;
-		const size_t   DIFFICULTY_CUT = 0;  // timestamps to cut after sorting
+		const size_t   DIFFICULTY_CUT = 5;  // timestamps to cut after sorting
 		const size_t   DIFFICULTY_CUT_V1 = 60;  // timestamps to cut after sorting
-		const size_t   DIFFICULTY_LAG = 0;  // !!!
+		const size_t   DIFFICULTY_LAG = 5;  // !!!
 		const size_t   DIFFICULTY_LAG_V1 = 15;  // !!!
-		const uint64_t DIFFICULTY_BLOCKS_COUNT = DIFFICULTY_WINDOW + 1;
+		const uint64_t DIFFICULTY_BLOCKS_COUNT = DIFFICULTY_WINDOW + DIFFICULTY_LAG;
 
 		static_assert(2 * DIFFICULTY_CUT <= DIFFICULTY_WINDOW - 2, "Bad DIFFICULTY_WINDOW or DIFFICULTY_CUT");
 
@@ -121,14 +125,14 @@ namespace CryptoNote {
 		const uint64_t MAX_BLOCK_SIZE_GROWTH_SPEED_DENOMINATOR = 365 * 24 * 60 * 60 / DIFFICULTY_TARGET;
 		const uint64_t MAX_EXTRA_SIZE = 140000;
 		const uint64_t MAX_EXTRA_SIZE_V2 = 10240;
-		const uint64_t MAX_EXTRA_SIZE_V2_HEIGHT = 205000; //height at which tx extra is limited to 10240 bytes
+		const uint64_t MAX_EXTRA_SIZE_V2_HEIGHT = 280000; //height at which tx extra is limited to 10240
 
 		/* For new projects forked from this code base, the values immediately below
-		   should be changed to 0 to prevent issues with transaction processing
-			and other possible unexpected behavior */
-		const uint64_t TRANSACTION_SIGNATURE_COUNT_VALIDATION_HEIGHT = 205000; //Signature count validation
-		const uint64_t BLOCK_BLOB_SHUFFLE_CHECK_HEIGHT = 205000; //Block blob shuffle check
-        const uint64_t TRANSACTION_INPUT_BLOCKTIME_VALIDATION_HEIGHT = 205000; //TX input validation height
+   should be changed to 0 to prevent issues with transaction processing
+   and other possible unexpected behavior */
+		const uint64_t TRANSACTION_SIGNATURE_COUNT_VALIDATION_HEIGHT = 280000; //UPGRADE HEIGHT
+		const uint64_t BLOCK_BLOB_SHUFFLE_CHECK_HEIGHT = 280000; //UPGRADE HEIGHT
+        const uint64_t TRANSACTION_INPUT_BLOCKTIME_VALIDATION_HEIGHT = 280000; //UPGRADE HEIGHT
 
 		const uint64_t CRYPTONOTE_LOCKED_TX_ALLOWED_DELTA_BLOCKS = 1;
 		const uint64_t CRYPTONOTE_LOCKED_TX_ALLOWED_DELTA_SECONDS = DIFFICULTY_TARGET * CRYPTONOTE_LOCKED_TX_ALLOWED_DELTA_BLOCKS;
@@ -165,12 +169,13 @@ namespace CryptoNote {
 			65500, //first fork to introduce DUST fund
 			67500, //fix tx sizes issue
 			130000, // CN Turtle
-			205000, //Difficulty, signature count validation, block blob shuffle & tx inputs block time
-			350000  // next fork height (dust v2 & net protect)
+			280000, //Difficulty Update
+			400000, // mixin limits reset
+			500000 // next fork height (dust v2 & net protect)
 		};
 
 		/* MAKE SURE TO UPDATE THIS VALUE WITH EVERY MAJOR RELEASE BEFORE A FORK */
-		const uint64_t SOFTWARE_SUPPORTED_FORK_INDEX = 7;
+		const uint64_t SOFTWARE_SUPPORTED_FORK_INDEX = 7; //supports up to diff update
 
 		const uint64_t FORK_HEIGHTS_SIZE = sizeof(FORK_HEIGHTS) / sizeof(*FORK_HEIGHTS);
 
@@ -204,6 +209,7 @@ namespace CryptoNote {
 	const uint8_t  BLOCK_MAJOR_VERSION_3 = 3;
 	const uint8_t  BLOCK_MAJOR_VERSION_4 = 4; //block version to fix tx sizes issue
 	const uint8_t  BLOCK_MAJOR_VERSION_5 = 5; //algo change to CN Turtle
+	
 	const uint8_t  BLOCK_MINOR_VERSION_0 = 0;
 	const uint8_t  BLOCK_MINOR_VERSION_1 = 1;
 
@@ -222,6 +228,18 @@ namespace CryptoNote {
 	// and the minimum version for communication between nodes
 	const uint8_t  P2P_CURRENT_VERSION = 5; //bump p2p version 
 	const uint8_t  P2P_MINIMUM_VERSION = 4; //bump min supported version
+const std::unordered_map<
+    uint8_t,
+    std::function<void(const void *data, size_t length, Crypto::Hash &hash)>
+> HASHING_ALGORITHMS_BY_BLOCK_VERSION =
+{
+    { BLOCK_MAJOR_VERSION_0, Crypto::cn_slow_hash_v0 },             /* From zero */
+	{ BLOCK_MAJOR_VERSION_1, Crypto::cn_slow_hash_v0 },             /* UPGRADE_HEIGHT_V1 */
+    { BLOCK_MAJOR_VERSION_2, Crypto::cn_slow_hash_v0 },             /* UPGRADE_HEIGHT_V2 */
+    { BLOCK_MAJOR_VERSION_3, Crypto::cn_lite_slow_hash_v1 },        /* UPGRADE_HEIGHT_V3 */
+    { BLOCK_MAJOR_VERSION_4, Crypto::cn_lite_slow_hash_v1 },        /* UPGRADE_HEIGHT_V4 */
+    { BLOCK_MAJOR_VERSION_5, Crypto::cn_turtle_lite_slow_hash_v2 }  /* UPGRADE_HEIGHT_V5 */
+};
 
 	// This defines the minimum P2P version required for lite blocks propogation
 	const uint8_t  P2P_LITE_BLOCKS_PROPOGATION_VERSION = 4;
@@ -243,12 +261,12 @@ namespace CryptoNote {
 	const size_t   P2P_DEFAULT_HANDSHAKE_INVOKE_TIMEOUT = 5000;          // 5 seconds
 	const char     P2P_STAT_TRUSTED_PUB_KEY[] = "";
 
-	const uint64_t DATABASE_WRITE_BUFFER_MB_DEFAULT_SIZE = 256;
-	const uint64_t DATABASE_READ_BUFFER_MB_DEFAULT_SIZE = 10;
-	const uint32_t DATABASE_DEFAULT_MAX_OPEN_FILES = 100;
-	const uint16_t DATABASE_DEFAULT_BACKGROUND_THREADS_COUNT = 2;
+	const uint64_t DATABASE_WRITE_BUFFER_MB_DEFAULT_SIZE = 1024;
+	const uint64_t DATABASE_READ_BUFFER_MB_DEFAULT_SIZE = 1024;
+	const uint32_t DATABASE_DEFAULT_MAX_OPEN_FILES = 500;
+	const uint16_t DATABASE_DEFAULT_BACKGROUND_THREADS_COUNT = 10;
 
-	const char     LATEST_VERSION_URL[] = "http://latest.plenteum.com";
+	const char     LATEST_VERSION_URL[] = "https://www.plenteum.com/latest";
 	const std::string LICENSE_URL = "https://github.com/plenteum/plenteum/blob/master/LICENSE";
 	const static boost::uuids::uuid CRYPTONOTE_NETWORK =
 	{

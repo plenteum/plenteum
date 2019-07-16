@@ -7,6 +7,10 @@ if(CCACHE_PROGRAM)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
 endif()
 
+set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Choose the type of build, options are: Debug, Release, RelWithDebInfo")
+set(CMAKE_CONFIGURATION_TYPES Debug RelWithDebInfo Release CACHE TYPE INTERNAL)
+set(ARCH native CACHE STRING "CPU to build for: -march value or native")
+
 project(Plenteum)
 
 # Required for finding Threads on ARM
@@ -37,13 +41,8 @@ find_package(Threads)
 
 set(VERSION "0.1")
 
-## This section describes build options for additional support in the project
-set(ENABLE_SSL OFF CACHE STRING "Enable SSL support")
-
 ## This section describes our general CMake setup options
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-set(CMAKE_CONFIGURATION_TYPES Debug RelWithDebInfo Release CACHE TYPE INTERNAL)
-set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: Debug, Release, RelWithDebInfo")
 set(CMAKE_SKIP_INSTALL_RULES OFF FORCE)
 set(CMAKE_SKIP_PACKAGE_ALL_DEPENDENCY ON FORCE)
 set(CMAKE_SUPPRESS_REGENERATION ON)
@@ -54,20 +53,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-## This section is specifically for RocksDB build options that we've disabled for maximum portability
-set(ENABLE_AVX OFF CACHE STRING "Enable RocksDB AVX/AVX2? Defaults to OFF")
-set(ENABLE_LEAF_FRAME OFF CACHE STRING "Enable RocksDB OMIT_LEAF_FRAME_POINTER detection? Defaults to OFF")
-set(ENABLE_SSE42 OFF CACHE STRING "Enable RocksDB SSE4.2 support detection? Defaults to OFF")
-set(ENABLE_THREAD_LOCAL OFF CACHE STRING "Enable RocksDB THREAD_LOCAL support detection? Defaults to OFF")
-set(ENABLE_SYNC_FILE_RANGE_WRITE OFF CACHE STRING "Enable RocksDB SYNC_FILE_RANGE_WRITE support detection? Defaults to OFF")
-set(ENABLE_PTHREAD_MUTEX_ADAPTIVE_NP OFF CACHE STRING "Enable RocksDB PTHREAD_MUTEX_ADAPTIVE_NP support detection? Defaults to OFF")
-set(ENABLE_MALLOC_USABLE_SIZE OFF CACHE STRING "Enable RocksDB MALLOC_USABLE_SIZE support detection? Defaults to OFF")
-set(ENABLE_SCHED_GETCPU OFF CACHE STRING "Enable RocksDB SCHED_GETCPU support detection? Defaults to OFF")
-
 ## This section is for settings found in the slow-hash routine(s) that may benefit some systems (mostly ARM)
 set(FORCE_USE_HEAP ON CACHE BOOL "Force the use of heap memory allocation")
 set(NO_AES OFF CACHE BOOL "Turn off Hardware AES instructions?")
 set(NO_OPTIMIZED_MULTIPLY_ON_ARM OFF CACHE BOOL "Turn off Optimized Multiplication on ARM?")
+
+message(STATUS "Building for target architecture: ${ARCH}")
 
 if(FORCE_USE_HEAP)
   add_definitions(-DFORCE_USE_HEAP)
@@ -95,11 +86,6 @@ set(LABEL "")
 if(DEFINED ENV{LABEL})
   set(LABEL $ENV{LABEL})
   message(STATUS "Found LABEL: ${LABEL}")
-endif()
-
-# We do not support 32-bit builds. When and if we do, this can be removed.
-if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
-  message(FATAL_ERROR "Targeting a 32-bit architecture is not supported.")
 endif()
 
 ## We only build static binaries -- this is left here for our dependencies
@@ -166,7 +152,6 @@ if(NOT MSVC)
   endif()
 
   ## This is here to support building for multiple architecture types... but we all know how well that usually goes...
-  set(ARCH default CACHE STRING "CPU to build for: -march value or default")
   if("${ARCH}" STREQUAL "default")
     set(ARCH_FLAG "")
   else()
@@ -192,6 +177,8 @@ if(NOT MSVC)
     set(CRYPTOPP_AARCH64 ON CACHE BOOL FORCE "Tell CryptoPP that we are building for aarch64")
   elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64" AND NOT "${LABEL}" STREQUAL "aarch64")
     set(MAES_FLAG "-maes")
+  else()
+    set(MAES_FLAG "")
   endif()
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 ${STATICASSERTC_FLAG} ${WARNINGS} ${C_WARNINGS} ${ARCH_FLAG} ${MAES_FLAG}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 ${STATICASSERTCPP_FLAG} ${WARNINGS} ${CXX_WARNINGS} ${ARCH_FLAG} ${MAES_FLAG}")
@@ -248,7 +235,7 @@ endif()
 ## Go get us some static BOOST libraries
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_STATIC_RUNTIME ON)
-find_package(Boost REQUIRED COMPONENTS system filesystem thread date_time chrono regex serialization program_options)
+find_package(Boost REQUIRED COMPONENTS system filesystem thread date_time chrono regex serialization)
 message(STATUS "Boost Found: ${Boost_INCLUDE_DIRS}")
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 if(APPLE)
@@ -257,27 +244,51 @@ elseif(NOT MSVC)
   set(Boost_LIBRARIES "${Boost_LIBRARIES};rt")
 endif()
 
-## Go get us some OpenSSL libraries if we need to
-if(ENABLE_SSL)
-  set(OPENSSL_USE_STATIC_LIBS OFF)
-  find_package(OpenSSL)
-  if(OPENSSL_FOUND)
-    include_directories(SYSTEM ${OPENSSL_INCLUDE_DIR})
-    add_definitions(-DCPPHTTPLIB_OPENSSL_SUPPORT)
-    message(STATUS "OpenSSL Found: ${OPENSSL_INCLUDE_DIR}")
-    message(STATUS "OpenSSL Libraries: ${OPENSSL_LIBRARIES}")
-  else()
-    message(STATUS "OpenSSL Found: No... Skipping...")
+## Let's see if we have any OpenSSL static libraries available
+set(OPENSSL_USE_STATIC_LIBS ON)
+## On MSVC, we need to link the RT/MT libraries
+if(MSVC)
+  set(OPENSSL_MSVC_STATIC_RT ON)
+endif()
+
+# We have to look for Homebrew OpenSSL a bit differently
+# Borrowed from https://github.com/tarantool/tarantool/commit/6eab201af1843f53a833c8928dc58fceffa08147
+if(APPLE)
+  find_program(HOMEBREW_EXECUTABLE brew)
+  execute_process(COMMAND ${HOMEBREW_EXECUTABLE} --prefix openssl
+                  OUTPUT_VARIABLE HOMEBREW_OPENSSL
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if (DEFINED HOMEBREW_OPENSSL)
+    if (NOT DEFINED OPENSSL_ROOT_DIR)
+        message(STATUS "Setting OpenSSL root to ${HOMEBREW_OPENSSL}")
+        set(OPENSSL_ROOT_DIR "${HOMEBREW_OPENSSL}")
+    endif()
   endif()
-endif(ENABLE_SSL)
+endif()
+
+find_package(OpenSSL)
+
+if(OPENSSL_FOUND)
+  ## On non MSVC build systems, we need to link ldl with the static OpenSSL library
+  if (NOT MSVC)
+    set(OPENSSL_LIBRARIES "${OPENSSL_LIBRARIES};dl")
+  endif()
+
+  include_directories(SYSTEM ${OPENSSL_INCLUDE_DIR})
+  add_definitions(-DCPPHTTPLIB_OPENSSL_SUPPORT)
+  message(STATUS "OpenSSL Found: ${OPENSSL_INCLUDE_DIR}")
+  message(STATUS "OpenSSL Libraries: ${OPENSSL_LIBRARIES}")
+else()
+  message(STATUS "OpenSSL Found: No... Skipping...")
+endif()
 
 add_subdirectory(external)
 add_subdirectory(src)
 
 ## We need to setup the RocksDB build environment to match our system
 if(NOT MSVC)
-  execute_process(
-    COMMAND cmake ${CMAKE_CURRENT_SOURCE_DIR}/external/rocksdb -DWITH_GFLAGS=0 -DCMAKE_BUILD_TYPE=MinSizeRel -DWITH_TESTS=OFF -DWITH_TOOLS=OFF -DPORTABLE=ON -B${PROJECT_BINARY_DIR}/rocksdb
-  )
+    execute_process(
+        COMMAND cmake ${CMAKE_CURRENT_SOURCE_DIR}/external/rocksdb -DARCH=${ARCH} -DWITH_LZ4=ON -DWITH_GFLAGS=0 -DCMAKE_BUILD_TYPE=MinSizeRel -DWITH_TESTS=OFF -DWITH_TOOLS=OFF -DPORTABLE=ON -B${PROJECT_BINARY_DIR}/rocksdb
+    )
   set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PROJECT_BINARY_DIR}/rocksdb/librocksdb.a")
 endif()

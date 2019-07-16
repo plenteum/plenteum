@@ -31,7 +31,7 @@ _note() {
 _fail() {
     local msg=`echo \'$1\'`
     _colorize red "Failure: $msg" | tee -a build.log && echo
-    _colorize red "Please check build.log and if you need help check out the team discord @ 'https://chat.plenteum.com'" && echo
+    _colorize red "Please check build.log and if you need help check out the team discord @ 'https://discordapp.com/invite/NZ7QYJA'" && echo
     _colorize purple "Exiting script" && echo
     exit 1
 }

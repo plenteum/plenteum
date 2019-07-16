@@ -224,6 +224,24 @@ std::string ipAddressToString(uint32_t ip) {
   return std::string(buf);
 }
 
+bool parseIpAddress(uint32_t &ip, const std::string &addr)
+{
+	uint32_t v[4];
+
+	if (sscanf(addr.c_str(), "%d.%d.%d.%d", &v[0], &v[1], &v[2], &v[3]) != 4) {
+		return false;
+	}
+
+	for (int i = 0; i < 4; ++i) {
+		if (v[i] > 0xff) {
+			return false;
+		}
+	}
+
+	ip = (v[3] << 24) | (v[2] << 16) | (v[1] << 8) | v[0];
+	return true;
+}
+
 bool parseIpAddressAndPort(uint32_t& ip, uint32_t& port, const std::string& addr) {
   uint32_t v[4];
   uint32_t localPort;
@@ -262,6 +280,27 @@ std::string timeIntervalToString(uint64_t intervalInSeconds) {
     ".s" << std::setw(2) << seconds;
 
   return ss.str();
+}
+
+/* Trims any whitespace from left and right */
+void trim(std::string &str)
+{
+	rightTrim(str);
+	leftTrim(str);
+}
+
+void leftTrim(std::string &str)
+{
+	std::string whitespace = " \t\n\r\f\v";
+
+	str.erase(0, str.find_first_not_of(whitespace));
+}
+
+void rightTrim(std::string &str)
+{
+	std::string whitespace = " \t\n\r\f\v";
+
+	str.erase(str.find_last_not_of(whitespace) + 1);
 }
 
 }
