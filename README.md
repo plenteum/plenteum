@@ -2,7 +2,7 @@
 
 #### Build Status
 [![Build Status](https://travis-ci.com/plenteum/plenteum.svg?branch=master)](https://travis-ci.com/plenteum/plenteum) 
-[![Build status](https://ci.appveyor.com/api/projects/status/github/plenteum/plenteum?branch=master&svg=true)](https://ci.appveyor.com/project/davehlong/plenteum)
+[![Build status](https://ci.appveyor.com/api/projects/status/yiyj95qfdgkpca39?svg=true)](https://ci.appveyor.com/project/davehlong/plenteum)
 
 ### How To Compile
 
