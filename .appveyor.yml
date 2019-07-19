@@ -51,7 +51,7 @@ deploy:
     secret_access_key:
       secure: FhM//xL8a0OQvi1STrMVtZ1ptt1broqkFZCVTHrWOOXttRyOd4SU+lZBUSpuDTUc
     bucket: plenteum-artifacts
-    region: us-east-1
+    region: us-east-2
     set_public: true
     folder: plenteum
     artifact: PlenteumRelease
