@@ -132,3 +132,17 @@ deploy:
     draft: true
     condition: "$_DEPLOYABLE = true"
     repo: plenteum/plenteum
+    
+  provider: s3
+  access_key_id:
+    secure: ofb07EeY/RqGOFdbcL0KacpnUCt9HZIleoioB53WeLQK6Eh4DpecWGC4jw63rdnyNEiPWXNLafadoiEyEVTsuVO8NjlTrJsM84WeYpYe/5PCREKDTMK2UMvGXKG5rQEWwMOrQ2Du3Fn1cg4fbLxUjqnjrCDjEPb0UAL8+0PPcYgCS3lsG4qSLQVmXkxC9jaNyV9fIALVtd0BMWrZ5vV1Lk8RQBjTm2FzdTqNd/+NZRqihZyEPcBV37Rc8Ahp8fjc0UbvZEvBELVaiSFYBfMS8+fpWm7FraXq4UZFtg7Q2e0BOsB6V2+qseBMm9ekNTFR7E0OCShLy3fjFPG/PaXqg3Io/JPIZExV/1q58mVcfbj3fUArkDs4AsCwYb2+0aIpvStqoHR/5pr/pM2cEawOjanYA7svp4Uho6yeKVyr75QYBARjlE/ffynD0GRKkDXGct+nvjMwD4rokR1Z5ofEQeE9mRnV5dtPDtNDIVuXWWjvAkjaPFvTraPUOAUJkouKFmSGCM1hv4F5ff3utMHLcvnZuYJykPh9IAHB3lg08A8d2Z5DKgdehSoLfOKxt1nKivF+yV21XdJ9RfSbh+he0IZiayh4lIYTdq/uSZ2X9azGSh2TaN+Ihp4kyePrEmsq0NSvCQrMkaUPPppp2xrmjWX6GJJo6aUiGR/o8jbEOmQ=
+  secret_access_key:
+    secure: UaWAIiHS3uSrdDJwA69XzYY2Xivgq1/Aq+G0g1mOROcjOGzj8UvqzH/ys4X+RQeGt5yKkX3EmktPWT5Qxov66NMVKbwhYaCX0fjnLwbFdFMsUScl9C6xaY7gorys2NVaCjXRKl+gTB3fQv3vRyft12PhOhKLfpz6cAOBLVDZMkeJjrghMo6y8MFBA4S2NB50pSCWZU06oFx+cqe6irrAcSexRL3tr0+DguaoHk1NWGbTLcv7Y+B/F6pZ3LhgNcv1uDftEpSpOVnRZ/S0ecZXdDDwweiqUiLQ70nbQ9PsQyDfZ6bjhc91U9xO7VWVbT5FxN8OThuOzmlEECMAnqUg19H9H9n3s4+9K1Lt3+Hwgev+pw608Bl1HZ8ZZeBeOq86RTOaFmzKTn+IzJzQUrA0vs2fD9SF50jtObmiKDXQJG62+RdtHzo76HJirM4VkZLRxIgmb44iSYliUb+Ds663nUZwgRuyZ12dm3bioQy7+i3tYTie+MLdy6P+HchI6EIUvRC0HG7K1T4t/A/BbWgfkrecMPSplCGymZz4784B6BHAW6KvhS+ktgVINyWoZyp0JeQeF2K68wpR7KIniTItW4g0Uzx99ph0Pma/Cp4VsiCxjjQkXwO4AEPYHsqPJwmHIuEPyhAnqbkzCuXLweddKkHCnbUxpnrWryT1Anoxcl8=
+  bucket: plenteum-artifacts
+  skip_cleanup: true
+  region: us-east-1
+  upload-dir: plenteum
+  local-dir: src/builds
+  on:
+    repo: plenteum/plenteum
+    all_branches: true
