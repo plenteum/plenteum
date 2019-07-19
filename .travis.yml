@@ -140,6 +140,7 @@ deploy:
       secure: ZHdWy0pryCGqaD7jWX2UjrQTZsky5d5B7PnHMTTCmm2VeSjGfy9QO82oNyya2eNTzgnQHrlcNBhjswNLCllloMOW9pZ5IDGDOalyn9zaksObl/WPWWb/bxu7b17eYeH6vbcKo0UVAntcUHuHn1c2cLCZn55kqfTvtFFHMv3P/FQkg1lZvTaZi0U4HkTsg5kyTva6mLwS/TxMJmvPtNO5IqEPytKP0zDhKntVNaQAH8M8CowGzx0R5pnbJyxQFSfvolUWpDJVenRTFLgq9IwtT4GS47zNQDM6TbsuI34Vhd+xj1wm3jD9oCgcuRomtuwqzabt3ap08HbM+ETpWYN/UTVsalOLIHldYBNTleYT5W7+Fk0sjpwRi0uU8ca0siV2sU0mC0VIToIhk71zCv/jJd5FPG6bxLuWWQtGxvR+oNbOSWwU7DzqcQQHsdJpiRk7bsh4BflqUa/fulwIi3btJKAGZMixl5Vag60wXnEo0zHbajeHNVUCRh2BfBLdlaF+JgRv+fn1vAcE+pYp5OQqy80U03U05/kwUUE+aI81/vtpOEeqRLPKdgfWi/S8cCF/mMMc4oMlWpkacXvnRDWLt5PNN9/jTsj7wFODJCwBRNLXjlN2RsGMcVhg2AZWbzQRgBh3IzNQfCoofLX5vIuRF466K3/V1uQ4EQpu3Cbdl5w=
     bucket: plenteum-artifacts
     skip_cleanup: true
+    acl: public_read
     region: us-east-2
     upload-dir: plenteum
     local-dir: builds
