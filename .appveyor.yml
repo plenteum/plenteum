@@ -47,7 +47,7 @@ deploy:
     
   - provider: S3
     access_key_id:
-      secure: Tm8HKNHztHnIHphhtPuL0HuN8nWxYjsLrAWzTpvLJQU
+      secure: Tm8HKNHztHnIHphhtPuL0HuN8nWxYjsLrAWzTpvLJQU=
     secret_access_key:
       secure: FhM//xL8a0OQvi1STrMVtZ1ptt1broqkFZCVTHrWOOXttRyOd4SU+lZBUSpuDTUc
     bucket: plenteum-artifacts

@@ -142,7 +142,7 @@ deploy:
     skip_cleanup: true
     region: us-east-1
     upload-dir: plenteum
-    local-dir: src/builds
+    local-dir: builds
     on:
       repo: plenteum/plenteum
       all_branches: true
