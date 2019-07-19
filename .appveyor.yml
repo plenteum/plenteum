@@ -44,4 +44,16 @@ deploy:
     on:
       appveyor_repo_name: plenteum/plenteum
       appveyor_repo_tag: true
-
+    
+  - provider: S3
+    access_key_id:
+      secure: Tm8HKNHztHnIHphhtPuL0HuN8nWxYjsLrAWzTpvLJQU
+    secret_access_key:
+      secure: FhM//xL8a0OQvi1STrMVtZ1ptt1broqkFZCVTHrWOOXttRyOd4SU+lZBUSpuDTUc
+    bucket: plenteum-artifacts
+    region: us-east-1
+    set_public: true
+    folder: plenteum
+    artifact: PlenteumRelease
+    on:
+      appveyor_repo_name: plenteum/plenteum
