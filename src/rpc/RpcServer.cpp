@@ -123,9 +123,9 @@ namespace CryptoNote
                 for (const auto &cors_domain : obj->getCorsDomains())
                 {
                     response.addHeader("Access-Control-Allow-Origin", cors_domain);
-					response.addHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-                    response.addHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
                 }
+				response.addHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+                response.addHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
                 response.addHeader("Content-Type", "application/json");
                 response.setBody(storeToJson(res.data()));
                 return result;
@@ -243,9 +243,9 @@ namespace CryptoNote
         for (const auto &cors_domain : m_cors_domains)
         {
             response.addHeader("Access-Control-Allow-Origin", cors_domain);
-			response.addHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-            response.addHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
         }
+		response.addHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+        response.addHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
         response.addHeader("Content-Type", "application/json");
 
         JsonRpcRequest jsonRequest;
@@ -292,7 +292,8 @@ namespace CryptoNote
         {
             jsonResponse.setError(JsonRpcError(JsonRpc::errInternalError, e.what()));
         }
-
+		
+		response.setStatus(HttpResponse::STATUS_200);
         response.setBody(jsonResponse.getBody());
         logger(TRACE) << "JSON-RPC response: " << jsonResponse.getBody();
         return true;
