@@ -169,7 +169,7 @@ struct Response {
     void set_content(const std::string &s, size_t n, const std::string &content_type);
     void set_content(const std::string &s, const std::string &content_type);
 
-    Response() : status(200) {}
+    Response() : status(-1) {}
 };
 
 class Stream {
