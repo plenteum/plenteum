@@ -293,7 +293,6 @@ namespace CryptoNote
             jsonResponse.setError(JsonRpcError(JsonRpc::errInternalError, e.what()));
         }
 		
-		response.setStatus(HttpResponse::STATUS_200);
         response.setBody(jsonResponse.getBody());
         logger(TRACE) << "JSON-RPC response: " << jsonResponse.getBody();
         return true;
