@@ -19,18 +19,18 @@
 
 #include <list>
 #include <vector>
-#include <Common/MemoryInputStream.h>
-#include <Common/StringOutputStream.h>
-#include <Common/VectorOutputStream.h>
+#include <common/MemoryInputStream.h>
+#include <common/StringOutputStream.h>
+#include <common/VectorOutputStream.h>
 #include "JsonInputStreamSerializer.h"
 #include "JsonOutputStreamSerializer.h"
 #include "KVBinaryInputStreamSerializer.h"
 #include "KVBinaryOutputStreamSerializer.h"
 #include <zedwallet/Types.h>
 
-#include <Serialization/BinaryInputStreamSerializer.h>
-#include <Serialization/BinaryOutputStreamSerializer.h>
-#include <Serialization/CryptoNoteSerialization.h>
+#include <serialization/BinaryInputStreamSerializer.h>
+#include <serialization/BinaryOutputStreamSerializer.h>
+#include <serialization/CryptoNoteSerialization.h>
 
 namespace Common {
 

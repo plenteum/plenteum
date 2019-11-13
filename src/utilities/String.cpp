@@ -3,7 +3,7 @@
 // Please see the included LICENSE file for more information.
 
 /////////////////////////////
-#include <Utilities/String.h>
+#include <utilities/String.h>
 /////////////////////////////
 
 #include <algorithm>

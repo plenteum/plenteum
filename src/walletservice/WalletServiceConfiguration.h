@@ -7,7 +7,7 @@
 #include <rapidjson/document.h>
 #include <string>
 #include <config/CryptoNoteConfig.h>
-#include <Logging/ILogger.h>
+#include <logging/ILogger.h>
 
 using namespace rapidjson;
 

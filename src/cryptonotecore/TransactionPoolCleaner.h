@@ -13,12 +13,12 @@
 
 #include "crypto/crypto.h"
 
-#include "CryptoNoteCore/ITimeProvider.h"
+#include "cryptonotecore/ITimeProvider.h"
 #include "ITransactionPool.h"
-#include "Logging/ILogger.h"
-#include "Logging/LoggerRef.h"
+#include "logging/ILogger.h"
+#include "logging/LoggerRef.h"
 
-#include <System/ContextGroup.h>
+#include <system/ContextGroup.h>
 
 namespace CryptoNote {
 
@@ -52,7 +52,7 @@ public:
 
   virtual uint64_t getTransactionReceiveTime(const Crypto::Hash& hash) const override;
   virtual std::vector<Crypto::Hash> getTransactionHashesByPaymentId(const Crypto::Hash& paymentId) const override;
-
+  virtual void flush() override;
   virtual std::vector<Crypto::Hash> clean(const uint32_t height) override;
 
 private:

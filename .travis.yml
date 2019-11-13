@@ -10,6 +10,7 @@ matrix:
 
   # Ubuntu, g++-8
   - os: linux
+    dist: trusty
     compiler: gcc
     addons:
       apt:
@@ -28,6 +29,7 @@ matrix:
 
   # Ubuntu, g++-7
   - os: linux
+    dist: trusty
     compiler: gcc
     addons:
       apt:
@@ -45,6 +47,7 @@ matrix:
 
   # Ubuntu, clang-6
   - os: linux
+    dist: trusty
     compiler: clang
     addons:
       apt:
@@ -66,13 +69,14 @@ matrix:
     osx_image: xcode10
     compiler: clang
     env:
-    - MATRIX_EVAL="CC=/usr/local/opt/llvm/bin/clang && CXX=/usr/local/opt/llvm/bin/clang++"
+    - MATRIX_EVAL="CC=/usr/local/opt/llvm@8/bin/clang && CXX=/usr/local/opt/llvm@8/bin/clang++"
     - LABEL="osx"
     - _DEPLOYABLE="true"
     - STRIP="strip"
 
   # Arm (aarch64) cross compile
   - os: linux
+    dist: trusty
     env:
     - MATRIX_EVAL="CC=aarch64-linux-gnu-gcc && CXX=aarch64-linux-gnu-g++"
     - LABEL="aarch64"
@@ -87,7 +91,9 @@ install:
 - if [[ "${LABEL:0:3}" == "osx" ]]; then brew cask uninstall --force oclint || true ; fi
 
 # Need a newer version of llvm to link against to get std::filesystem / std::experimental::filesystem
-- if [[ "${LABEL:0:3}" == "osx" ]]; then travis_retry brew install llvm || travis_retry brew upgrade llvm ; fi
+- if [[ "${LABEL:0:3}" == "osx" ]]; then travis_retry brew install llvm@8 || travis_retry brew upgrade llvm@8 ; fi
+- if [[ "${LABEL:0:3}" == "osx" ]]; then travis_retry brew link --force llvm@8 ; fi
+- if [[ "${LABEL:0:3}" == "osx" ]]; then ln -s /usr/local/opt/llvm@8 /usr/local/opt/llvm ; fi
 
 # Need to make sure that we have openssl installed
 - if [[ "${LABEL:0:3}" == "osx" ]]; then travis_retry brew install openssl || travis_retry brew upgrade openssl ; fi
@@ -111,7 +117,7 @@ script:
 before_deploy:
 - if [[ "${TRAVIS_TAG}" == "" ]]; then export TRAVIS_TAG=${TRAVIS_COMMIT} ; fi
 - cd src
-- TARGETS="Plenteumd miner zedwallet wallet-service zedwallet-beta cryptotest wallet-api"
+- TARGETS="Plenteumd miner zedwallet wallet-service zedwallet-beta cryptotest wallet-api wallet-upgrader"
 - ${STRIP} ${TARGETS}
 - rm -rf plenteum-${TRAVIS_TAG}
 - mkdir plenteum-${TRAVIS_TAG}

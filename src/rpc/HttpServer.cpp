@@ -18,10 +18,10 @@
 #include "HttpServer.h"
 #include <boost/scope_exit.hpp>
 
-#include <HTTP/HttpParser.h>
-#include <System/InterruptedException.h>
-#include <System/TcpStream.h>
-#include <System/Ipv4Address.h>
+#include <http/HttpParser.h>
+#include <system/InterruptedException.h>
+#include <system/TcpStream.h>
+#include <system/Ipv4Address.h>
 
 using namespace Logging;
 

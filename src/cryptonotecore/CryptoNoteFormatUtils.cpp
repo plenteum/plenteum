@@ -18,17 +18,16 @@
 #include "CryptoNoteFormatUtils.h"
 
 #include <set>
-#include <Logging/LoggerRef.h>
-#include <Common/Varint.h>
+#include <logging/LoggerRef.h>
+#include <common/Varint.h>
 
-#include "Serialization/BinaryOutputStreamSerializer.h"
-#include "Serialization/BinaryInputStreamSerializer.h"
-#include "Serialization/CryptoNoteSerialization.h"
+#include "serialization/BinaryOutputStreamSerializer.h"
+#include "serialization/BinaryInputStreamSerializer.h"
+#include "serialization/CryptoNoteSerialization.h"
 
-#include "Account.h"
 #include "CryptoNoteBasicImpl.h"
 
-#include "Common/CryptoNoteTools.h"
+#include "common/CryptoNoteTools.h"
 
 #include <config/CryptoNoteConfig.h>
 

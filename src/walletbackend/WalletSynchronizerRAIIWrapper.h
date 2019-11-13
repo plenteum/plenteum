@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <WalletBackend/WalletSynchronizer.h>
+#include <walletbackend/WalletSynchronizer.h>
 
 class WalletSynchronizerRAIIWrapper
 {

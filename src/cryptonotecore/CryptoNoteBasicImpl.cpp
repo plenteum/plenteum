@@ -17,13 +17,13 @@
 
 #include "CryptoNoteBasicImpl.h"
 #include "CryptoNoteFormatUtils.h"
-#include "Common/CryptoNoteTools.h"
+#include "common/CryptoNoteTools.h"
 
-#include "Serialization/CryptoNoteSerialization.h"
+#include "serialization/CryptoNoteSerialization.h"
 
-#include "Common/Base58.h"
+#include "common/Base58.h"
 #include "crypto/hash.h"
-#include "Common/int-util.h"
+#include "common/int-util.h"
 
 using namespace Crypto;
 using namespace Common;

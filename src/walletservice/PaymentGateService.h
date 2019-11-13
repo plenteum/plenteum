@@ -9,12 +9,12 @@
 #include "ConfigurationManager.h"
 
 #include <config/CliHeader.h>
-#include "Logging/ConsoleLogger.h"
-#include "Logging/LoggerGroup.h"
-#include "Logging/StreamLogger.h"
+#include "logging/ConsoleLogger.h"
+#include "logging/LoggerGroup.h"
+#include "logging/StreamLogger.h"
 
-#include "WalletService/NodeFactory.h"
-#include "WalletService/WalletService.h"
+#include "walletservice/NodeFactory.h"
+#include "walletservice/WalletService.h"
 
 class PaymentGateService {
 public:

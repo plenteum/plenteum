@@ -19,12 +19,12 @@
 
 #include <memory>
 
-#include <HTTP/HttpRequest.h>
-#include <HTTP/HttpResponse.h>
-#include <System/TcpConnection.h>
-#include <System/TcpStream.h>
+#include <http/HttpRequest.h>
+#include <http/HttpResponse.h>
+#include <system/TcpConnection.h>
+#include <system/TcpStream.h>
 
-#include "Serialization/SerializationTools.h"
+#include "serialization/SerializationTools.h"
 
 namespace CryptoNote {
 

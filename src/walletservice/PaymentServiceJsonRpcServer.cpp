@@ -14,10 +14,10 @@
 #include "PaymentServiceJsonRpcMessages.h"
 #include "WalletService.h"
 
-#include "Serialization/JsonInputValueSerializer.h"
-#include "Serialization/JsonOutputStreamSerializer.h"
+#include "serialization/JsonInputValueSerializer.h"
+#include "serialization/JsonOutputStreamSerializer.h"
 
-#include "Rpc/JsonRpc.h"
+#include "rpc/JsonRpc.h"
 
 namespace PaymentService {
 

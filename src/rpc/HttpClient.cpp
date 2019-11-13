@@ -17,10 +17,10 @@
 
 #include "HttpClient.h"
 
-#include <HTTP/HttpParser.h>
-#include <System/Ipv4Resolver.h>
-#include <System/Ipv4Address.h>
-#include <System/TcpConnector.h>
+#include <http/HttpParser.h>
+#include <system/Ipv4Resolver.h>
+#include <system/Ipv4Address.h>
+#include <system/TcpConnector.h>
 
 namespace CryptoNote {
 

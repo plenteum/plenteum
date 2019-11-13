@@ -8,31 +8,30 @@
 // Please see the included LICENSE file for more information.
 
 ///////////////////////////////
-#include <Wallet/WalletGreen.h>
+#include <wallet/WalletGreen.h>
 ///////////////////////////////
 
 #include <algorithm>
 
 #include <cassert>
 
-#include <Common/CryptoNoteTools.h>
-#include <Common/ScopeExit.h>
-#include <Common/ShuffleGenerator.h>
-#include <Common/StdInputStream.h>
-#include <Common/StdOutputStream.h>
-#include <Common/StreamTools.h>
-#include <Common/StringOutputStream.h>
-#include <Common/StringTools.h>
+#include <common/CryptoNoteTools.h>
+#include <common/ScopeExit.h>
+#include <common/ShuffleGenerator.h>
+#include <common/StdInputStream.h>
+#include <common/StdOutputStream.h>
+#include <common/StreamTools.h>
+#include <common/StringOutputStream.h>
+#include <common/StringTools.h>
 
 #include <crypto/crypto.h>
 #include <crypto/random.h>
 
-#include <CryptoNoteCore/Account.h>
-#include <CryptoNoteCore/Core.h>
-#include <CryptoNoteCore/Currency.h>
-#include <CryptoNoteCore/CryptoNoteBasicImpl.h>
-#include <CryptoNoteCore/CryptoNoteFormatUtils.h>
-#include <CryptoNoteCore/TransactionApi.h>
+#include <cryptonotecore/Core.h>
+#include <cryptonotecore/Currency.h>
+#include <cryptonotecore/CryptoNoteBasicImpl.h>
+#include <cryptonotecore/CryptoNoteFormatUtils.h>
+#include <cryptonotecore/TransactionApi.h>
 
 #include <ctime>
 
@@ -44,29 +43,30 @@
 
 #include <random>
 
-#include <Serialization/CryptoNoteSerialization.h>
+#include <serialization/CryptoNoteSerialization.h>
 
 #include <set>
 
-#include <System/EventLock.h>
-#include <System/RemoteContext.h>
+#include <system/EventLock.h>
+#include <system/RemoteContext.h>
 
-#include <Transfers/TransfersContainer.h>
+#include <transfers/TransfersContainer.h>
 
 #include <tuple>
 
 #include <utility>
 
-#include <Utilities/Addresses.h>
-#include <Utilities/ParseExtra.h>
-#include <Utilities/Utilities.h>
+#include <utilities/Addresses.h>
+#include <utilities/ParseExtra.h>
+#include <utilities/Utilities.h>
 
-#include <Wallet/WalletSerializationV2.h>
-#include <Wallet/WalletErrors.h>
-#include <Wallet/WalletUtils.h>
+#include <wallet/WalletSerializationV2.h>
+#include <wallet/WalletErrors.h>
+#include <wallet/WalletUtils.h>
 
-#include <WalletBackend/Constants.h>
-#include <WalletBackend/WalletBackend.h>
+#include <walletbackend/Constants.h>
+#include <walletbackend/Transfer.h>
+#include <walletbackend/WalletBackend.h>
 
 #undef ERROR
 
@@ -416,12 +416,14 @@ void WalletGreen::exportWallet(const std::string& path, bool encrypt, WalletSave
     Tools::ScopeExit failExitHandler([path, &storageCreated] {
       // Don't delete file if it has existed
       if (storageCreated) {
-        boost::system::error_code ignore;
-        boost::filesystem::remove(path, ignore);
+         std::error_code ignore;
+         fs::remove(path, ignore);
       }
     });
 
-    ContainerStorage newStorage(path, FileMappedVectorOpenMode::CREATE, m_containerStorage.prefixSize());
+    ContainerStorage newStorage(path, FileMappedVectorOpenMode::OPEN_OR_CREATE, m_containerStorage.prefixSize());
+    newStorage.clear();
+			
     storageCreated = true;
 
     chacha8_key newStorageKey;
@@ -1534,7 +1536,14 @@ void WalletGreen::prepareTransaction(std::vector<WalletOuts>&& wallets,
   else {
 	  ////extract dust from decomposed outs (excluding change) and add new DUST transfer
 	  uint64_t dustLimit = CryptoNote::parameters::CRYPTONOTE_DUST_OUT_LIMIT;
-	  uint64_t dustAmount = 0;
+	  uint64_t dustAmount = 0; 
+	  
+	  if (fee > CryptoNote::parameters::MINIMUM_FEE) {
+		  //assign the fee amount above the minimum fee to the dust fund
+		  dustAmount = fee - CryptoNote::parameters::MINIMUM_FEE;
+		  //reset the fee to the minimum amount
+		  fee = CryptoNote::parameters::MINIMUM_FEE;
+	  }
 
 	  std::vector<ReceiverAmounts> newDecomposedOutputs;
 	  for (const auto& output : decomposedOutputs) {
@@ -2585,7 +2594,7 @@ CryptoNote::WalletGreen::ReceiverAmounts WalletGreen::splitAmount(
   ReceiverAmounts receiverAmounts;
 
   receiverAmounts.receiver = destination;
-  decomposeAmount(amount, dustThreshold, receiverAmounts.amounts);
+  receiverAmounts.amounts = SendTransaction::splitAmountIntoDenominations(amount);
   return receiverAmounts;
 }
 
@@ -3335,8 +3344,8 @@ size_t WalletGreen::createFusionTransaction(uint64_t threshold, uint16_t mixin,
 WalletGreen::ReceiverAmounts WalletGreen::decomposeFusionOutputs(const AccountPublicAddress& address, uint64_t inputsAmount) {
   WalletGreen::ReceiverAmounts outputs;
   outputs.receiver = address;
+  outputs.amounts = SendTransaction::splitAmountIntoDenominations(inputsAmount);
 
-  decomposeAmount(inputsAmount, 0, outputs.amounts);
   std::sort(outputs.amounts.begin(), outputs.amounts.end());
 
   return outputs;
@@ -3728,7 +3737,7 @@ void WalletGreen::deleteFromUncommitedTransactions(const std::vector<size_t>& de
    100,000 + ((height * 102,400) / 1,051,200)
    At a block height of 400k, this gives us a size of 138,964.
    The constants this calculation arise from can be seen below, or in
-   src/CryptoNoteCore/Currency.cpp::maxBlockCumulativeSize(). Call this value
+   src/cryptonotecore/Currency.cpp::maxBlockCumulativeSize(). Call this value
    x.
 
    Next, calculate the median size of the last 100 blocks. Take the max of

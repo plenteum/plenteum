@@ -13,9 +13,9 @@
 #include <config/CliHeader.h>
 #include <config/CryptoNoteConfig.h>
 
-#include "Common/Util.h"
+#include "common/Util.h"
 #include "crypto/hash.h"
-#include "Logging/ILogger.h"
+#include "logging/ILogger.h"
 
 namespace PaymentService {
 

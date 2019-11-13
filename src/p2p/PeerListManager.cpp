@@ -8,9 +8,9 @@
 #include <algorithm>
 
 #include <time.h>
-#include <System/Ipv4Address.h>
+#include <system/Ipv4Address.h>
 
-#include "Serialization/SerializationOverloads.h"
+#include "serialization/SerializationOverloads.h"
 
 void PeerlistManager::serialize(CryptoNote::ISerializer& s) {
   const uint8_t currentVersion = 1;

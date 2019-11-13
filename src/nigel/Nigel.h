@@ -8,7 +8,7 @@
 
 #include "httplib.h"
 
-#include <Rpc/CoreRpcServerCommandsDefinitions.h>
+#include <rpc/CoreRpcServerCommandsDefinitions.h>
 
 #include <config/CryptoNoteConfig.h>
 

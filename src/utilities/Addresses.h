@@ -6,7 +6,7 @@
 
 #include <CryptoNote.h>
 
-#include <Errors/Errors.h>
+#include <errors/Errors.h>
 
 #include <string>
 

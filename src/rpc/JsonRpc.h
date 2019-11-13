@@ -22,9 +22,9 @@
 #include <functional>
 
 #include "CoreRpcServerCommandsDefinitions.h"
-#include <Common/JsonValue.h>
-#include "Serialization/ISerializer.h"
-#include "Serialization/SerializationTools.h"
+#include <common/JsonValue.h>
+#include "serialization/ISerializer.h"
+#include "serialization/SerializationTools.h"
 
 namespace CryptoNote {
 

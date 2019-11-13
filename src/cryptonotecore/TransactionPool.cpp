@@ -5,9 +5,9 @@
 
 #include "TransactionPool.h"
 
-#include "Common/int-util.h"
+#include "common/int-util.h"
 #include "CryptoNoteBasicImpl.h"
-#include "Common/TransactionExtra.h"
+#include "common/TransactionExtra.h"
 
 namespace CryptoNote {
 
@@ -174,4 +174,12 @@ std::vector<Crypto::Hash> TransactionPool::getTransactionHashesByPaymentId(const
   return transactionHashes;
 }
 
+void TransactionPool::flush()
+{
+    const auto txns = getTransactionHashes();
+    for (const auto tx : txns)
+    {
+        removeTransaction(tx);
+    }
+}
 }

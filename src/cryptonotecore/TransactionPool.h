@@ -16,8 +16,8 @@
 #include <boost/multi_index/ordered_index.hpp>
 
 #include "ITransactionPool.h"
-#include <Logging/LoggerMessage.h>
-#include <Logging/LoggerRef.h>
+#include <logging/LoggerMessage.h>
+#include <logging/LoggerRef.h>
 #include "TransactionValidatiorState.h"
 
 namespace CryptoNote {
@@ -40,6 +40,8 @@ public:
 
   virtual uint64_t getTransactionReceiveTime(const Crypto::Hash& hash) const override;
   virtual std::vector<Crypto::Hash> getTransactionHashesByPaymentId(const Crypto::Hash& paymentId) const override;
+  virtual void flush() override;
+  
 private:
   TransactionValidatorState poolState;
 

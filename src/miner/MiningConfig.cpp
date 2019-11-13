@@ -17,17 +17,17 @@
 #include <config/CliHeader.h>
 
 #include <config/CryptoNoteConfig.h>
-#include "Common/StringTools.h"
-#include <Common/Util.h>
+#include "common/StringTools.h"
+#include <common/Util.h>
 
-#include "Logging/ILogger.h"
+#include "logging/ILogger.h"
 #include "version.h"
 
-#include <Errors/ValidateParameters.h>
+#include <errors/ValidateParameters.h>
 
-#include <Utilities/ColouredMsg.h>
-#include <Utilities/String.h>
-#include <Utilities/Utilities.h>
+#include <utilities/ColouredMsg.h>
+#include <utilities/String.h>
+#include <utilities/Utilities.h>
 
 namespace CryptoNote {
 

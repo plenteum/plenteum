@@ -8,10 +8,10 @@
 
 #include <config/CryptoNoteConfig.h>
 
-#include <CryptoNoteCore/CachedTransaction.h>
-#include <CryptoNoteCore/TransactionApi.h>
+#include <cryptonotecore/CachedTransaction.h>
+#include <cryptonotecore/TransactionApi.h>
 
-#include <Utilities/Mixins.h>
+#include <utilities/Mixins.h>
 
 namespace CryptoNote
 {

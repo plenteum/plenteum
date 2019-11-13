@@ -11,8 +11,8 @@
 #endif
 #include <winsock2.h>
 #include <ws2ipdef.h>
-#include <System/InterruptedException.h>
-#include <System/Ipv4Address.h>
+#include <system/InterruptedException.h>
+#include <system/Ipv4Address.h>
 #include "Dispatcher.h"
 #include "ErrorMessage.h"
 

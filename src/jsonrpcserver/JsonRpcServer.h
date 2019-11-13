@@ -8,12 +8,12 @@
 
 #include <system_error>
 
-#include <System/Dispatcher.h>
-#include <System/Event.h>
-#include "Logging/ILogger.h"
-#include "Logging/LoggerRef.h"
-#include "Rpc/HttpServer.h"
-#include "WalletService/ConfigurationManager.h"
+#include <system/Dispatcher.h>
+#include <system/Event.h>
+#include "logging/ILogger.h"
+#include "logging/LoggerRef.h"
+#include "rpc/HttpServer.h"
+#include "walletservice/ConfigurationManager.h"
 
 namespace CryptoNote {
 class HttpResponse;

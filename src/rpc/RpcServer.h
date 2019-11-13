@@ -12,8 +12,8 @@
 #include <functional>
 #include <unordered_map>
 
-#include <Logging/LoggerRef.h>
-#include "Common/Math.h"
+#include <logging/LoggerRef.h>
+#include "common/Math.h"
 #include "CoreRpcServerCommandsDefinitions.h"
 #include "JsonRpc.h"
 
@@ -25,7 +25,7 @@ struct ICryptoNoteProtocolHandler;
 
 class RpcServer : public HttpServer {
 public:
-  RpcServer(System::Dispatcher& dispatcher, std::shared_ptr<Logging::ILogger> log, Core& c, NodeServer& p2p, ICryptoNoteProtocolHandler& protocol);
+  RpcServer(System::Dispatcher& dispatcher, std::shared_ptr<Logging::ILogger> log, Core& c, NodeServer& p2p, ICryptoNoteProtocolHandler& protocol, const bool BlockExplorerDetailed);
 
   typedef std::function<bool(RpcServer*, const HttpRequest& request, HttpResponse& response)> HandlerFunction;
   bool enableCors(const std::vector<std::string>  domains);
@@ -108,6 +108,7 @@ private:
   std::vector<std::string> m_cors_domains;
   std::string m_fee_address;
   uint32_t m_fee_amount;
+  bool m_blockExplorerDetailed;
 };
 
 }

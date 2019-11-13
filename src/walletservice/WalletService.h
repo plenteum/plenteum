@@ -7,21 +7,21 @@
 
 #pragma once
 
-#include <System/ContextGroup.h>
-#include <System/Dispatcher.h>
-#include <System/Event.h>
+#include <system/ContextGroup.h>
+#include <system/Dispatcher.h>
+#include <system/Event.h>
 #include "INode.h"
-#include "CryptoNoteCore/Currency.h"
+#include "cryptonotecore/Currency.h"
 #include "PaymentServiceJsonRpcMessages.h"
 #undef ERROR //TODO: workaround for windows build. fix it
-#include "Logging/LoggerRef.h"
+#include "logging/LoggerRef.h"
 
 #include <fstream>
 #include <memory>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/hashed_index.hpp>
-#include <Wallet/WalletGreen.h>
+#include <wallet/WalletGreen.h>
 
 namespace CryptoNote {
 class IFusionManager;

@@ -3,18 +3,18 @@
 // Please see the included LICENSE file for more information.
 
 ////////////////////////
-#include <Nigel/Nigel.h>
+#include <nigel/Nigel.h>
 ////////////////////////
 
 #include <config/CryptoNoteConfig.h>
 
-#include <Common/CryptoNoteTools.h>
+#include <common/CryptoNoteTools.h>
 
-#include <Errors/ValidateParameters.h>
+#include <errors/ValidateParameters.h>
 
-#include <Logger/Logger.h>
+#include <logger/Logger.h>
 
-#include <Utilities/Utilities.h>
+#include <utilities/Utilities.h>
 
 using json = nlohmann::json;
 

@@ -14,10 +14,10 @@
 
 #include <iostream>
 
-#include <Utilities/ColouredMsg.h>
-#include <Utilities/String.h>
+#include <utilities/ColouredMsg.h>
+#include <utilities/String.h>
 
-#include <zedwallet++/PasswordContainer.h>
+#include <utilities/PasswordContainer.h>
 
 namespace ZedUtilities
 {

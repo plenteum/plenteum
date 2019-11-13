@@ -9,34 +9,32 @@
 
 #include "DaemonConfiguration.h"
 #include "DaemonCommandsHandler.h"
-#include "Common/ScopeExit.h"
-#include "Common/SignalHandler.h"
-#include "Common/StdOutputStream.h"
-#include "Common/StdInputStream.h"
-#include "Common/PathTools.h"
-#include "Common/Util.h"
-#include "Common/FileSystemShim.h"
+#include "common/ScopeExit.h"
+#include "common/SignalHandler.h"
+#include "common/StdOutputStream.h"
+#include "common/StdInputStream.h"
+#include "common/PathTools.h"
+#include "common/Util.h"
+#include "common/FileSystemShim.h"
 #include "crypto/hash.h"
-#include "Common/CryptoNoteTools.h"
-#include "CryptoNoteCore/Core.h"
-#include "CryptoNoteCore/Currency.h"
-#include "CryptoNoteCore/DatabaseBlockchainCache.h"
-#include "CryptoNoteCore/DatabaseBlockchainCacheFactory.h"
-#include "CryptoNoteCore/MainChainStorage.h"
-#include "CryptoNoteCore/MainChainStorageSqlite.h"
-#include "CryptoNoteCore/MainChainStorageRocksdb.h"
-#include "CryptoNoteCore/RocksDBWrapper.h"
-#include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
-#include "P2p/NetNode.h"
-#include "P2p/NetNodeConfig.h"
-#include "Rpc/RpcServer.h"
-#include "Serialization/BinaryInputStreamSerializer.h"
-#include "Serialization/BinaryOutputStreamSerializer.h"
+#include "common/CryptoNoteTools.h"
+#include "cryptonotecore/Core.h"
+#include "cryptonotecore/Currency.h"
+#include "cryptonotecore/DatabaseBlockchainCache.h"
+#include "cryptonotecore/DatabaseBlockchainCacheFactory.h"
+#include "cryptonotecore/MainChainStorage.h"
+#include "cryptonotecore/RocksDBWrapper.h"
+#include "cryptonoteprotocol/CryptoNoteProtocolHandler.h"
+#include "p2p/NetNode.h"
+#include "p2p/NetNodeConfig.h"
+#include "rpc/RpcServer.h"
+#include "serialization/BinaryInputStreamSerializer.h"
+#include "serialization/BinaryOutputStreamSerializer.h"
 
 #include <config/CryptoNoteCheckpoints.h>
-#include <Logging/LoggerManager.h>
+#include <logging/LoggerManager.h>
 
-#include <Common/FileSystemShim.h>
+#include <common/FileSystemShim.h>
 
 #if defined(WIN32)
 #include <crtdbg.h>
@@ -173,8 +171,6 @@ int main(int argc, char* argv[])
       config.dataDirectory + "/" + CryptoNote::parameters::CRYPTONOTE_BLOCKS_FILENAME,
       config.dataDirectory + "/" + CryptoNote::parameters::CRYPTONOTE_BLOCKINDEXES_FILENAME,
       config.dataDirectory + "/" + CryptoNote::parameters::P2P_NET_DATA_FILENAME,
-      config.dataDirectory + "/" + CryptoNote::parameters::CRYPTONOTE_BLOCKS_FILENAME + ".sqlite3",
-      config.dataDirectory + "/" + CryptoNote::parameters::CRYPTONOTE_BLOCKS_FILENAME + ".rocksdb",
       config.dataDirectory + "/DB"
     };
 
@@ -189,7 +185,25 @@ int main(int argc, char* argv[])
       }
     }
   }
+    
+	if (config.p2pPort < 0 || config.p2pPort > 65535)
+    {
+        std::cout << "P2P Port must be between 0 and 65,535" << std::endl;
+        exit(1);
+    }
 
+    if (config.p2pExternalPort < 0 || config.p2pExternalPort > 65535)
+    {
+        std::cout << "P2P External Port must be between 0 and 65,535" << std::endl;
+        exit(1);
+    }
+
+    if (config.rpcPort < 0 || config.rpcPort > 65535)
+    {
+        std::cout << "RPC Port must be between 0 and 65,535" << std::endl;
+        exit(1);
+    }
+	
   try
   {
     fs::path cwdPath = fs::current_path();
@@ -240,20 +254,8 @@ int main(int argc, char* argv[])
     if (config.rewindToHeight > 0)
     {
       logger(INFO) << "Rewinding blockchain to: " << config.rewindToHeight << std::endl;
-      std::unique_ptr<IMainChainStorage> mainChainStorage;
-
-      if (config.useSqliteForLocalCaches)
-      {
-        mainChainStorage = createSwappedMainChainStorageSqlite(config.dataDirectory, currency);
-      }
-      else if (config.useRocksdbForLocalCaches )
-      {
-        mainChainStorage = createSwappedMainChainStorageRocksdb(config.dataDirectory, currency, dbConfig);
-      }
-      else
-      {
-        mainChainStorage = createSwappedMainChainStorage(config.dataDirectory, currency);
-      }
+      
+	  std::unique_ptr<IMainChainStorage> mainChainStorage = createSwappedMainChainStorage(config.dataDirectory, currency);
 
       mainChainStorage->rewindTo(config.rewindToHeight);
 
@@ -309,21 +311,11 @@ int main(int argc, char* argv[])
     }
 
     System::Dispatcher dispatcher;
-    logger(INFO) << "Initializing core...";
+	logger(INFO) << "Initializing core...";
 
-    std::unique_ptr<IMainChainStorage> tmainChainStorage;
-    if ( config.useSqliteForLocalCaches )
-    {
-      tmainChainStorage = createSwappedMainChainStorageSqlite(config.dataDirectory, currency);
-    }
-    else if ( config.useRocksdbForLocalCaches )
-    {
-      tmainChainStorage = createSwappedMainChainStorageRocksdb(config.dataDirectory, currency, dbConfig);
-    }
-    else
-    {
-      tmainChainStorage = createSwappedMainChainStorage(config.dataDirectory, currency);
-    }
+    std::unique_ptr<IMainChainStorage> tmainChainStorage = createSwappedMainChainStorage(config.dataDirectory, currency);
+
+	logger(INFO) << "Swapped storage created...";
 
     CryptoNote::Core ccore(
       currency,
@@ -333,7 +325,7 @@ int main(int argc, char* argv[])
       std::unique_ptr<IBlockchainCacheFactory>(new DatabaseBlockchainCacheFactory(database, logger.getLogger())),
       std::move(tmainChainStorage)
     );
-
+	logger(INFO) << "loading core...";
     ccore.load();
     logger(INFO) << "Core initialized OK";
 
@@ -358,7 +350,7 @@ int main(int argc, char* argv[])
 		}
 	}*/
     CryptoNote::NodeServer p2psrv(dispatcher, cprotocol, logManager);
-    CryptoNote::RpcServer rpcServer(dispatcher, logManager, ccore, p2psrv, cprotocol);
+    CryptoNote::RpcServer rpcServer(dispatcher, logManager, ccore, p2psrv, cprotocol, config.enableBlockExplorerDetailed);
 
     cprotocol.set_p2p_endpoint(&p2psrv);
     DaemonCommandsHandler dch(ccore, p2psrv, logManager, &rpcServer);

@@ -17,9 +17,9 @@
 
 #include "MainChainStorage.h"
 
-#include <boost/filesystem.hpp>
+#include "common/FileSystemShim.h"
 
-#include "Common/CryptoNoteTools.h"
+#include "common/CryptoNoteTools.h"
 
 namespace CryptoNote {
 
@@ -67,8 +67,8 @@ void MainChainStorage::clear() {
 }
 
 std::unique_ptr<IMainChainStorage> createSwappedMainChainStorage(const std::string& dataDir, const Currency& currency) {
-  boost::filesystem::path blocksFilename = boost::filesystem::path(dataDir) / currency.blocksFileName();
-  boost::filesystem::path indexesFilename = boost::filesystem::path(dataDir) / currency.blockIndexesFileName();
+  fs::path blocksFilename = fs::path(dataDir) / currency.blocksFileName();
+  fs::path indexesFilename = fs::path(dataDir) / currency.blockIndexesFileName();
 
   std::unique_ptr<IMainChainStorage> storage(new MainChainStorage(blocksFilename.string(), indexesFilename.string()));
   if (storage->getBlockCount() == 0) {

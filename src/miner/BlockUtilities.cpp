@@ -3,14 +3,14 @@
 // Please see the included LICENSE file for more information.
 
 /////////////////////////////////
-#include <Miner/BlockUtilities.h>
+#include <miner/BlockUtilities.h>
 /////////////////////////////////
 
-#include <Common/CryptoNoteTools.h>
-#include <Common/Varint.h>
+#include <common/CryptoNoteTools.h>
+#include <common/Varint.h>
 
-#include <Serialization/CryptoNoteSerialization.h>
-#include <Serialization/SerializationTools.h>
+#include <serialization/CryptoNoteSerialization.h>
+#include <serialization/SerializationTools.h>
 
 std::vector<uint8_t> getParentBlockHashingBinaryArray(const CryptoNote::BlockTemplate& block, const bool headerOnly)
 {

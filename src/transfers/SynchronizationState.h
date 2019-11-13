@@ -19,7 +19,7 @@
 
 #include "CommonTypes.h"
 #include "IStreamSerializable.h"
-#include "Serialization/ISerializer.h"
+#include "serialization/ISerializer.h"
 #include <vector>
 #include <map>
 

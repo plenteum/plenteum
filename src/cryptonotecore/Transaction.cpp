@@ -19,8 +19,7 @@
 #include "TransactionApiExtra.h"
 #include "TransactionUtils.h"
 
-#include "Account.h"
-#include "Common/CryptoNoteTools.h"
+#include "common/CryptoNoteTools.h"
 #include <config/CryptoNoteConfig.h>
 
 #include <boost/optional.hpp>

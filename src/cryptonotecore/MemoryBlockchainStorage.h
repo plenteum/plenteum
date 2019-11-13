@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <CryptoNoteCore/BlockchainStorage.h>
+#include <cryptonotecore/BlockchainStorage.h>
 
 namespace CryptoNote {
 

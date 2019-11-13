@@ -17,7 +17,7 @@
 
 #pragma once
 #include <cstdint>
-#include <CryptoNoteCore/Currency.h>
+#include <cryptonotecore/Currency.h>
 
 namespace CryptoNote {
 

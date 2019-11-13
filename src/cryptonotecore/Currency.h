@@ -13,13 +13,11 @@
 #include <boost/utility.hpp>
 #include <config/CryptoNoteConfig.h>
 #include "crypto/hash.h"
-#include "Logging/LoggerRef.h"
+#include "logging/LoggerRef.h"
 #include "CachedBlock.h"
 #include "CryptoNoteBasic.h"
 
 namespace CryptoNote {
-
-class AccountBase;
 
 class Currency {
 public:
@@ -134,7 +132,6 @@ public:
   bool isAmountApplicableInFusionTransactionInput(uint64_t amount, uint64_t threshold, uint32_t height) const;
   bool isAmountApplicableInFusionTransactionInput(uint64_t amount, uint64_t threshold, uint8_t& amountPowerOfTen, uint32_t height) const;
 
-  std::string accountAddressAsString(const AccountBase& account) const;
   std::string accountAddressAsString(const AccountPublicAddress& accountPublicAddress) const;
   bool parseAccountAddressString(const std::string& str, AccountPublicAddress& addr) const;
 
@@ -215,6 +212,7 @@ private:
   uint32_t m_upgradeHeightV5;
   uint32_t m_upgradeHeightV6;
   uint32_t m_upgradeHeightV7;
+  uint32_t m_upgradeHeightV8;
   
   unsigned int m_upgradeVotingThreshold;
   uint32_t m_upgradeVotingWindow;
@@ -300,6 +298,7 @@ public:
   CurrencyBuilder& upgradeHeightV5(uint32_t val) { m_currency.m_upgradeHeightV5 = val; return *this; }
   CurrencyBuilder& upgradeHeightV6(uint32_t val) { m_currency.m_upgradeHeightV6 = val; return *this; }
   CurrencyBuilder& upgradeHeightV7(uint32_t val) { m_currency.m_upgradeHeightV7 = val; return *this; }
+  CurrencyBuilder& upgradeHeightV8(uint32_t val) { m_currency.m_upgradeHeightV8 = val; return *this; }
   
   CurrencyBuilder& upgradeVotingThreshold(unsigned int val);
   CurrencyBuilder& upgradeVotingWindow(uint32_t val) { m_currency.m_upgradeVotingWindow = val; return *this; }

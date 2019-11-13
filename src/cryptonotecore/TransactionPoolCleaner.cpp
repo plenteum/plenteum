@@ -8,10 +8,10 @@
 #include "Core.h"
 #include "Mixins.h"
 
-#include "Common/StringTools.h"
+#include "common/StringTools.h"
 
-#include <System/InterruptedException.h>
-#include <System/Timer.h>
+#include <system/InterruptedException.h>
+#include <system/Timer.h>
 
 namespace CryptoNote {
 
@@ -75,6 +75,11 @@ uint64_t TransactionPoolCleanWrapper::getTransactionReceiveTime(const Crypto::Ha
 
 std::vector<Crypto::Hash> TransactionPoolCleanWrapper::getTransactionHashesByPaymentId(const Crypto::Hash& paymentId) const {
   return transactionPool->getTransactionHashesByPaymentId(paymentId);
+}
+
+void TransactionPoolCleanWrapper::flush()
+{
+    return transactionPool->flush();
 }
 
 std::vector<Crypto::Hash> TransactionPoolCleanWrapper::clean(const uint32_t height) {

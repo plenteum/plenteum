@@ -6,51 +6,50 @@
 // Please see the included LICENSE file for more information.
 
 ////////////////////////////////////////
-#include <WalletService/WalletService.h>
+#include <walletservice/WalletService.h>
 ////////////////////////////////////////
 
 #include <assert.h>
 
-#include <boost/filesystem/operations.hpp>
 
-#include "Common/Base58.h"
-#include "Common/CryptoNoteTools.h"
-#include "Common/TransactionExtra.h"
-#include "Common/Util.h"
+#include "common/Base58.h"
+#include "common/CryptoNoteTools.h"
+#include "common/FileSystemShim.h"
+#include "common/TransactionExtra.h"
+#include "common/Util.h"
 
 #include "crypto/crypto.h"
 
 #include "CryptoNote.h"
 
-#include "CryptoNoteCore/Account.h"
-#include "CryptoNoteCore/CryptoNoteBasicImpl.h"
-#include "CryptoNoteCore/CryptoNoteFormatUtils.h"
-#include "CryptoNoteCore/Mixins.h"
+#include "cryptonotecore/CryptoNoteBasicImpl.h"
+#include "cryptonotecore/CryptoNoteFormatUtils.h"
+#include "cryptonotecore/Mixins.h"
 
 #include <future>
 
-#include <Mnemonics/Mnemonics.h>
+#include <mnemonics/Mnemonics.h>
 
 #include <sstream>
 
-#include <System/EventLock.h>
-#include <System/InterruptedException.h>
-#include <System/RemoteContext.h>
-#include <System/Timer.h>
+#include <system/EventLock.h>
+#include <system/InterruptedException.h>
+#include <system/RemoteContext.h>
+#include <system/Timer.h>
 
 #include <tuple>
 
 #include <unordered_set>
 
-#include <Utilities/Addresses.h>
+#include <utilities/Addresses.h>
 
-#include <WalletService/NodeFactory.h>
-#include <WalletService/PaymentServiceJsonRpcMessages.h>
-#include <WalletService/WalletServiceErrorCategory.h>
+#include <walletservice/NodeFactory.h>
+#include <walletservice/PaymentServiceJsonRpcMessages.h>
+#include <walletservice/WalletServiceErrorCategory.h>
 
-#include <Wallet/WalletGreen.h>
-#include <Wallet/WalletErrors.h>
-#include <Wallet/WalletUtils.h>
+#include <wallet/WalletGreen.h>
+#include <wallet/WalletErrors.h>
+#include <wallet/WalletUtils.h>
 
 namespace PaymentService {
 
@@ -589,8 +588,8 @@ std::error_code WalletService::exportWallet(const std::string& fileName) {
       return make_error_code(CryptoNote::error::NOT_INITIALIZED);
     }
 
-    boost::filesystem::path walletPath(config.walletFile);
-    boost::filesystem::path exportPath = walletPath.parent_path() / fileName;
+    fs::path walletPath(config.walletFile);
+    fs::path exportPath = walletPath.parent_path() / fileName;
 
     logger(Logging::INFO, Logging::BRIGHT_WHITE) << "Exporting wallet to " << exportPath.string();
     wallet.exportWallet(exportPath.string());

@@ -9,11 +9,11 @@
 #include "TransfersSynchronizer.h"
 #include "TransfersConsumer.h"
 
-#include "Common/StdInputStream.h"
-#include "Common/StdOutputStream.h"
-#include "CryptoNoteCore/CryptoNoteBasicImpl.h"
-#include "Serialization/BinaryInputStreamSerializer.h"
-#include "Serialization/BinaryOutputStreamSerializer.h"
+#include "common/StdInputStream.h"
+#include "common/StdOutputStream.h"
+#include "cryptonotecore/CryptoNoteBasicImpl.h"
+#include "serialization/BinaryInputStreamSerializer.h"
+#include "serialization/BinaryOutputStreamSerializer.h"
 
 using namespace Common;
 using namespace Crypto;

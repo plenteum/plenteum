@@ -8,16 +8,16 @@
 #include "MinerManager.h"
 /////////////////////////
 
-#include <Common/CryptoNoteTools.h>
-#include <Common/StringTools.h>
-#include <Common/TransactionExtra.h>
+#include <common/CryptoNoteTools.h>
+#include <common/StringTools.h>
+#include <common/TransactionExtra.h>
 
 #include <config/CryptoNoteConfig.h>
 
-#include <Miner/BlockUtilities.h>
+#include <miner/BlockUtilities.h>
 
-#include <Utilities/ColouredMsg.h>
-#include <Utilities/FormatTools.h>
+#include <utilities/ColouredMsg.h>
+#include <utilities/FormatTools.h>
 
 using json = nlohmann::json;
 

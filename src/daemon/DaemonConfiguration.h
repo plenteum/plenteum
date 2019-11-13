@@ -8,9 +8,9 @@
 
 #include <rapidjson/document.h>
 #include <config/CryptoNoteConfig.h>
-#include <Logging/ILogger.h>
-#include "Common/PathTools.h"
-#include "Common/Util.h"
+#include <logging/ILogger.h>
+#include "common/PathTools.h"
+#include "common/Util.h"
 
 using namespace rapidjson;
 
@@ -38,6 +38,7 @@ namespace DaemonConfig {
       rpcPort = CryptoNote::RPC_DEFAULT_PORT;
       noConsole = false;
       enableBlockExplorer = false;
+	  enableBlockExplorerDetailed = false;
       localIp = false;
       hideMyPort = false;
       p2pResetPeerstate = false;
@@ -46,8 +47,6 @@ namespace DaemonConfig {
       osVersion = false;
       printGenesisTx = false;
       dumpConfig = false;
-      useSqliteForLocalCaches = false;
-      useRocksdbForLocalCaches = false;
       enableDbCompression = false;
       resync = false;
     }
@@ -79,6 +78,7 @@ namespace DaemonConfig {
 
     bool noConsole;
     bool enableBlockExplorer;
+	bool enableBlockExplorerDetailed;
     bool localIp;
     bool hideMyPort;
     bool resync;
@@ -92,8 +92,6 @@ namespace DaemonConfig {
     bool osVersion;
     bool printGenesisTx;
     bool dumpConfig;
-    bool useSqliteForLocalCaches;
-    bool useRocksdbForLocalCaches;
     bool enableDbCompression;
 
 	// tx threshold

@@ -9,11 +9,11 @@
 
 #include <unordered_map>
 
-#include "Common/JsonValue.h"
-#include "JsonRpcServer/JsonRpcServer.h"
+#include "common/JsonValue.h"
+#include "jsonrpcserver/JsonRpcServer.h"
 #include "PaymentServiceJsonRpcMessages.h"
-#include "Serialization/JsonInputValueSerializer.h"
-#include "Serialization/JsonOutputStreamSerializer.h"
+#include "serialization/JsonInputValueSerializer.h"
+#include "serialization/JsonOutputStreamSerializer.h"
 
 namespace PaymentService {
 

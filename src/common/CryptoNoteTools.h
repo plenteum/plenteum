@@ -17,19 +17,19 @@
 
 #pragma once
 
-#include <Common/MemoryInputStream.h>
-#include <Common/StringTools.h>
-#include <Common/VectorOutputStream.h>
+#include <common/MemoryInputStream.h>
+#include <common/StringTools.h>
+#include <common/VectorOutputStream.h>
 
 #include <config/CryptoNoteConfig.h>
 #include <config/Constants.h>
 
 #include <limits>
 
-#include <Serialization/BinaryOutputStreamSerializer.h>
-#include <Serialization/BinaryInputStreamSerializer.h>
-#include <Serialization/CryptoNoteSerialization.h>
-#include <Serialization/SerializationTools.h>
+#include <serialization/BinaryOutputStreamSerializer.h>
+#include <serialization/BinaryInputStreamSerializer.h>
+#include <serialization/CryptoNoteSerialization.h>
+#include <serialization/SerializationTools.h>
 
 namespace CryptoNote {
 

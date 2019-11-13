@@ -8,15 +8,15 @@
 
 #include <future>
 
-#include "Common/SignalHandler.h"
-#include "Common/Util.h"
-#include "Logging/LoggerRef.h"
+#include "common/SignalHandler.h"
+#include "common/Util.h"
+#include "logging/LoggerRef.h"
 #include "PaymentServiceJsonRpcServer.h"
 
-#include "Common/ScopeExit.h"
-#include "NodeRpcProxy/NodeRpcProxy.h"
-#include <System/Context.h>
-#include "Wallet/WalletGreen.h"
+#include "common/ScopeExit.h"
+#include "noderpcproxy/NodeRpcProxy.h"
+#include <system/Context.h>
+#include "wallet/WalletGreen.h"
 
 #ifdef ERROR
 #undef ERROR

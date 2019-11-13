@@ -10,38 +10,38 @@
 
 #include <numeric>
 
-#include <Common/CryptoNoteTools.h>
-#include <Common/ShuffleGenerator.h>
-#include <Common/Math.h>
-#include <Common/MemoryInputStream.h>
-#include <Common/TransactionExtra.h>
+#include <common/CryptoNoteTools.h>
+#include <common/ShuffleGenerator.h>
+#include <common/Math.h>
+#include <common/MemoryInputStream.h>
+#include <common/TransactionExtra.h>
 
 #include <config/Constants.h>
 
-#include <CryptoNoteCore/BlockchainCache.h>
-#include <CryptoNoteCore/BlockchainStorage.h>
-#include <CryptoNoteCore/BlockchainUtils.h>
-#include <CryptoNoteCore/Core.h>
-#include <CryptoNoteCore/CoreErrors.h>
-#include <CryptoNoteCore/CryptoNoteFormatUtils.h>
-#include <CryptoNoteCore/ITimeProvider.h>
-#include <CryptoNoteCore/MemoryBlockchainStorage.h>
-#include <CryptoNoteCore/Mixins.h>
-#include <CryptoNoteCore/TransactionApi.h>
-#include <CryptoNoteCore/TransactionPool.h>
-#include <CryptoNoteCore/TransactionPoolCleaner.h>
-#include <CryptoNoteCore/UpgradeManager.h>
+#include <cryptonotecore/BlockchainCache.h>
+#include <cryptonotecore/BlockchainStorage.h>
+#include <cryptonotecore/BlockchainUtils.h>
+#include <cryptonotecore/Core.h>
+#include <cryptonotecore/CoreErrors.h>
+#include <cryptonotecore/CryptoNoteFormatUtils.h>
+#include <cryptonotecore/ITimeProvider.h>
+#include <cryptonotecore/MemoryBlockchainStorage.h>
+#include <cryptonotecore/Mixins.h>
+#include <cryptonotecore/TransactionApi.h>
+#include <cryptonotecore/TransactionPool.h>
+#include <cryptonotecore/TransactionPoolCleaner.h>
+#include <cryptonotecore/UpgradeManager.h>
 
-#include <CryptoNoteProtocol/CryptoNoteProtocolHandlerCommon.h>
+#include <cryptonoteprotocol/CryptoNoteProtocolHandlerCommon.h>
 
 #include <set>
 
-#include <System/Timer.h>
+#include <system/Timer.h>
 
-#include <Utilities/Container.h>
-#include <Utilities/FormatTools.h>
-#include <Utilities/LicenseCanary.h>
-#include <Utilities/ParseExtra.h>
+#include <utilities/Container.h>
+#include <utilities/FormatTools.h>
+#include <utilities/LicenseCanary.h>
+#include <utilities/ParseExtra.h>
 
 #include <unordered_set>
 
@@ -207,6 +207,7 @@ Core::Core(const Currency& currency, std::shared_ptr<Logging::ILogger> logger, C
   upgradeManager->addMajorBlockVersion(BLOCK_MAJOR_VERSION_3, currency.upgradeHeight(BLOCK_MAJOR_VERSION_3));
   upgradeManager->addMajorBlockVersion(BLOCK_MAJOR_VERSION_4, currency.upgradeHeight(BLOCK_MAJOR_VERSION_4));
   upgradeManager->addMajorBlockVersion(BLOCK_MAJOR_VERSION_5, currency.upgradeHeight(BLOCK_MAJOR_VERSION_5));
+  upgradeManager->addMajorBlockVersion(BLOCK_MAJOR_VERSION_6, currency.upgradeHeight(BLOCK_MAJOR_VERSION_6));
 
   transactionPool = std::unique_ptr<ITransactionPoolCleanWrapper>(new TransactionPoolCleanWrapper(
     std::unique_ptr<ITransactionPool>(new TransactionPool(logger)),
@@ -216,6 +217,7 @@ Core::Core(const Currency& currency, std::shared_ptr<Logging::ILogger> logger, C
 }
 
 Core::~Core() {
+  transactionPool->flush();
   contextGroup.interrupt();
   contextGroup.wait();
 }
@@ -375,11 +377,14 @@ void Core::copyTransactionsToPool(IBlockchainCache* alt) {
   while (alt != nullptr) {
     if (mainChainSet.count(alt) != 0)
       break;
+  
     auto transactions = alt->getRawTransactions(alt->getTransactionHashes());
     for (auto& transaction : transactions) {
-      if (addTransactionToPool(std::move(transaction))) {
+       const auto [success, error] = addTransactionToPool(std::move(transaction));
+       if (success) 
+	   {
         // TODO: send notification
-      }
+       }
     }
     alt = alt->getParent();
   }
@@ -1060,7 +1065,7 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
       return error::BlockValidationError::CHECKPOINT_BLOCK_HASH_MISMATCH;
     }
   } else if (!currency.checkProofOfWork(cachedBlock, currentDifficulty)) {
-    logger(Logging::WARNING) << "Proof of work too weak for block " << blockStr;
+    logger(Logging::DEBUGGING) << "Proof of work too weak for block " << blockStr;
     return error::BlockValidationError::PROOF_OF_WORK_TOO_WEAK;
   }
 
@@ -1078,7 +1083,10 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
         cache->pushBlock(cachedBlock, transactions, validatorState, cumulativeBlockSize, emissionChange, currentDifficulty, std::move(rawBlock));
 
         updateBlockMedianSize();
-        actualizePoolTransactionsLite(validatorState);
+		/* Take the current block spent key images and run them
+        against the pool to remove any transactions that may
+        be in the pool that would now be considered invalid */
+        checkAndRemoveInvalidPoolTransactions(validatorState);
 
         ret = error::AddBlockErrorCode::ADDED_TO_MAIN;
         logger(Logging::DEBUGGING) << "Block " << blockStr << " added to main chain.";
@@ -1101,7 +1109,11 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
           updateMainChainSet();
 
           updateBlockMedianSize();
-          actualizePoolTransactions();
+		   /* Take the current block spent key images and run them
+          against the pool to remove any transactions that may
+          be in the pool that would now be considered invalid */
+          checkAndRemoveInvalidPoolTransactions(validatorState);
+		  
           copyTransactionsToPool(chainsLeaves[endpointIndex]);
 
           switchMainChainStorage(chainsLeaves[0]->getStartBlockIndex(), *chainsLeaves[0]);
@@ -1169,40 +1181,74 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
   return ret;
 }
 
-void Core::actualizePoolTransactions() {
-  auto& pool = *transactionPool;
-  auto hashes = pool.getTransactionHashes();
-
-  for (auto& hash : hashes) {
-    auto tx = pool.getTransaction(hash);
-    pool.removeTransaction(hash);
-
-    if (!addTransactionToPool(std::move(tx))) {
-      notifyObservers(makeDelTransactionMessage({hash}, Messages::DeleteTransaction::Reason::NotActual));
-    }
-  }
-}
-
-void Core::actualizePoolTransactionsLite(const TransactionValidatorState& validatorState) {
-  auto& pool = *transactionPool;
-  auto hashes = pool.getTransactionHashes();
-
-  TransactionValidatorState validator = validatorState;
-
-  for (auto& hash : hashes) {
-    auto tx = pool.getTransaction(hash);
-
-    auto txState = extractSpentOutputs(tx);
-
-    if (hasIntersections(validatorState, txState) ||
-        tx.getTransactionBinaryArray().size() > getMaximumTransactionAllowedSize(blockMedianSize, currency) ||
-        !isTransactionValidForPool(tx, validator))
+   /* This method is a light version of transaction validation that is used
+       to clear the transaction pool of transactions that have been invalidated
+       by the addition of a block to the blockchain. As the transactions are already
+       in the pool, there are only a subset of normal transaction validation
+       tests that need to be completed to determine if the transaction can
+       stay in the pool at this time. */
+    void Core::checkAndRemoveInvalidPoolTransactions(
+        const TransactionValidatorState blockTransactionsState)
     {
-      pool.removeTransaction(hash);
-      notifyObservers(makeDelTransactionMessage({ hash }, Messages::DeleteTransaction::Reason::NotActual));
+        auto &pool = *transactionPool;
+
+        const auto poolHashes = pool.getTransactionHashes();
+
+        const auto maxTransactionSize = getMaximumTransactionAllowedSize(blockMedianSize, currency);
+
+        for (const auto poolTxHash : poolHashes)
+        {
+            const auto poolTx = pool.getTransaction(poolTxHash);
+
+            const auto poolTxState = extractSpentOutputs(poolTx);
+
+            auto [mixinSuccess, err] = Mixins::validate({poolTx}, getTopBlockIndex());
+
+            bool isValid = true;
+
+            /* If the transaction is in the chain but somehow was not previously removed, fail */
+            if (isTransactionInChain(poolTxHash))
+            {
+                isValid = false;
+            }
+            /* If the transaction does not have the right number of mixins, fail */
+            else if (!mixinSuccess)
+            {
+                isValid = false;
+            }
+            /* If the transaction exceeds the maximum size of a transaction, fail */
+            else if (poolTx.getTransactionBinaryArray().size() > maxTransactionSize)
+            {
+                isValid = false;
+            }
+            /* If the the transaction contains outputs that were spent in the new block, fail */
+            else if (hasIntersections(blockTransactionsState, poolTxState))
+            {
+                isValid = false;
+            }
+
+            /* If the transaction is no longer valid, remove it from the pool
+               and tell everyone else that they should also remove it from the pool */
+            if (!isValid)
+            {
+                pool.removeTransaction(poolTxHash);
+                notifyObservers(makeDelTransactionMessage({poolTxHash}, Messages::DeleteTransaction::Reason::NotActual));
+            }
+        }
     }
-  }
+
+/* This quickly finds out if a transaction is in the blockchain somewhere */
+bool Core::isTransactionInChain(const Crypto::Hash &txnHash)
+{
+    throwIfNotInitialized();
+    auto segment = findSegmentContainingTransaction(txnHash);
+    if (segment != nullptr)
+    {
+        return true;
+    }
+    return false;
 }
+
 
 void Core::switchMainChainStorage(uint32_t splitBlockIndex, IBlockchainCache& newChain) {
   assert(mainChainStorage->getBlockCount() > splitBlockIndex);
@@ -1388,75 +1434,93 @@ bool Core::getGlobalIndexesForRange(
     }
 }
 
-bool Core::addTransactionToPool(const BinaryArray& transactionBinaryArray) {
+std::tuple<bool, std::string> Core::addTransactionToPool(const BinaryArray &transactionBinaryArray)
+{
   throwIfNotInitialized();
 
   Transaction transaction;
   if (!fromBinaryArray<Transaction>(transaction, transactionBinaryArray)) {
     logger(Logging::WARNING) << "Couldn't add transaction to pool due to deserialization error";
-    return false;
+    return {false, "Could not deserialize transaction"};
   }
 
   CachedTransaction cachedTransaction(std::move(transaction));
   auto transactionHash = cachedTransaction.getTransactionHash();
 
-  if (!addTransactionToPool(std::move(cachedTransaction))) {
-    return false;
+  const auto [success, error] = addTransactionToPool(std::move(cachedTransaction));
+  if (!success)
+  {
+    return {false, error};
   }
 
   notifyObservers(makeAddTransactionMessage({transactionHash}));
-  return true;
+  return {true, ""};
 }
 
-bool Core::addTransactionToPool(CachedTransaction&& cachedTransaction) {
+std::tuple<bool, std::string> Core::addTransactionToPool(CachedTransaction &&cachedTransaction)
+{
   TransactionValidatorState validatorState;
-
-  if (!isTransactionValidForPool(cachedTransaction, validatorState)) {
-    return false;
-  }
-
   auto transactionHash = cachedTransaction.getTransactionHash();
+
+  /* If the transaction is already in the pool, then checking it again
+  and/or trying to add it to the pool again wastes time and resources.
+  We don't need to waste time doing this as everything we hear about
+  from the network would result in us checking relayed transactions
+  an insane number of times */
+  if (transactionPool->checkIfTransactionPresent(transactionHash))
+  {
+      return {false, "Transaction already exists in pool"};
+  }
+  const auto [success, error] = isTransactionValidForPool(cachedTransaction, validatorState);
+  if (!success)
+  {
+    return {false, error};
+  }
 
   if (!transactionPool->pushTransaction(std::move(cachedTransaction), std::move(validatorState))) {
     logger(Logging::DEBUGGING) << "Failed to push transaction " << transactionHash << " to pool, already exists";
-    return false;
+    return {false, "Transaction already exists in pool"};
   }
 
   logger(Logging::DEBUGGING) << "Transaction " << transactionHash << " has been added to pool";
-  return true;
+  return {true, ""};
 }
 
-bool Core::isTransactionValidForPool(const CachedTransaction& cachedTransaction, TransactionValidatorState& validatorState) {
+std::tuple<bool, std::string> Core::isTransactionValidForPool(const CachedTransaction& cachedTransaction, TransactionValidatorState& validatorState) 
+{
+  const auto transactionHash = cachedTransaction.getTransactionHash();
+  
   auto [success, err] = Mixins::validate({cachedTransaction}, getTopBlockIndex());
 
   if (!success)
   {
-      return false;
+      return {false, "Transaction does not contain the proper number of ring signatures"};
   }
 
   if (cachedTransaction.getTransaction().extra.size() >= CryptoNote::parameters::MAX_EXTRA_SIZE_V2)
   {
-      logger(Logging::TRACE) << "Not adding transaction "
-                             << cachedTransaction.getTransactionHash()
-                             << " to pool, extra too large.";
+      logger(Logging::TRACE) << "Not adding transaction " << transactionHash
+                                   << " to pool, extra too large.";
 
-      return false;
-  }
-
-  uint64_t fee;
-
-  if (auto validationResult = validateTransaction(cachedTransaction, validatorState, chainsLeaves[0], fee, getTopBlockIndex())) {
-    logger(Logging::DEBUGGING) << "Transaction " << cachedTransaction.getTransactionHash()
-      << " is not valid. Reason: " << validationResult.message();
-    return false;
+      return {false, "Transaction extra data is too large"};
   }
 
   auto maxTransactionSize = getMaximumTransactionAllowedSize(blockMedianSize, currency);
   if (cachedTransaction.getTransactionBinaryArray().size() > maxTransactionSize) {
-    logger(Logging::WARNING) << "Transaction " << cachedTransaction.getTransactionHash()
-      << " is not valid. Reason: transaction is too big (" << cachedTransaction.getTransactionBinaryArray().size()
-      << "). Maximum allowed size is " << maxTransactionSize;
-    return false;
+    logger(Logging::WARNING) << "Transaction " << transactionHash
+                                     << " is not valid. Reason: transaction is too big ("
+                                     << cachedTransaction.getTransactionBinaryArray().size()
+                                     << "). Maximum allowed size is " << maxTransactionSize;
+     return {false, "Transaction size (bytes) is too large"};
+  }
+  
+  uint64_t fee;
+
+  if (auto validationResult = validateTransaction(cachedTransaction, validatorState, chainsLeaves[0], fee, getTopBlockIndex()))
+  {
+      logger(Logging::WARNING) << "Transaction " << transactionHash
+                               << " is not valid. Reason: fee is too small and it's not a fusion transaction";
+      return {false, validationResult.message()};
   }
 
   bool isFusion = fee == 0 && currency.isFusionTransaction(cachedTransaction.getTransaction(), cachedTransaction.getTransactionBinaryArray().size(), getTopBlockIndex());
@@ -1464,10 +1528,10 @@ bool Core::isTransactionValidForPool(const CachedTransaction& cachedTransaction,
   if (!isFusion && fee < currency.minimumFee()) {
     logger(Logging::WARNING) << "Transaction " << cachedTransaction.getTransactionHash()
       << " is not valid. Reason: fee is too small and it's not a fusion transaction";
-    return false;
+    return {false, "Transaction fee is too small"};
   }
 
-  return true;
+  return {true, ""};
 }
 
 std::vector<Crypto::Hash> Core::getPoolTransactionHashes() const {
@@ -1826,7 +1890,13 @@ std::error_code Core::validateSemantic(const Transaction& transaction, uint64_t&
     if (output.amount == 0) {
       return error::TransactionValidationError::OUTPUT_ZERO_AMOUNT;
     }
-
+	if (blockIndex >= CryptoNote::parameters::MAX_OUTPUT_SIZE_HEIGHT)
+	{
+		if (output.amount > CryptoNote::parameters::MAX_OUTPUT_SIZE_NODE)
+		{
+			return error::TransactionValidationError::OUTPUT_AMOUNT_TOO_LARGE;
+		}
+	}
     if (output.target.type() == typeid(KeyOutput)) {
       if (!check_key(boost::get<KeyOutput>(output.target).key)) {
         return error::TransactionValidationError::OUTPUT_INVALID_KEY;
@@ -2763,7 +2833,7 @@ TransactionDetails Core::getTransactionDetails(const Crypto::Hash& transactionHa
   }
   transactionDetails.extra.publicKey = transaction->getTransactionPublicKey();
   transaction->getExtraNonce(transactionDetails.extra.nonce);
-
+  transactionDetails.extra.raw = transaction->getExtra();
   transactionDetails.signatures = rawTransaction.signatures;
 
   transactionDetails.inputs.reserve(transaction->getInputCount());

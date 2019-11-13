@@ -23,10 +23,10 @@
 
 #include <CryptoNote.h>
 
-#include "CryptoNoteCore/CachedBlock.h"
-#include "CryptoNoteCore/CachedTransaction.h"
-#include "CryptoNoteCore/TransactionValidatiorState.h"
-#include "Common/ArrayView.h"
+#include "cryptonotecore/CachedBlock.h"
+#include "cryptonotecore/CachedTransaction.h"
+#include "cryptonotecore/TransactionValidatiorState.h"
+#include "common/ArrayView.h"
 
 namespace CryptoNote {
 

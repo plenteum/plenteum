@@ -13,17 +13,17 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/functional/hash.hpp>
 
-#include <System/Context.h>
-#include <System/ContextGroup.h>
-#include <System/Dispatcher.h>
-#include <System/Event.h>
-#include <System/Timer.h>
-#include <System/TcpConnection.h>
-#include <System/TcpListener.h>
+#include <system/Context.h>
+#include <system/ContextGroup.h>
+#include <system/Dispatcher.h>
+#include <system/Event.h>
+#include <system/Timer.h>
+#include <system/TcpConnection.h>
+#include <system/TcpListener.h>
 
-#include "P2p/OnceInInterval.h"
-#include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
-#include "Logging/LoggerRef.h"
+#include "p2p/OnceInInterval.h"
+#include "cryptonoteprotocol/CryptoNoteProtocolHandler.h"
+#include "logging/LoggerRef.h"
 
 #include "ConnectionContext.h"
 #include "LevinProtocol.h"

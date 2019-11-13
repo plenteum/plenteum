@@ -11,11 +11,11 @@
 #include <fstream>
 #endif
 
-#include <Serialization/SerializationTools.h>
+#include <serialization/SerializationTools.h>
 
-#include <Wallet/WalletUtils.h>
+#include <wallet/WalletUtils.h>
 
-#include <Utilities/ColouredMsg.h>
+#include <utilities/ColouredMsg.h>
 #include <zedwallet/Tools.h>
 #include <zedwallet/Transfer.h>
 #include <config/WalletConfig.h>

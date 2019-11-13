@@ -8,11 +8,11 @@
 
 #include <queue>
 
-#include <System/ContextGroup.h>
-#include <System/Event.h>
+#include <system/ContextGroup.h>
+#include <system/Event.h>
 
 #include "BlockchainMonitor.h"
-#include "Logging/LoggerRef.h"
+#include "logging/LoggerRef.h"
 #include "Miner.h"
 #include "MinerEvent.h"
 #include "MiningConfig.h"

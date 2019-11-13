@@ -3,12 +3,12 @@
 // Please see the included LICENSE file for more information.
 
 ////////////////////////////////////
-#include <WalletApi/ApiDispatcher.h>
+#include <walletapi/ApiDispatcher.h>
 ////////////////////////////////////
 
 #include <config/CryptoNoteConfig.h>
 
-#include <CryptoNoteCore/Mixins.h>
+#include <cryptonotecore/Mixins.h>
 
 #include <crypto/random.h>
 
@@ -16,7 +16,7 @@
 #include <cryptopp/sha.h>
 #include <cryptopp/pwdbased.h>
 
-#include <Errors/ValidateParameters.h>
+#include <errors/ValidateParameters.h>
 
 #include <iomanip>
 
@@ -24,11 +24,11 @@
 
 #include "json.hpp"
 
-#include <WalletApi/Constants.h>
+#include <walletapi/Constants.h>
 
-#include <WalletBackend/JsonSerialization.h>
+#include <walletbackend/JsonSerialization.h>
 
-#include <Utilities/Addresses.h>
+#include <utilities/Addresses.h>
 
 using namespace httplib;
 
@@ -738,7 +738,7 @@ std::tuple<Error, uint16_t> ApiDispatcher::sendAdvancedTransaction(
 
     res.set_content(j.dump(4) + "\n", "application/json");
 
-    return {SUCCESS, 200};
+    return {SUCCESS, 201};
 }
 
 std::tuple<Error, uint16_t> ApiDispatcher::sendBasicFusionTransaction(
@@ -909,7 +909,7 @@ std::tuple<Error, uint16_t> ApiDispatcher::setNodeInfo(
 
     m_walletBackend->swapNode(daemonHost, daemonPort, daemonSSL);
 
-    return {SUCCESS, 202};
+    return {SUCCESS, 200};
 }
 
 //////////////////

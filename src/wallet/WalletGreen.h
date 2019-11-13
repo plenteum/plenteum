@@ -23,11 +23,11 @@
 #include "IFusionManager.h"
 #include "WalletIndices.h"
 
-#include "Logging/LoggerRef.h"
-#include <System/Dispatcher.h>
-#include <System/Event.h>
-#include "Transfers/TransfersSynchronizer.h"
-#include "Transfers/BlockchainSynchronizer.h"
+#include "logging/LoggerRef.h"
+#include <system/Dispatcher.h>
+#include <system/Event.h>
+#include "transfers/TransfersSynchronizer.h"
+#include "transfers/BlockchainSynchronizer.h"
 
 namespace CryptoNote {
 

@@ -5,7 +5,7 @@
 
 #include "MinerManager.h"
 
-#include <System/Dispatcher.h>
+#include <system/Dispatcher.h>
 
 int main(int argc, char **argv)
 {

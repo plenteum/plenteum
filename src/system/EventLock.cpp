@@ -16,7 +16,7 @@
 // along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "EventLock.h"
-#include <System/Event.h>
+#include <system/Event.h>
 
 namespace System {
 

@@ -10,17 +10,17 @@
 #include <future>
 #include <boost/scope_exit.hpp>
 #include <boost/uuid/uuid_io.hpp>
-#include <System/Dispatcher.h>
+#include <system/Dispatcher.h>
 
-#include "CryptoNoteCore/CryptoNoteBasicImpl.h"
-#include "CryptoNoteCore/CryptoNoteFormatUtils.h"
-#include "Common/CryptoNoteTools.h"
-#include "CryptoNoteCore/Currency.h"
-#include "P2p/LevinProtocol.h"
+#include "cryptonotecore/CryptoNoteBasicImpl.h"
+#include "cryptonotecore/CryptoNoteFormatUtils.h"
+#include "common/CryptoNoteTools.h"
+#include "cryptonotecore/Currency.h"
+#include "p2p/LevinProtocol.h"
 
-#include <Serialization/SerializationTools.h>
+#include <serialization/SerializationTools.h>
 
-#include <Utilities/FormatTools.h>
+#include <utilities/FormatTools.h>
 
 #include <config/Ascii.h>
 #include <config/CryptoNoteConfig.h>
@@ -451,14 +451,15 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
 
 	  const auto it = std::remove_if(arg.txs.begin(), arg.txs.end(), [this, &context](const auto &tx)
 	  {
-		  bool failed = !this->m_core.addTransactionToPool(tx);
+		  const auto [success, error] = this->m_core.addTransactionToPool(tx);
 
-		  if (failed)
+		  if (!success)
 		  {
 			  this->logger(Logging::DEBUGGING) << context << "Tx verification failed";
 		  }
 
-		  return failed;
+		  /* We return the opposite of success in this lambda */
+          return !success;
 	  });
 	  if (it != arg.txs.end())
 	  {

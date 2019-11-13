@@ -17,13 +17,13 @@
 
 #include "WalletGreenTypes.h"
 #include "TransfersContainer.h"
-#include "Common/StdInputStream.h"
-#include "Common/StdOutputStream.h"
-#include "CryptoNoteCore/CryptoNoteBasicImpl.h"
-#include "CryptoNoteCore/CryptoNoteFormatUtils.h"
-#include "Serialization/BinaryInputStreamSerializer.h"
-#include "Serialization/BinaryOutputStreamSerializer.h"
-#include "Serialization/SerializationOverloads.h"
+#include "common/StdInputStream.h"
+#include "common/StdOutputStream.h"
+#include "cryptonotecore/CryptoNoteBasicImpl.h"
+#include "cryptonotecore/CryptoNoteFormatUtils.h"
+#include "serialization/BinaryInputStreamSerializer.h"
+#include "serialization/BinaryOutputStreamSerializer.h"
+#include "serialization/SerializationOverloads.h"
 
 #include <config/Constants.h>
 

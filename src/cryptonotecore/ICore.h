@@ -105,7 +105,7 @@ public:
     const uint64_t endHeight,
     std::unordered_map<Crypto::Hash, std::vector<uint64_t>> &indexes) const = 0;
 
-  virtual bool addTransactionToPool(const BinaryArray& transactionBinaryArray) = 0;
+  virtual std::tuple<bool, std::string> addTransactionToPool(const BinaryArray &transactionBinaryArray) = 0;
 
   virtual std::vector<Crypto::Hash> getPoolTransactionHashes() const = 0;
   virtual std::tuple<bool, CryptoNote::BinaryArray> getPoolTransaction(const Crypto::Hash& transactionHash) const = 0;

@@ -12,10 +12,10 @@
 #include <future>
 
 #include "CommonTypes.h"
-#include "Common/BlockingQueue.h"
-#include "CryptoNoteCore/CryptoNoteBasicImpl.h"
-#include "CryptoNoteCore/CryptoNoteFormatUtils.h"
-#include "CryptoNoteCore/TransactionApi.h"
+#include "common/BlockingQueue.h"
+#include "cryptonotecore/CryptoNoteBasicImpl.h"
+#include "cryptonotecore/CryptoNoteFormatUtils.h"
+#include "cryptonotecore/TransactionApi.h"
 
 #include <config/Constants.h>
 

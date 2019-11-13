@@ -5,6 +5,6 @@
 
 #pragma once
 
-#include <WalletBackend/WalletBackend.h>
+#include <walletbackend/WalletBackend.h>
 
 void syncWallet(const std::shared_ptr<WalletBackend> walletBackend);

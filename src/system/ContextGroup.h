@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <System/Dispatcher.h>
+#include <system/Dispatcher.h>
 
 namespace System {
 

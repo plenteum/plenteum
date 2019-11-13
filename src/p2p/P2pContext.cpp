@@ -17,10 +17,10 @@
 
 #include "P2pContext.h"
 
-#include <System/EventLock.h>
-#include <System/InterruptedException.h>
-#include <System/Ipv4Address.h>
-#include <System/OperationTimeout.h>
+#include <system/EventLock.h>
+#include <system/InterruptedException.h>
+#include <system/Ipv4Address.h>
+#include <system/OperationTimeout.h>
 
 #include "LevinProtocol.h"
 

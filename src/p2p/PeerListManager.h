@@ -9,10 +9,10 @@
 
 #include <list>
 
-#include <P2p/P2pProtocolTypes.h>
-#include <P2p/Peerlist.h>
+#include <p2p/P2pProtocolTypes.h>
+#include <p2p/Peerlist.h>
 
-#include <Serialization/ISerializer.h>
+#include <serialization/ISerializer.h>
 
 class PeerlistManager
 {

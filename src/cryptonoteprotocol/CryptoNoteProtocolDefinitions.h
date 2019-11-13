@@ -8,12 +8,12 @@
 #pragma once
 
 #include <list>
-#include "CryptoNoteCore/CryptoNoteBasic.h"
+#include "cryptonotecore/CryptoNoteBasic.h"
 
 // ISerializer-based serialization
-#include "Serialization/ISerializer.h"
-#include "Serialization/SerializationOverloads.h"
-#include "Serialization/CryptoNoteSerialization.h"
+#include "serialization/ISerializer.h"
+#include "serialization/SerializationOverloads.h"
+#include "serialization/CryptoNoteSerialization.h"
 
 namespace CryptoNote
 {

@@ -5,24 +5,24 @@
 //
 // Please see the included LICENSE file for more information.
 
-#include <CryptoNoteCore/DatabaseBlockchainCache.h>
+#include <cryptonotecore/DatabaseBlockchainCache.h>
 
 #include <ctime>
 #include <cstdlib>
 
 #include <boost/iterator/iterator_facade.hpp>
 
-#include <Common/ShuffleGenerator.h>
+#include <common/ShuffleGenerator.h>
 
 #include "BlockchainUtils.h"
 
 #include "crypto/hash.h"
 
-#include <CryptoNoteCore/BlockchainStorage.h>
-#include <CryptoNoteCore/CryptoNoteBasicImpl.h>
+#include <cryptonotecore/BlockchainStorage.h>
+#include <cryptonotecore/CryptoNoteBasicImpl.h>
 
-#include <Common/TransactionExtra.h>
-#include <Common/CryptoNoteTools.h>
+#include <common/TransactionExtra.h>
+#include <common/CryptoNoteTools.h>
 
 namespace CryptoNote {
 
@@ -1057,6 +1057,7 @@ uint8_t DatabaseBlockchainCache::getBlockMajorVersionForHeight(uint32_t height) 
   upgradeManager.addMajorBlockVersion(BLOCK_MAJOR_VERSION_3, currency.upgradeHeight(BLOCK_MAJOR_VERSION_3));
   upgradeManager.addMajorBlockVersion(BLOCK_MAJOR_VERSION_4, currency.upgradeHeight(BLOCK_MAJOR_VERSION_4));
   upgradeManager.addMajorBlockVersion(BLOCK_MAJOR_VERSION_5, currency.upgradeHeight(BLOCK_MAJOR_VERSION_5));
+  upgradeManager.addMajorBlockVersion(BLOCK_MAJOR_VERSION_6, currency.upgradeHeight(BLOCK_MAJOR_VERSION_6));
   return upgradeManager.getBlockMajorVersion(height);
 }
 

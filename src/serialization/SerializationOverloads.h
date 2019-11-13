@@ -39,9 +39,17 @@ serializeAsBinary(std::vector<T>& value, Common::StringView name, CryptoNote::IS
   std::string blob;
   if (serializer.type() == ISerializer::INPUT) {
     serializer.binary(blob, name);
-    value.resize(blob.size() / sizeof(T));
-    if (blob.size()) {
-      memcpy(&value[0], blob.data(), blob.size());
+    const size_t blobSize = blob.size();
+
+    value.resize(blobSize / sizeof(T));
+
+    if (blobSize % sizeof(T) != 0)
+    {
+        throw std::runtime_error("Invalid blob size given!");
+    }
+
+    if (blobSize > 0) {
+      memcpy(&value[0], blob.data(), blobSize);
     }
   } else {
     if (!value.empty()) {
@@ -59,6 +67,12 @@ serializeAsBinary(std::list<T>& value, Common::StringView name, CryptoNote::ISer
     serializer.binary(blob, name);
 
     uint64_t count = blob.size() / sizeof(T);
+	
+	if (blob.size() % sizeof(T) != 0)
+    {
+        throw std::runtime_error("Invalid blob size given!");
+    }
+	
     const T* ptr = reinterpret_cast<const T*>(blob.data());
 
     while (count--) {

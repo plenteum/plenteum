@@ -25,12 +25,12 @@
 #include "INode.h"
 
 #include "BlockchainExplorerErrors.h"
-#include "Common/ObserverManager.h"
-#include "Serialization/BinaryInputStreamSerializer.h"
-#include "Serialization/BinaryOutputStreamSerializer.h"
-#include "Wallet/WalletAsyncContextCounter.h"
+#include "common/ObserverManager.h"
+#include "serialization/BinaryInputStreamSerializer.h"
+#include "serialization/BinaryOutputStreamSerializer.h"
+#include "wallet/WalletAsyncContextCounter.h"
 
-#include "Logging/LoggerRef.h"
+#include "logging/LoggerRef.h"
 
 namespace CryptoNote {
 

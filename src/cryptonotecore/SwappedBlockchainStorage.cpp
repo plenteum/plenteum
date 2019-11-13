@@ -19,10 +19,10 @@
 
 #include <cassert>
 
-#include "Serialization/CryptoNoteSerialization.h"
+#include "serialization/CryptoNoteSerialization.h"
 #include "ICoreDefinitions.h"
 #include "MemoryBlockchainStorage.h"
-#include "Serialization/SerializationOverloads.h"
+#include "serialization/SerializationOverloads.h"
 
 namespace CryptoNote {
 
@@ -66,7 +66,7 @@ std::unique_ptr<BlockchainStorage::IBlockchainStorageInternal> SwappedBlockchain
     blocks.pop_back();
   }
 
-  return std::move(newStorage);
+  return newStorage;
 }
 
 }

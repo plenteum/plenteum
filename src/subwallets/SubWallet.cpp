@@ -3,16 +3,16 @@
 // Please see the included LICENSE file for more information.
 
 /////////////////////////////////
-#include <SubWallets/SubWallet.h>
+#include <subwallets/SubWallet.h>
 /////////////////////////////////
 
 #include <config/Constants.h>
 
-#include <Logger/Logger.h>
+#include <logger/Logger.h>
 
-#include <Utilities/Utilities.h>
+#include <utilities/Utilities.h>
 
-#include <WalletBackend/Constants.h>
+#include <walletbackend/Constants.h>
 
 ///////////////////////////////////
 /* CONSTRUCTORS / DECONSTRUCTORS */
@@ -226,8 +226,15 @@ void SubWallet::markInputAsSpent(
         return;
     }
     
-    /* Shouldn't happen */
-    throw std::runtime_error("Could not find key image to remove!");
+    std::stringstream stream;
+
+    stream << "Could not find key image " << keyImage << " to remove. Ignoring.";
+
+    Logger::logger.log(
+        stream.str(),
+        Logger::WARNING,
+        { Logger::SYNC }
+    );
 }
 
 void SubWallet::markInputAsLocked(const Crypto::KeyImage keyImage)
@@ -242,7 +249,17 @@ void SubWallet::markInputAsLocked(const Crypto::KeyImage keyImage)
     /* Shouldn't happen */
     if (it == m_unspentInputs.end())
     {
-        throw std::runtime_error("Could not find key image to lock!");
+        std::stringstream stream;
+
+        stream << "Could not find key image " << keyImage << " to lock. Ignoring.";
+
+        Logger::logger.log(
+            stream.str(),
+            Logger::WARNING,
+            { Logger::SYNC }
+        );
+
+        return;
     }
 
     /* Add to the spent inputs vector */
@@ -252,24 +269,14 @@ void SubWallet::markInputAsLocked(const Crypto::KeyImage keyImage)
     m_unspentInputs.erase(it);
 }
 
-std::vector<Crypto::KeyImage> SubWallet::removeForkedInputs(
-    const uint64_t forkHeight,
-    const bool isViewWallet)
+std::vector<Crypto::KeyImage> SubWallet::removeForkedInputs(const uint64_t forkHeight, const bool isViewWallet)
 {
-    std::vector<Crypto::KeyImage> keyImagesToRemove;
-
-    for (const auto input : m_lockedInputs)
-    {
-        keyImagesToRemove.push_back(input.keyImage);
-    }
-
-    /* Both of these will be resolved by the wallet in time */
-    m_lockedInputs.clear();
+    /* This will get resolved by the wallet in time */
     m_unconfirmedIncomingAmounts.clear();
 
-    /* Unspent inputs which we recieved in a block after the fork. Remove them. */
-    auto it = std::remove_if(m_unspentInputs.begin(), m_unspentInputs.end(),
-    [forkHeight, &keyImagesToRemove](const auto input)
+    std::vector<Crypto::KeyImage> keyImagesToRemove;
+
+    auto isForked = [forkHeight, &keyImagesToRemove](const auto &input)
     {
         if (input.blockHeight >= forkHeight)
         {
@@ -277,18 +284,27 @@ std::vector<Crypto::KeyImage> SubWallet::removeForkedInputs(
         }
 
         return input.blockHeight >= forkHeight;
-    });
+    };
 
-    if (it != m_unspentInputs.end())
+    auto removeForked = [isForked](auto &inputVector)
     {
-        m_unspentInputs.erase(it, m_unspentInputs.end());
-    }
+        const auto it = std::remove_if(inputVector.begin(), inputVector.end(), isForked);
+
+        if (it != inputVector.end())
+        {
+            inputVector.erase(it, inputVector.end());
+        }
+    };
+
+     /* Remove both spent and unspent and locked inputs that were recieved after
+     * the fork height */
+    removeForked(m_lockedInputs);
+    removeForked(m_unspentInputs);
+    removeForked(m_spentInputs);
 
     /* If the input was spent after the fork height, but received before the
        fork height, then we keep it, but move it into the unspent vector */
-    it = std::remove_if(m_spentInputs.begin(), m_spentInputs.end(),
-    [&forkHeight, this](auto &input)
-    {
+    const auto it = std::remove_if(m_spentInputs.begin(), m_spentInputs.end(), [&forkHeight, this](auto &input) {
         if (input.spendHeight >= forkHeight)
         {
             /* Reset spend height */
@@ -315,6 +331,7 @@ std::vector<Crypto::KeyImage> SubWallet::removeForkedInputs(
 
     return keyImagesToRemove;
 }
+
 
 /* Cancelled transactions are transactions we sent, but got cancelled and not
    included in a block for some reason */

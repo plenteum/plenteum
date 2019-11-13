@@ -53,7 +53,7 @@ namespace CryptoNote {
   }
 
   std::ostream& HttpRequest::printHttpRequest(std::ostream& os) const {
-    os << "POST " << url << " HTTP/1.1\r\n";
+    os << "POST " << url << " http/1.1\r\n";
     auto host = headers.find("Host");
     if (host == headers.end()) {
       os << "Host: " << "127.0.0.1" << "\r\n";

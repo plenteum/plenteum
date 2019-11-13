@@ -9,22 +9,21 @@
 
 #include <atomic>
 
-#include <Common/StringTools.h>
+#include <common/StringTools.h>
 
 #include <config/WalletConfig.h>
 
-#include <CryptoNoteCore/Account.h>
-#include <Common/TransactionExtra.h>
+#include <common/TransactionExtra.h>
 
 #ifndef MSVC
 #include <fstream>
 #endif
 
-#include <Mnemonics/Mnemonics.h>
+#include <mnemonics/Mnemonics.h>
 
-#include <Utilities/ColouredMsg.h>
-#include <Utilities/FormatTools.h>
-#include <Utilities/ParseExtra.h>
+#include <utilities/ColouredMsg.h>
+#include <utilities/FormatTools.h>
+#include <utilities/ParseExtra.h>
 
 #include <zedwallet/AddressBook.h>
 #include <zedwallet/Commands.h>

@@ -28,12 +28,12 @@
 #include <boost/multi_index/ordered_index.hpp>
 
 #include "crypto/crypto.h"
-#include "CryptoNoteCore/CryptoNoteBasic.h"
-#include "Serialization/CryptoNoteSerialization.h"
-#include "CryptoNoteCore/Currency.h"
-#include "Logging/LoggerRef.h"
-#include "Serialization/ISerializer.h"
-#include "Serialization/SerializationOverloads.h"
+#include "cryptonotecore/CryptoNoteBasic.h"
+#include "serialization/CryptoNoteSerialization.h"
+#include "cryptonotecore/Currency.h"
+#include "logging/LoggerRef.h"
+#include "serialization/ISerializer.h"
+#include "serialization/SerializationOverloads.h"
 
 #include "ITransaction.h"
 #include "ITransfersContainer.h"

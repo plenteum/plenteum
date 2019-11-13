@@ -9,19 +9,19 @@
 
 #include <random>
 
-#include <System/ContextGroupTimeout.h>
-#include <System/InterruptedException.h>
-#include <System/Ipv4Address.h>
-#include <System/OperationTimeout.h>
-#include <System/TcpConnection.h>
-#include <System/TcpConnector.h>
+#include <system/ContextGroupTimeout.h>
+#include <system/InterruptedException.h>
+#include <system/Ipv4Address.h>
+#include <system/OperationTimeout.h>
+#include <system/TcpConnection.h>
+#include <system/TcpConnector.h>
 
 #include <config/CryptoNoteConfig.h>
 #include <crypto/random.h>
-#include "Common/StdInputStream.h"
-#include "Common/StdOutputStream.h"
-#include "Serialization/BinaryInputStreamSerializer.h"
-#include "Serialization/BinaryOutputStreamSerializer.h"
+#include "common/StdInputStream.h"
+#include "common/StdOutputStream.h"
+#include "serialization/BinaryInputStreamSerializer.h"
+#include "serialization/BinaryOutputStreamSerializer.h"
 
 #include "LevinProtocol.h"
 #include "P2pConnectionProxy.h"

@@ -3,10 +3,10 @@
 // Please see the included LICENSE file for more information.
 
 //////////////////////////////////////
-#include <Errors/ValidateParameters.h>
+#include <errors/ValidateParameters.h>
 //////////////////////////////////////
 
-#include <Common/Base58.h>
+#include <common/Base58.h>
 
 #include <config/CryptoNoteConfig.h>
 #include <config/WalletConfig.h>
@@ -16,14 +16,14 @@ extern "C"
     #include <crypto/crypto-ops.h>
 }
 
-#include <Common/TransactionExtra.h>
-#include <Common/CryptoNoteTools.h>
+#include <common/TransactionExtra.h>
+#include <common/CryptoNoteTools.h>
 
 #include <regex>
 
-#include <Utilities/Addresses.h>
-#include <Utilities/Mixins.h>
-#include <Utilities/Utilities.h>
+#include <utilities/Addresses.h>
+#include <utilities/Mixins.h>
+#include <utilities/Utilities.h>
 
 Error validateFusionTransaction(
     const uint64_t mixin,

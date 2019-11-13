@@ -4,7 +4,7 @@
 // Please see the included LICENSE file for more information.
 
 /////////////////////////////
-#include <Utilities/Mixins.h>
+#include <utilities/Mixins.h>
 /////////////////////////////
 
 #include <config/CryptoNoteConfig.h>

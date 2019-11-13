@@ -17,7 +17,7 @@
 
 #include "Checkpoints.h"
 
-#include <Common/StringTools.h>
+#include <common/StringTools.h>
 
 #include <config/Constants.h>
 
@@ -83,23 +83,22 @@ bool Checkpoints::loadCheckpointsFromFile(const std::string& filename)
         try
         {
             index = std::stoull(indexString);
+			/* Failed to parse hash, or checkpoint already exists */
+			if (!addCheckpoint(index, hash))
+            {
+                return false;
+			}
         }
         catch (const std::out_of_range &)
         {
             logger(ERROR, BRIGHT_RED) << "Invalid checkpoint file format - "
                                       << "height is out of range of uint64_t";
+			return false;						  
         }
         catch (const std::invalid_argument &)
         {
             logger(ERROR, BRIGHT_RED) << "Invalid checkpoint file format - "
                                       << "could not parse height as a number";
-
-            return false;
-        }
-
-        /* Failed to parse hash, or checkpoint already exists */
-        if (!addCheckpoint(index, hash))
-        {
             return false;
         }
     }

@@ -3,19 +3,19 @@
 // Please see the included LICENSE file for more information.
 
 ////////////////////////////////////////////
-#include <WalletBackend/JsonSerialization.h>
+#include <walletbackend/JsonSerialization.h>
 ////////////////////////////////////////////
 
-#include <Common/StringTools.h>
+#include <common/StringTools.h>
 
 #include <tuple>
 
-#include <SubWallets/SubWallets.h>
+#include <subwallets/SubWallets.h>
 
-#include <WalletBackend/Constants.h>
-#include <WalletBackend/SynchronizationStatus.h>
-#include <WalletBackend/WalletBackend.h>
-#include <WalletBackend/WalletSynchronizer.h>
+#include <walletbackend/Constants.h>
+#include <walletbackend/SynchronizationStatus.h>
+#include <walletbackend/WalletBackend.h>
+#include <walletbackend/WalletSynchronizer.h>
 
 using nlohmann::json;
 

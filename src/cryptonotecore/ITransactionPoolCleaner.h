@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#include "CryptoNoteCore/ITransactionPool.h"
+#include "cryptonotecore/ITransactionPool.h"
 
 namespace Crypto {
 struct Hash;

@@ -6,15 +6,15 @@
 
 #include <atomic>
 
-#include <Nigel/Nigel.h>
+#include <nigel/Nigel.h>
 
-#include <SubWallets/SubWallets.h>
+#include <subwallets/SubWallets.h>
 
-#include <Utilities/ThreadSafeDeque.h>
+#include <utilities/ThreadSafeDeque.h>
 
 #include <vector>
 
-#include <WalletBackend/SynchronizationStatus.h>
+#include <walletbackend/SynchronizationStatus.h>
 
 #include <WalletTypes.h>
 

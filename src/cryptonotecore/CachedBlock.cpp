@@ -6,9 +6,9 @@
 // Please see the included LICENSE file for more information.
 
 #include "CachedBlock.h"
-#include <Common/Varint.h>
+#include <common/Varint.h>
 #include <config/CryptoNoteConfig.h>
-#include "Common/CryptoNoteTools.h"
+#include "common/CryptoNoteTools.h"
 
 using namespace Crypto;
 using namespace CryptoNote;

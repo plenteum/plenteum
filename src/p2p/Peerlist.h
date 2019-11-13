@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <P2p/P2pProtocolTypes.h>
+#include <p2p/P2pProtocolTypes.h>
 
 #include <vector>
 

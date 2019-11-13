@@ -16,7 +16,7 @@
 // along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "JsonRpc.h"
-#include "Rpc/HttpClient.h"
+#include "rpc/HttpClient.h"
 
 namespace CryptoNote {
 

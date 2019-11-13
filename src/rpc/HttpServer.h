@@ -19,16 +19,16 @@
 
 #include <unordered_set>
 
-#include <HTTP/HttpRequest.h>
-#include <HTTP/HttpResponse.h>
+#include <http/HttpRequest.h>
+#include <http/HttpResponse.h>
 
-#include <System/ContextGroup.h>
-#include <System/Dispatcher.h>
-#include <System/TcpListener.h>
-#include <System/TcpConnection.h>
-#include <System/Event.h>
+#include <system/ContextGroup.h>
+#include <system/Dispatcher.h>
+#include <system/TcpListener.h>
+#include <system/TcpConnection.h>
+#include <system/Event.h>
 
-#include <Logging/LoggerRef.h>
+#include <logging/LoggerRef.h>
 
 namespace CryptoNote {
 

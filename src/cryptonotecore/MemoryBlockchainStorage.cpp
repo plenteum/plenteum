@@ -17,7 +17,7 @@
 
 #include "MemoryBlockchainStorage.h"
 #include <cassert>
-#include "Serialization/SerializationOverloads.h"
+#include "serialization/SerializationOverloads.h"
 
 using namespace CryptoNote;
 
@@ -50,5 +50,5 @@ std::unique_ptr<BlockchainStorage::IBlockchainStorageInternal> MemoryBlockchainS
   std::move(blocks.begin() + splitIndex, blocks.end(), std::back_inserter(newStorage->blocks));
   blocks.resize(splitIndex);
   blocks.shrink_to_fit();
-  return std::move(newStorage);
+  return newStorage;
 }

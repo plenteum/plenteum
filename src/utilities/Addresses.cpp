@@ -3,16 +3,16 @@
 // Please see the included LICENSE file for more information.
 
 ////////////////////////////////
-#include <Utilities/Addresses.h>
+#include <utilities/Addresses.h>
 ////////////////////////////////
 
-#include <Common/Base58.h>
+#include <common/Base58.h>
 
 #include <config/CryptoNoteConfig.h>
 
-#include <Errors/ValidateParameters.h>
+#include <errors/ValidateParameters.h>
 
-#include <Serialization/SerializationTools.h>
+#include <serialization/SerializationTools.h>
 
 namespace Utilities
 {

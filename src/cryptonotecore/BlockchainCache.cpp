@@ -12,17 +12,17 @@
 
 #include <boost/functional/hash.hpp>
 
-#include "Common/StdInputStream.h"
-#include "Common/StdOutputStream.h"
-#include "Common/ShuffleGenerator.h"
+#include "common/StdInputStream.h"
+#include "common/StdOutputStream.h"
+#include "common/ShuffleGenerator.h"
 
-#include "CryptoNoteCore/CryptoNoteBasicImpl.h"
-#include "Common/CryptoNoteTools.h"
-#include "CryptoNoteCore/BlockchainStorage.h"
-#include "Common/TransactionExtra.h"
+#include "cryptonotecore/CryptoNoteBasicImpl.h"
+#include "common/CryptoNoteTools.h"
+#include "cryptonotecore/BlockchainStorage.h"
+#include "common/TransactionExtra.h"
 
-#include "Serialization/CryptoNoteSerialization.h"
-#include "Serialization/SerializationOverloads.h"
+#include "serialization/CryptoNoteSerialization.h"
+#include "serialization/SerializationOverloads.h"
 
 #include "TransactionValidatiorState.h"
 
@@ -263,7 +263,7 @@ std::unique_ptr<IBlockchainCache> BlockchainCache::split(uint32_t splitBlockInde
   children = { newCache.get() };
 
   logger(Logging::DEBUGGING) << "Split successfully completed";
-  return std::move(newCache);
+  return newCache;
 }
 
 void BlockchainCache::splitSpentKeyImages(BlockchainCache& newCache, uint32_t splitBlockIndex) {
@@ -1224,6 +1224,7 @@ uint8_t BlockchainCache::getBlockMajorVersionForHeight(uint32_t height) const {
   upgradeManager.addMajorBlockVersion(BLOCK_MAJOR_VERSION_3, currency.upgradeHeight(BLOCK_MAJOR_VERSION_3));
   upgradeManager.addMajorBlockVersion(BLOCK_MAJOR_VERSION_4, currency.upgradeHeight(BLOCK_MAJOR_VERSION_4));
   upgradeManager.addMajorBlockVersion(BLOCK_MAJOR_VERSION_5, currency.upgradeHeight(BLOCK_MAJOR_VERSION_5));
+  upgradeManager.addMajorBlockVersion(BLOCK_MAJOR_VERSION_6, currency.upgradeHeight(BLOCK_MAJOR_VERSION_6));
   return upgradeManager.getBlockMajorVersion(height);
 }
 

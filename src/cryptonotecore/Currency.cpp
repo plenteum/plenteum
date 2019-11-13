@@ -9,27 +9,24 @@
 #include "Currency.h"
 /////////////////////
 
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/lexical_cast.hpp>
-
 #include <cctype>
 
-#include <Common/Base58.h>
-#include <Common/CheckDifficulty.h>
-#include <Common/CryptoNoteTools.h>
-#include <Common/int-util.h>
-#include <Common/StringTools.h>
-#include <Common/TransactionExtra.h>
+#include <common/Base58.h>
+#include <common/CheckDifficulty.h>
+#include <common/CryptoNoteTools.h>
+#include <common/int-util.h>
+#include <common/StringTools.h>
+#include <common/TransactionExtra.h>
 
-#include <CryptoNoteCore/Account.h>
-#include <CryptoNoteCore/CryptoNoteBasicImpl.h>
-#include <CryptoNoteCore/CryptoNoteFormatUtils.h>
-#include <CryptoNoteCore/Difficulty.h>
-#include <CryptoNoteCore/UpgradeDetector.h>
+#include <cryptonotecore/CryptoNoteBasicImpl.h>
+#include <cryptonotecore/CryptoNoteFormatUtils.h>
+#include <cryptonotecore/Difficulty.h>
+#include <cryptonotecore/UpgradeDetector.h>
 
 #include <config/Constants.h>
 
-#include <Utilities/Addresses.h>
+#include <utilities/Addresses.h>
+#include <utilities/String.h>
 
 #undef ERROR
 
@@ -55,7 +52,7 @@ bool Currency::init() {
 }
 
 bool Currency::generateGenesisBlock() {
-  genesisBlockTemplate = boost::value_initialized<BlockTemplate>();
+  genesisBlockTemplate = BlockTemplate{};
 
   std::string genesisCoinbaseTxHex = CryptoNote::parameters::GENESIS_COINBASE_TX_HEX;
   BinaryArray minerTxBlob;
@@ -131,7 +128,9 @@ uint32_t Currency::upgradeHeight(uint8_t majorVersion) const {
 	return m_upgradeHeightV6; //height of fix for tx sizes
   } else if (majorVersion == BLOCK_MAJOR_VERSION_5) {
 	return m_upgradeHeightV7; //cn turtle
-  } else {
+  } else if (majorVersion == BLOCK_MAJOR_VERSION_6) {
+	return m_upgradeHeightV8; //argon2id
+  }  else {
     return static_cast<uint32_t>(-1);
   }
 }
@@ -205,8 +204,8 @@ bool Currency::constructMinerTx(uint8_t blockMajorVersion, uint32_t height, size
 
   uint64_t summaryAmounts = 0;
   for (size_t no = 0; no < outAmounts.size(); no++) {
-    Crypto::KeyDerivation derivation = boost::value_initialized<Crypto::KeyDerivation>();
-    Crypto::PublicKey outEphemeralPubKey = boost::value_initialized<Crypto::PublicKey>();
+    Crypto::KeyDerivation derivation;
+    Crypto::PublicKey outEphemeralPubKey;
 
     bool r = Crypto::generate_key_derivation(minerAddress.viewPublicKey, txkey.secretKey, derivation);
 
@@ -317,10 +316,6 @@ bool Currency::isAmountApplicableInFusionTransactionInput(uint64_t amount, uint6
   return true;
 }
 
-std::string Currency::accountAddressAsString(const AccountBase& account) const {
-  return Utilities::getAccountAddressAsStr(m_publicAddressBase58Prefix, account.getAccountKeys().address);
-}
-
 std::string Currency::accountAddressAsString(const AccountPublicAddress& accountPublicAddress) const {
   return Utilities::getAccountAddressAsStr(m_publicAddressBase58Prefix, accountPublicAddress);
 }
@@ -360,7 +355,7 @@ std::string Currency::formatAmount(int64_t amount) const {
 
 bool Currency::parseAmount(const std::string& str, uint64_t& amount) const {
   std::string strAmount = str;
-  boost::algorithm::trim(strAmount);
+  Utilities:trim(strAmount);
 
   size_t pointIndex = strAmount.find_first_of('.');
   size_t fractionSize;
@@ -578,12 +573,7 @@ bool Currency::checkProofOfWork(const CachedBlock& block, uint64_t currentDiffic
   switch (block.getBlock().majorVersion) {
   case BLOCK_MAJOR_VERSION_0:
     return checkProofOfWorkV1(block, currentDiffic);
-
-  case BLOCK_MAJOR_VERSION_1:
-  case BLOCK_MAJOR_VERSION_2:
-  case BLOCK_MAJOR_VERSION_3:
-  case BLOCK_MAJOR_VERSION_4:
-  case BLOCK_MAJOR_VERSION_5:
+  default:
     return checkProofOfWorkV2(block, currentDiffic);
   }
 
@@ -630,7 +620,8 @@ m_upgradeHeightV3(currency.m_upgradeHeightV3),
 m_upgradeHeightV4(currency.m_upgradeHeightV4),
 m_upgradeHeightV5(currency.m_upgradeHeightV5),
 m_upgradeHeightV6(currency.m_upgradeHeightV6),
-m_upgradeHeightV7(currency.m_upgradeHeightV7),
+m_upgradeHeightV7(currency.m_upgradeHeightV7), //cn turtle
+m_upgradeHeightV8(currency.m_upgradeHeightV8), //argon2id
 m_upgradeVotingThreshold(currency.m_upgradeVotingThreshold),
 m_upgradeVotingWindow(currency.m_upgradeVotingWindow),
 m_upgradeWindow(currency.m_upgradeWindow),
@@ -696,7 +687,8 @@ CurrencyBuilder::CurrencyBuilder(std::shared_ptr<Logging::ILogger> log) : m_curr
   upgradeHeightV4(parameters::UPGRADE_HEIGHT_V4);
   upgradeHeightV5(parameters::UPGRADE_HEIGHT_V5);
   upgradeHeightV6(parameters::UPGRADE_HEIGHT_V6);
-  upgradeHeightV7(parameters::UPGRADE_HEIGHT_V7);
+  upgradeHeightV7(parameters::UPGRADE_HEIGHT_V7); //cn turtle
+  upgradeHeightV8(parameters::UPGRADE_HEIGHT_V8); //argon2id
     upgradeVotingThreshold(parameters::UPGRADE_VOTING_THRESHOLD);
   upgradeVotingWindow(parameters::UPGRADE_VOTING_WINDOW);
   upgradeWindow(parameters::UPGRADE_WINDOW);
@@ -710,7 +702,7 @@ CurrencyBuilder::CurrencyBuilder(std::shared_ptr<Logging::ILogger> log) : m_curr
 
 Transaction CurrencyBuilder::generateGenesisTransaction() {
   CryptoNote::Transaction tx;
-  CryptoNote::AccountPublicAddress ac = boost::value_initialized<CryptoNote::AccountPublicAddress>();
+  CryptoNote::AccountPublicAddress ac;
   m_currency.constructMinerTx(1, 0, 0, 0, 0, 0, ac, tx); // zero fee in genesis
   return tx;
 }

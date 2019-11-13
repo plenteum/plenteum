@@ -7,9 +7,9 @@
 
 #include <config/CryptoNoteConfig.h>
 
-#include <Serialization/ISerializer.h>
+#include <serialization/ISerializer.h>
 
-#include <Wallet/WalletGreen.h>
+#include <wallet/WalletGreen.h>
 
 struct WalletInfo
 {

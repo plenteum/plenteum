@@ -14,7 +14,7 @@
 #include "TypeHelpers.h"
 
 #include "crypto/crypto.h"
-#include "Logging/LoggerRef.h"
+#include "logging/LoggerRef.h"
 
 #include "IObservableImpl.h"
 

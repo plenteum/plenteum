@@ -6,16 +6,16 @@
 
 #include <memory>
 
-#include <Nigel/Nigel.h>
+#include <nigel/Nigel.h>
 
-#include <SubWallets/SubWallets.h>
+#include <subwallets/SubWallets.h>
 
-#include <Utilities/ThreadSafeDeque.h>
-#include <Utilities/ThreadSafePriorityQueue.h>
+#include <utilities/ThreadSafeDeque.h>
+#include <utilities/ThreadSafePriorityQueue.h>
 
-#include <WalletBackend/BlockDownloader.h>
-#include <WalletBackend/EventHandler.h>
-#include <WalletBackend/SynchronizationStatus.h>
+#include <walletbackend/BlockDownloader.h>
+#include <walletbackend/EventHandler.h>
+#include <walletbackend/SynchronizationStatus.h>
 
 #include <WalletTypes.h>
 

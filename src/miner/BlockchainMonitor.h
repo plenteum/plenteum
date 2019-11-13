@@ -11,9 +11,9 @@
 
 #include <optional>
 
-#include <System/ContextGroup.h>
-#include <System/Dispatcher.h>
-#include <System/Event.h>
+#include <system/ContextGroup.h>
+#include <system/Dispatcher.h>
+#include <system/Event.h>
 
 class BlockchainMonitor
 {

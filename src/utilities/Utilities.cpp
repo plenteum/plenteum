@@ -3,18 +3,18 @@
 // Please see the included LICENSE file for more information.
 
 ////////////////////////////////
-#include <Utilities/Utilities.h>
+#include <utilities/Utilities.h>
 ////////////////////////////////
 
 #include <atomic>
 
-#include <Common/Base58.h>
+#include <common/Base58.h>
 
 #include <config/CryptoNoteConfig.h>
 
 #include <thread>
 
-#include <Utilities/String.h>
+#include <utilities/String.h>
 
 namespace Utilities
 {
@@ -77,7 +77,7 @@ bool isInputUnlocked(
    100,000 + ((height * 102,400) / 1,051,200)
    At a block height of 400k, this gives us a size of 138,964.
    The constants this calculation arise from can be seen below, or in
-   src/CryptoNoteCore/Currency.cpp::maxBlockCumulativeSize(). Call this value
+   src/cryptonotecore/Currency.cpp::maxBlockCumulativeSize(). Call this value
    x.
 
    Next, calculate the median size of the last 100 blocks. Take the max of

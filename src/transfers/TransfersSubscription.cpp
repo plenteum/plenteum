@@ -17,7 +17,7 @@
 
 #include "WalletGreenTypes.h"
 #include "TransfersSubscription.h"
-#include "CryptoNoteCore/CryptoNoteBasicImpl.h"
+#include "cryptonotecore/CryptoNoteBasicImpl.h"
 
 using namespace Crypto;
 using namespace Logging;

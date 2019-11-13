@@ -87,7 +87,7 @@ namespace CryptoNote {
 		const uint64_t CRYPTONOTE_DUST_OUT_LIMIT = UINT64_C(1000000); //the limit up to which dust outs should be removed and contributed back to the dust fund
 		const char CRYPTONOTE_DUST_OUT_ADDRESS[] = "PLeafjfpaRWEXR4artCAer4yZFzeq5mRrMaLByP7Rkf3FL1URKUrBnP3ppfL6LVgz4hJYwk6DebUxZq6aQKHa8eT5f1ycM7j7d";
 
-		const uint64_t MINIMUM_FEE = UINT64_C(0); //0
+		const uint64_t MINIMUM_FEE = UINT64_C(1000000); //0.01 minimum fee
 
 		const uint64_t MINIMUM_MIXIN = 3;
 		const uint64_t MAXIMUM_MIXIN = 12;
@@ -127,6 +127,17 @@ namespace CryptoNote {
 		const uint64_t MAX_EXTRA_SIZE_V2 = 10240;
 		const uint64_t MAX_EXTRA_SIZE_V2_HEIGHT = 280000; //height at which tx extra is limited to 10240
 
+		/* 1 billion PLE */
+		/* This is enforced on the daemon side. An output > 1 billion causes
+		 * an invalid block. */
+		const uint64_t MAX_OUTPUT_SIZE_NODE = 100000000000000000;
+
+		/* 1 billion PLE */
+		/* This is enforced on the client side. An output > 1 billion will not
+		 * be created in a transaction */
+		const uint64_t MAX_OUTPUT_SIZE_CLIENT = 100000000000000000;
+
+		const uint64_t MAX_OUTPUT_SIZE_HEIGHT = 400000;
 		/* For new projects forked from this code base, the values immediately below
    should be changed to 0 to prevent issues with transaction processing
    and other possible unexpected behavior */
@@ -151,8 +162,9 @@ namespace CryptoNote {
 		const uint32_t UPGRADE_HEIGHT_V5 = 65500; // Upgrade height for DustFund V1.
 		const uint32_t UPGRADE_HEIGHT_V6 = 67500;  //fix tx sizes issues
 		const uint32_t UPGRADE_HEIGHT_V7 = 130000;  //CN Turtle
+		const uint32_t UPGRADE_HEIGHT_V8 = 400000;  //Argon2 POW
 
-		const uint32_t UPGRADE_HEIGHT_CURRENT = UPGRADE_HEIGHT_V7;
+		const uint32_t UPGRADE_HEIGHT_CURRENT = UPGRADE_HEIGHT_V8;
 		const unsigned UPGRADE_VOTING_THRESHOLD = 90;               // percent
 		const uint32_t UPGRADE_VOTING_WINDOW = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;  // blocks
 		const uint32_t UPGRADE_WINDOW = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;  // blocks
@@ -170,12 +182,12 @@ namespace CryptoNote {
 			67500, //fix tx sizes issue
 			130000, // CN Turtle
 			280000, //Difficulty Update
-			400000, // mixin limits reset
+			400000, // mixin limits reset & argon2 POW
 			500000 // next fork height (dust v2 & net protect)
 		};
 
 		/* MAKE SURE TO UPDATE THIS VALUE WITH EVERY MAJOR RELEASE BEFORE A FORK */
-		const uint64_t SOFTWARE_SUPPORTED_FORK_INDEX = 8; //supports up to diff update
+		const uint64_t SOFTWARE_SUPPORTED_FORK_INDEX = 9; //supports up to argon2 and mixing limits
 
 		const uint64_t FORK_HEIGHTS_SIZE = sizeof(FORK_HEIGHTS) / sizeof(*FORK_HEIGHTS);
 
@@ -187,7 +199,6 @@ namespace CryptoNote {
 		   need to change it manually. */
 		const uint8_t CURRENT_FORK_INDEX = FORK_HEIGHTS_SIZE == 0 ? 0 : SOFTWARE_SUPPORTED_FORK_INDEX;
 
-		static_assert(CURRENT_FORK_INDEX >= 0, "CURRENT FORK INDEX must be >= 0");
 		/* Make sure CURRENT_FORK_INDEX is a valid index, unless FORK_HEIGHTS is empty */
 		static_assert(FORK_HEIGHTS_SIZE == 0 || CURRENT_FORK_INDEX < FORK_HEIGHTS_SIZE, "CURRENT_FORK_INDEX out of range of FORK_HEIGHTS!");
 
@@ -209,6 +220,7 @@ namespace CryptoNote {
 	const uint8_t  BLOCK_MAJOR_VERSION_3 = 3;
 	const uint8_t  BLOCK_MAJOR_VERSION_4 = 4; //block version to fix tx sizes issue
 	const uint8_t  BLOCK_MAJOR_VERSION_5 = 5; //algo change to CN Turtle
+	const uint8_t  BLOCK_MAJOR_VERSION_6 = 6; //algo change to Argon2id
 	
 	const uint8_t  BLOCK_MINOR_VERSION_0 = 0;
 	const uint8_t  BLOCK_MINOR_VERSION_1 = 1;
@@ -226,19 +238,21 @@ namespace CryptoNote {
 
 	// P2P Network Configuration Section - This defines our current P2P network version
 	// and the minimum version for communication between nodes
-	const uint8_t  P2P_CURRENT_VERSION = 5; //bump p2p version 
-	const uint8_t  P2P_MINIMUM_VERSION = 4; //bump min supported version
+	const uint8_t  P2P_CURRENT_VERSION = 6; //bump p2p version 
+	const uint8_t  P2P_MINIMUM_VERSION = 5; //bump min supported version
+	
 const std::unordered_map<
     uint8_t,
     std::function<void(const void *data, size_t length, Crypto::Hash &hash)>
 > HASHING_ALGORITHMS_BY_BLOCK_VERSION =
 {
-    { BLOCK_MAJOR_VERSION_0, Crypto::cn_slow_hash_v0 },             /* From zero */
-	{ BLOCK_MAJOR_VERSION_1, Crypto::cn_slow_hash_v0 },             /* UPGRADE_HEIGHT_V1 */
-    { BLOCK_MAJOR_VERSION_2, Crypto::cn_slow_hash_v0 },             /* UPGRADE_HEIGHT_V2 */
-    { BLOCK_MAJOR_VERSION_3, Crypto::cn_lite_slow_hash_v1 },        /* UPGRADE_HEIGHT_V3 */
-    { BLOCK_MAJOR_VERSION_4, Crypto::cn_lite_slow_hash_v1 },        /* UPGRADE_HEIGHT_V4 */
-    { BLOCK_MAJOR_VERSION_5, Crypto::cn_turtle_lite_slow_hash_v2 }  /* UPGRADE_HEIGHT_V5 */
+    { BLOCK_MAJOR_VERSION_0, Crypto::cn_slow_hash_v0 },              /* From zero */
+	{ BLOCK_MAJOR_VERSION_1, Crypto::cn_slow_hash_v0 },              /* UPGRADE_HEIGHT_V1 */
+    { BLOCK_MAJOR_VERSION_2, Crypto::cn_slow_hash_v0 },              /* UPGRADE_HEIGHT_V2 */
+    { BLOCK_MAJOR_VERSION_3, Crypto::cn_lite_slow_hash_v1 },         /* UPGRADE_HEIGHT_V3 */
+    { BLOCK_MAJOR_VERSION_4, Crypto::cn_lite_slow_hash_v1 },         /* UPGRADE_HEIGHT_V4 */
+    { BLOCK_MAJOR_VERSION_5, Crypto::cn_turtle_lite_slow_hash_v2 },  /* UPGRADE_HEIGHT_V5 */
+	{ BLOCK_MAJOR_VERSION_6, Crypto::chukwa_slow_hash }				 /* UPGRADE_HEIGHT_V6 */
 };
 
 	// This defines the minimum P2P version required for lite blocks propogation
@@ -261,12 +275,12 @@ const std::unordered_map<
 	const size_t   P2P_DEFAULT_HANDSHAKE_INVOKE_TIMEOUT = 5000;          // 5 seconds
 	const char     P2P_STAT_TRUSTED_PUB_KEY[] = "";
 
-	const uint64_t DATABASE_WRITE_BUFFER_MB_DEFAULT_SIZE = 1024;
-	const uint64_t DATABASE_READ_BUFFER_MB_DEFAULT_SIZE = 1024;
-	const uint32_t DATABASE_DEFAULT_MAX_OPEN_FILES = 500;
-	const uint16_t DATABASE_DEFAULT_BACKGROUND_THREADS_COUNT = 10;
+	const uint64_t DATABASE_WRITE_BUFFER_MB_DEFAULT_SIZE = 256;
+	const uint64_t DATABASE_READ_BUFFER_MB_DEFAULT_SIZE = 128;
+	const uint32_t DATABASE_DEFAULT_MAX_OPEN_FILES = 125;
+	const uint16_t DATABASE_DEFAULT_BACKGROUND_THREADS_COUNT = 4;
 
-	const char     LATEST_VERSION_URL[] = "https://www.plenteum.com/latest";
+	const char     LATEST_VERSION_URL[] = "http://latest.plenteum.com";
 	const std::string LICENSE_URL = "https://github.com/plenteum/plenteum/blob/master/LICENSE";
 	const static boost::uuids::uuid CRYPTONOTE_NETWORK =
 	{
@@ -275,11 +289,9 @@ const std::unordered_map<
 
 	const char* const SEED_NODES[] = {
 		//add seed nodes
-		"miner.care:44015", //miner.care
-		"one.public.plenteum.com:44015", //Charlie
-		"ple.optimusblue.com:44015", //DeadSet
-		"three.seed.plenteum.com:44015", //DO Seed3
-		"two.seed.plenteum.com:44015", //DO Seed2
-		"four.seed.plenteum.com:44015" //Seed 4
+		"two.seed.plenteum.com:44015", 
+		"four.seed.plenteum.com:44015",
+		"pool.plenteum.com:44015",		
+		"ple.optimusblue.com:44015"
 	};
 } // CryptoNote

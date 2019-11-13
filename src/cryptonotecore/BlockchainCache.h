@@ -29,10 +29,10 @@
 #include <boost/multi_index/random_access_index.hpp>
 
 #include "BlockchainStorage.h"
-#include "Common/StringView.h"
+#include "common/StringView.h"
 #include "Currency.h"
 #include "IBlockchainCache.h"
-#include "CryptoNoteCore/UpgradeManager.h"
+#include "cryptonotecore/UpgradeManager.h"
 
 namespace CryptoNote {
 

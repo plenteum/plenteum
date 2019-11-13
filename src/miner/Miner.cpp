@@ -10,17 +10,17 @@
 
 #include <iostream>
 
-#include <Common/CheckDifficulty.h>
-#include <Common/StringTools.h>
+#include <common/CheckDifficulty.h>
+#include <common/StringTools.h>
 
 #include <crypto/crypto.h>
 #include <crypto/random.h>
 
-#include <Miner/BlockUtilities.h>
+#include <miner/BlockUtilities.h>
 
-#include <System/InterruptedException.h>
+#include <system/InterruptedException.h>
 
-#include <Utilities/ColouredMsg.h>
+#include <utilities/ColouredMsg.h>
 
 namespace CryptoNote {
 

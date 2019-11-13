@@ -17,9 +17,9 @@
 
 #pragma once
 
-#include <System/Dispatcher.h>
-#include <System/Event.h>
-#include <System/InterruptedException.h>
+#include <system/Dispatcher.h>
+#include <system/Event.h>
+#include <system/InterruptedException.h>
 
 namespace System {
 

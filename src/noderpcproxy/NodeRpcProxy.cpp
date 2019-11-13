@@ -12,24 +12,24 @@
 #include <system_error>
 #include <thread>
 
-#include <HTTP/HttpRequest.h>
-#include <HTTP/HttpResponse.h>
-#include <System/ContextGroup.h>
-#include <System/Dispatcher.h>
-#include <System/Event.h>
-#include <System/EventLock.h>
-#include <System/Timer.h>
-#include <CryptoNoteCore/TransactionApi.h>
+#include <http/HttpRequest.h>
+#include <http/HttpResponse.h>
+#include <system/ContextGroup.h>
+#include <system/Dispatcher.h>
+#include <system/Event.h>
+#include <system/EventLock.h>
+#include <system/Timer.h>
+#include <cryptonotecore/TransactionApi.h>
 
-#include "Common/StringTools.h"
-#include "CryptoNoteCore/CryptoNoteBasicImpl.h"
-#include "Common/CryptoNoteTools.h"
+#include "common/StringTools.h"
+#include "cryptonotecore/CryptoNoteBasicImpl.h"
+#include "common/CryptoNoteTools.h"
 
-#include <Logging/DummyLogger.h>
+#include <logging/DummyLogger.h>
 
-#include "Rpc/CoreRpcServerCommandsDefinitions.h"
-#include "Rpc/HttpClient.h"
-#include "Rpc/JsonRpc.h"
+#include "rpc/CoreRpcServerCommandsDefinitions.h"
+#include "rpc/HttpClient.h"
+#include "rpc/JsonRpc.h"
 
 #ifndef AUTO_VAL_INIT
 #define AUTO_VAL_INIT(n) boost::value_initialized<decltype(n)>()

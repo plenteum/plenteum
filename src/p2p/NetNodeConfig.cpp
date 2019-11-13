@@ -6,8 +6,8 @@
 
 #include "NetNodeConfig.h"
 
-#include <Common/Util.h>
-#include "Common/StringTools.h"
+#include <common/Util.h>
+#include "common/StringTools.h"
 #include <config/CryptoNoteConfig.h>
 #include <crypto/random.h>
 

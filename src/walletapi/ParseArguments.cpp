@@ -3,7 +3,7 @@
 // Please see the included LICENSE file for more information.
 
 /////////////////////////////////////
-#include <WalletApi/ParseArguments.h>
+#include <walletapi/ParseArguments.h>
 /////////////////////////////////////
 
 #include <cxxopts.hpp>
@@ -23,7 +23,7 @@ ApiConfig parseArguments(int argc, char **argv)
 
     cxxopts::Options options(argv[0], CryptoNote::getProjectCLIHeader());
 
-    bool help, version, scanCoinbaseTransactions;
+    bool help, version, scanCoinbaseTransactions, noConsole;
 
     int logLevel;
 
@@ -35,7 +35,10 @@ ApiConfig parseArguments(int argc, char **argv)
 
         ("log-level", "Specify log level",
             cxxopts::value<int>(logLevel)->default_value(std::to_string(config.logLevel)), "#")
-
+		
+		("no-console", "If set, will not provide an interactive console",
+         cxxopts::value<bool>(noConsole)->default_value("false")->implicit_value("true"))
+		
         ("scan-coinbase-transactions", "Scan miner/coinbase transactions",
             cxxopts::value<bool>(scanCoinbaseTransactions)->default_value("false")->implicit_value("true"))
 
@@ -97,6 +100,11 @@ ApiConfig parseArguments(int argc, char **argv)
     else
     {
         config.logLevel = static_cast<Logger::LogLevel>(logLevel);
+    }
+	
+	if (noConsole)
+    {
+        config.noConsole = true;
     }
 
     if (threads == 0)

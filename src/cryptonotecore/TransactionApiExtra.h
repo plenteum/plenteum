@@ -19,7 +19,7 @@
 
 #include "CryptoNoteFormatUtils.h"
 
-#include <Common/TransactionExtra.h>
+#include <common/TransactionExtra.h>
 
 namespace CryptoNote {
 

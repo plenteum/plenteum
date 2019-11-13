@@ -6,22 +6,22 @@
 #include <zedwallet++/Open.h>
 /////////////////////////////
 
-#include <Common/FileSystemShim.h>
+#include <common/FileSystemShim.h>
 
 #include <config/WalletConfig.h>
 
 #include <iostream>
 
-#include <Mnemonics/Mnemonics.h>
+#include <mnemonics/Mnemonics.h>
 
-#include <Errors/ValidateParameters.h>
+#include <errors/ValidateParameters.h>
 
-#include <Utilities/ColouredMsg.h>
-#include <Utilities/String.h>
-#include <Utilities/Input.h>
+#include <utilities/ColouredMsg.h>
+#include <utilities/String.h>
+#include <utilities/Input.h>
 
 #include <zedwallet++/CommandImplementations.h>
-#include <zedwallet++/PasswordContainer.h>
+#include <utilities/PasswordContainer.h>
 #include <zedwallet++/Utilities.h>
 
 std::shared_ptr<WalletBackend> importViewWallet(const ZedConfig &config)
@@ -379,11 +379,11 @@ std::string getExistingWalletFileName(const ZedConfig &config)
                 std::cout << WarningMsg("\nWallet name can't be blank! Try again.\n\n");
             }
             /* Allow people to enter wallet name with or without file extension */
-            else if (fs::exists(walletName))
+            else if (fs::exists(walletName) && !fs::is_directory(walletName))
             {
                 return walletName;
             }
-            else if (fs::exists(walletFileName))
+            else if (fs::exists(walletFileName) && !fs::is_directory(walletFileName))
             {
                 return walletFileName;
             }

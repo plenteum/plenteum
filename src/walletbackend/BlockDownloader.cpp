@@ -3,17 +3,17 @@
 // Please see the included LICENSE file for more information.
 
 //////////////////////////////////////////
-#include <WalletBackend/BlockDownloader.h>
+#include <walletbackend/BlockDownloader.h>
 //////////////////////////////////////////
 
 #include <config/WalletConfig.h>
 
-#include <Logger/Logger.h>
+#include <logger/Logger.h>
 
-#include <Utilities/FormatTools.h>
-#include <Utilities/Utilities.h>
+#include <utilities/FormatTools.h>
+#include <utilities/Utilities.h>
 
-#include <WalletBackend/Constants.h>
+#include <walletbackend/Constants.h>
 
 #include <config/Config.h>
 

@@ -6,18 +6,18 @@
 
 #include <chrono>
 
-#include <Common/SignalHandler.h>
+#include <common/SignalHandler.h>
 
 #include <config/CliHeader.h>
 
 #include <iostream>
 
-#include <Logger/Logger.h>
+#include <logger/Logger.h>
 
 #include <thread>
 
-#include <WalletApi/ApiDispatcher.h>
-#include <WalletApi/ParseArguments.h>
+#include <walletapi/ApiDispatcher.h>
+#include <walletapi/ParseArguments.h>
 
 int main(int argc, char **argv)
 {
@@ -56,21 +56,32 @@ int main(int argc, char **argv)
 
         std::string address = "http://" + config.rpcBindIp + ":" + std::to_string(config.port);
 
-        std::cout << "The api has been launched on " << address
-                  << ".\nType exit to save and shutdown." << std::endl;
+        std::cout << "The api has been launched on " << address << "." << std::endl;
+
+        if (!config.noConsole)
+        {
+            std::cout << "Type exit to save and shutdown." << std::endl;
+        }
 
         while (!ctrl_c)
         {
-            std::string input;
-
-            if (!std::getline(std::cin, input) || input == "exit" || input == "quit")
+			if (!config.noConsole)
             {
-                break;
-            }
+				std::string input;
 
-            if (input == "help")
+				if (!std::getline(std::cin, input) || input == "exit" || input == "quit")
+				{
+					break;
+				}
+
+				if (input == "help")
+				{
+					std::cout << "Type exit to save and shutdown." << std::endl;
+				}
+			}
+            else /* If not, then a brief sleep helps stop the thread from running away */
             {
-                std::cout << "Type exit to save and shutdown." << std::endl;
+                std::this_thread::sleep_for(std::chrono::milliseconds(250));
             }
         }
     }

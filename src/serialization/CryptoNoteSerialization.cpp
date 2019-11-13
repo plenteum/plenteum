@@ -24,18 +24,18 @@
 #include <boost/variant/static_visitor.hpp>
 #include <boost/variant/apply_visitor.hpp>
 
-#include "Serialization/ISerializer.h"
-#include "Serialization/SerializationOverloads.h"
-#include "Serialization/BinaryInputStreamSerializer.h"
-#include "Serialization/BinaryOutputStreamSerializer.h"
+#include "serialization/ISerializer.h"
+#include "serialization/SerializationOverloads.h"
+#include "serialization/BinaryInputStreamSerializer.h"
+#include "serialization/BinaryOutputStreamSerializer.h"
 
-#include "Common/StringOutputStream.h"
+#include "common/StringOutputStream.h"
 #include "crypto/crypto.h"
 
 #include <config/CryptoNoteConfig.h>
 
-#include <Common/CryptoNoteTools.h>
-#include <Common/TransactionExtra.h>
+#include <common/CryptoNoteTools.h>
+#include <common/TransactionExtra.h>
 
 using namespace Common;
 
@@ -365,7 +365,7 @@ void serialize(ParentBlockSerializer& pbs, ISerializer& serializer) {
 
 void serializeBlockHeader(BlockHeader& header, ISerializer& serializer) {
   serializer(header.majorVersion, "major_version");
-  if (header.majorVersion > BLOCK_MAJOR_VERSION_5) {
+  if (header.majorVersion > BLOCK_MAJOR_VERSION_6) {
     throw std::runtime_error("Wrong major version");
   }
 
@@ -454,21 +454,31 @@ void serialize(RawBlock& rawBlock, ISerializer& serializer) {
     serializer(txCount, "tx_count");
     rawBlock.transactions.resize(static_cast<uint64_t>(txCount));
 
+	serializer.beginArray(txCount, "transactions");
+
     for (auto& txBlob : rawBlock.transactions) {
+	  serializer.beginObject("transaction");
       uint64_t txSize;
       serializer(txSize, "tx_size");
       txBlob.resize(txSize);
       serializer.binary(txBlob.data(), txBlob.size(), "transaction");
+	  serializer.endObject();
     }
+	serializer.endArray();
   } else {
     uint64_t txCount = rawBlock.transactions.size();
     serializer(txCount, "tx_count");
-
+	
+	serializer.beginArray(txCount, "transactions");
+	
     for (auto& txBlob : rawBlock.transactions) {
+		serializer.beginObject("transaction");
       uint64_t txSize = txBlob.size();
       serializer(txSize, "tx_size");
       serializer.binary(txBlob.data(), txBlob.size(), "transaction");
+	  serializer.endObject();
     }
+	serializer.endArray();
   }
 }
 

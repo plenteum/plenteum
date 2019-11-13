@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include <CryptoNoteCore/BlockchainStorage.h>
-#include "CryptoNoteCore/SwappedVector.h"
+#include <cryptonotecore/BlockchainStorage.h>
+#include "cryptonotecore/SwappedVector.h"
 
 namespace CryptoNote {
 

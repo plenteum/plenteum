@@ -24,10 +24,10 @@
 #include <deque>
 
 #include <boost/uuid/uuid.hpp>
-#include "Common/StringTools.h"
+#include "common/StringTools.h"
 #include "crypto/hash.h"
 
-#include "P2p/PendingLiteBlock.h"
+#include "p2p/PendingLiteBlock.h"
 
 namespace CryptoNote {
 

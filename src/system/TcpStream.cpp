@@ -16,7 +16,7 @@
 // along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "TcpStream.h"
-#include <System/TcpConnection.h>
+#include <system/TcpConnection.h>
 
 namespace System {
 

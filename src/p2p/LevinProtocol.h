@@ -18,10 +18,10 @@
 #pragma once
 
 #include "CryptoNote.h"
-#include <Common/MemoryInputStream.h>
-#include <Common/VectorOutputStream.h>
-#include "Serialization/KVBinaryInputStreamSerializer.h"
-#include "Serialization/KVBinaryOutputStreamSerializer.h"
+#include <common/MemoryInputStream.h>
+#include <common/VectorOutputStream.h>
+#include "serialization/KVBinaryInputStreamSerializer.h"
+#include "serialization/KVBinaryOutputStreamSerializer.h"
 
 namespace System {
 class TcpConnection;

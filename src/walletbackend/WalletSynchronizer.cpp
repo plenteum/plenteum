@@ -3,10 +3,10 @@
 // Please see the included LICENSE file for more information.
 
 /////////////////////////////////////////////
-#include <WalletBackend/WalletSynchronizer.h>
+#include <walletbackend/WalletSynchronizer.h>
 /////////////////////////////////////////////
 
-#include <Common/StringTools.h>
+#include <common/StringTools.h>
 
 #include <config/Config.h>
 #include <config/WalletConfig.h>
@@ -17,13 +17,13 @@
 
 #include <iostream>
 
-#include <Logger/Logger.h>
+#include <logger/Logger.h>
 
-#include <Utilities/ThreadSafeQueue.h>
-#include <Utilities/ThreadSafeDeque.h>
-#include <Utilities/Utilities.h>
+#include <utilities/ThreadSafeQueue.h>
+#include <utilities/ThreadSafeDeque.h>
+#include <utilities/Utilities.h>
 
-#include <WalletBackend/Constants.h>
+#include <walletbackend/Constants.h>
 
 ///////////////////////////////////
 /* CONSTRUCTORS / DECONSTRUCTORS */

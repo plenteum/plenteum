@@ -17,9 +17,9 @@
 
 #pragma once
 
-#include <System/ContextGroup.h>
-#include <System/Dispatcher.h>
-#include <System/Timer.h>
+#include <system/ContextGroup.h>
+#include <system/Dispatcher.h>
+#include <system/Timer.h>
 
 namespace System {
 

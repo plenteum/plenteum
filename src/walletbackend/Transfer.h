@@ -4,13 +4,13 @@
 
 #include <CryptoNote.h>
 
-#include <Errors/Errors.h>
+#include <errors/Errors.h>
 
-#include <Nigel/Nigel.h>
+#include <nigel/Nigel.h>
 
-#include <Serialization/SerializationTools.h>
+#include <serialization/SerializationTools.h>
 
-#include <SubWallets/SubWallets.h>
+#include <subwallets/SubWallets.h>
 
 #include <vector>
 
@@ -69,7 +69,7 @@ namespace SendTransaction
         const std::vector<WalletTypes::ObscuredInput> inputsAndFakes,
         const std::vector<Crypto::SecretKey> tmpSecretKeys);
 
-    std::vector<uint64_t> splitAmountIntoDenominations(uint64_t amount);
+    std::vector<uint64_t> splitAmountIntoDenominations(uint64_t amount, const bool preventTooLargeOutputs = true);
 
     std::vector<CryptoNote::TransactionInput> keyInputToTransactionInput(
         const std::vector<CryptoNote::KeyInput> keyInputs);
