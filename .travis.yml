@@ -116,6 +116,7 @@ script:
 
 before_deploy:
 - if [[ "${TRAVIS_TAG}" == "" ]]; then export TRAVIS_TAG=${TRAVIS_COMMIT} ; fi
+- cd src
 - TARGETS="Plenteumd miner zedwallet wallet-service zedwallet-beta cryptotest wallet-api wallet-upgrader"
 - ${STRIP} ${TARGETS}
 - rm -rf plenteum-${TRAVIS_TAG}
