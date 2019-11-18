@@ -292,6 +292,7 @@ const std::unordered_map<
 		"two.seed.plenteum.com:44015", 
 		"four.seed.plenteum.com:44015",
 		"pool.plenteum.com:44015",		
-		"ple.optimusblue.com:44015"
+		"ple.optimusblue.com:44015",
+		"5.9.65.105:44015" // Pluto
 	};
 } // CryptoNote
