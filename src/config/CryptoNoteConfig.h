@@ -85,7 +85,7 @@ namespace CryptoNote {
 
 		//DustFund Parameters
 		const uint64_t CRYPTONOTE_DUST_OUT_LIMIT = UINT64_C(1000000); //the limit up to which dust outs should be removed and contributed back to the dust fund
-		const char CRYPTONOTE_DUST_OUT_ADDRESS[] = "PLeafjfpaRWEXR4artCAer4yZFzeq5mRrMaLByP7Rkf3FL1URKUrBnP3ppfL6LVgz4hJYwk6DebUxZq6aQKHa8eT5f1ycM7j7d";
+		const char CRYPTONOTE_DUST_OUT_ADDRESS[] = "PLeap8Ej6DwGo2Qcgur2s5Zj8iUTgTv8yAmUtFFkqAqte5CjQt9f1Zy7myMkbS785VdGy1pFnrBX24SzPRUynAd53FtKE5beYg";
 
 		const uint64_t MINIMUM_FEE = UINT64_C(1000000); //0.01 minimum fee
 
@@ -238,8 +238,8 @@ namespace CryptoNote {
 
 	// P2P Network Configuration Section - This defines our current P2P network version
 	// and the minimum version for communication between nodes
-	const uint8_t  P2P_CURRENT_VERSION = 6; //bump p2p version 
-	const uint8_t  P2P_MINIMUM_VERSION = 5; //bump min supported version
+	const uint8_t  P2P_CURRENT_VERSION = 7; //bump p2p version 
+	const uint8_t  P2P_MINIMUM_VERSION = 6; //bump min supported version
 	
 const std::unordered_map<
     uint8_t,
@@ -292,6 +292,7 @@ const std::unordered_map<
 		"two.seed.plenteum.com:44015", 
 		"four.seed.plenteum.com:44015",
 		"pool.plenteum.com:44015",		
-		"ple.optimusblue.com:44015"
+		"ple.optimusblue.com:44015",
+		"5.9.65.105:44015" //CapEtn
 	};
 } // CryptoNote

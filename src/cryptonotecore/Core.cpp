@@ -1519,7 +1519,7 @@ std::tuple<bool, std::string> Core::isTransactionValidForPool(const CachedTransa
   if (auto validationResult = validateTransaction(cachedTransaction, validatorState, chainsLeaves[0], fee, getTopBlockIndex()))
   {
       logger(Logging::WARNING) << "Transaction " << transactionHash
-                               << " is not valid. Reason: fee is too small and it's not a fusion transaction";
+                               << " is not valid. Reason: " << validationResult.message();
       return {false, validationResult.message()};
   }
 
