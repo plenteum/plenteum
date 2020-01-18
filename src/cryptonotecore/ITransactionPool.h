@@ -17,7 +17,7 @@ public:
   virtual bool pushTransaction(CachedTransaction&& tx, TransactionValidatorState&& transactionState) = 0;
   virtual const CachedTransaction& getTransaction(const Crypto::Hash& hash) const = 0;
   virtual bool removeTransaction(const Crypto::Hash& hash) = 0;
-
+  virtual size_t getFusionTransactionCount() const = 0;
   virtual size_t getTransactionCount() const = 0;
   virtual std::vector<Crypto::Hash> getTransactionHashes() const = 0;
   virtual bool checkIfTransactionPresent(const Crypto::Hash& hash) const = 0;

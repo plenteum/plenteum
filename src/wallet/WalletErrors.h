@@ -59,6 +59,7 @@ enum WalletErrorCodes {
   MIXIN_ABOVE_THRESHOLD,
   CONFLICTING_PAYMENT_IDS,
   EXTRA_TOO_LARGE,
+  EXCESSIVE_OUTPUTS
 };
 
 // custom category:
@@ -109,6 +110,7 @@ public:
     case MIXIN_ABOVE_THRESHOLD:         return "Mixin above maximum allowed threshold";
     case CONFLICTING_PAYMENT_IDS:       return "Multiple conflicting payment ID's were specified via the use of integrated addresses";
 	case EXTRA_TOO_LARGE:               return "Transaction extra too large";
+	case EXCESSIVE_OUTPUTS:				return "Transaction has an excessive number of outputs for the input count";
     default:                            return "Unknown error";
     }
   }

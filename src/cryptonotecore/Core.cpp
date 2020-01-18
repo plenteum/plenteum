@@ -1034,7 +1034,14 @@ std::error_code Core::addBlock(const CachedBlock& cachedBlock, RawBlock&& rawBlo
     uint64_t fee = 0;
     auto transactionValidationResult = validateTransaction(transaction, validatorState, cache, fee, previousBlockIndex);
     if (transactionValidationResult) {
+	  const auto hash = transaction.getTransactionHash();
       logger(Logging::DEBUGGING) << "Failed to validate transaction " << transaction.getTransactionHash() << ": " << transactionValidationResult.message();
+	  if (transactionPool->checkIfTransactionPresent(hash))
+	  {
+		  logger(Logging::DEBUGGING) << "Invalid transaction " << hash << " is present in the pool, removing";
+		  transactionPool->removeTransaction(hash);
+		  notifyObservers(makeDelTransactionMessage({ hash }, Messages::DeleteTransaction::Reason::NotActual));
+	  }
       return transactionValidationResult;
     }
 
@@ -1490,6 +1497,21 @@ std::tuple<bool, std::string> Core::isTransactionValidForPool(const CachedTransa
 {
   const auto transactionHash = cachedTransaction.getTransactionHash();
   
+  /* If there are already a certain number of fusion transactions in
+		  the pool, then do not try to add another */
+  if (cachedTransaction.getTransactionFee() == 0 && transactionPool->getFusionTransactionCount() >= CryptoNote::parameters::FUSION_TX_MAX_POOL_COUNT)
+  {
+	  return { false, "Pool already contains the maximum amount of fusion transactions" };
+  }
+
+  if (cachedTransaction.getTransaction().outputs.size() > CryptoNote::parameters::NORMAL_TX_MAX_OUTPUT_COUNT_V1)
+  {
+	  logger(Logging::TRACE) << "Not adding transaction " << transactionHash
+		  << " to transaction pool, excessive input deconstruction.";
+
+	  return { false, "Transaction has an excessive number of outputs for the input count" };
+  }
+
   auto [success, err] = Mixins::validate({cachedTransaction}, getTopBlockIndex());
 
   if (!success)
@@ -1815,6 +1837,12 @@ std::error_code Core::validateTransaction(const CachedTransaction& cachedTransac
 auto error = validateSemantic(transaction, fee, blockIndex);
   if (error != error::TransactionValidationError::VALIDATION_SUCCESS) {
     return error;
+  }
+
+  if (blockIndex >= CryptoNote::parameters::NORMAL_TX_MAX_OUTPUT_COUNT_V1_HEIGHT &&
+	  transaction.outputs.size() > CryptoNote::parameters::NORMAL_TX_MAX_OUTPUT_COUNT_V1)
+  {
+	  return error::TransactionValidationError::EXCESSIVE_OUTPUTS;
   }
 
   size_t inputIndex = 0;
@@ -2459,6 +2487,15 @@ bool Core::validateBlockTemplateTransaction(
     const uint64_t blockHeight) const
 {
     const auto &transaction = cachedTransaction.getTransaction();
+
+	/* Do not select transactions for inclusion in a block that create excessive outputs
+		   this is to prevent abuse whereby 1 input is used to create thousands of outputs */
+	if (transaction.outputs.size() > CryptoNote::parameters::NORMAL_TX_MAX_OUTPUT_COUNT_V1)
+	{
+		logger(Logging::TRACE) << "Not adding transaction " << cachedTransaction.getTransactionHash()
+			<< " to block template, excessive input deconstruction.";
+		return false;
+	}
 
     if (transaction.extra.size() >= CryptoNote::parameters::MAX_EXTRA_SIZE_V2)
     {

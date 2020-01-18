@@ -96,7 +96,7 @@ namespace CryptoNote {
 		const uint64_t MAXIMUM_MIXIN_V1 = 7;
 
 		/* The heights to activate the mixin limits at */
-		const uint32_t MIXIN_LIMITS_V1_HEIGHT = 400000; //height at which new Mixin Limits Kick in
+		const uint32_t MIXIN_LIMITS_V1_HEIGHT = 500000; //height at which new Mixin Limits Kick in
 
 		/* The mixin to use by default with zedwallet and wallet-service */
 		/* DEFAULT_MIXIN_V1 is the mixin used before MIXIN_LIMITS_V1_HEIGHT is started */
@@ -155,6 +155,16 @@ namespace CryptoNote {
 		const size_t   FUSION_TX_MAX_SIZE = CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_CURRENT * 30 / 100;
 		const size_t   FUSION_TX_MIN_INPUT_COUNT = 12;
 		const size_t   FUSION_TX_MIN_IN_OUT_COUNT_RATIO = 4;
+
+		/* This sets the maximum number of fusion transactions that can be present in the pool
+		   at any given time. Incoming fusion transactions that attempt to exceed this limit
+		   will be rejected from the pool and will not be added. This mechanism is in place
+		   to help curtail fusion transaction spam. */
+		const size_t FUSION_TX_MAX_POOL_COUNT = 50;
+
+		/* This prevents tx's from having a rediculous number of outputs in relation to inputs */
+		const size_t NORMAL_TX_MAX_OUTPUT_COUNT_V1 = 90;
+		const size_t NORMAL_TX_MAX_OUTPUT_COUNT_V1_HEIGHT = 400000;
 
 		const uint32_t UPGRADE_HEIGHT_V2 = 1;
 		const uint32_t UPGRADE_HEIGHT_V3 = 2;

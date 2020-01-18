@@ -210,6 +210,29 @@ enum ErrorCode
 
     /* Not on ed25519 curve */
     INVALID_PRIVATE_KEY = 52,
+
+		/* Extra data for transaction is not a valid hexadecimal string */
+		INVALID_EXTRA_DATA = 53,
+
+		/* An unknown error occured */
+		UNKNOWN_ERROR = 54,
+
+		/* The daemon received our request but we timed out before we could figure
+		 * out if it completed */
+		DAEMON_STILL_PROCESSING = 55,
+
+		/* The transaction has more outputs than are permitted for the number
+		 * inputs that have been provided */
+		OUTPUT_DECOMPOSITION = 56,
+
+		/* The inputs that were included in a prepared transaction have since been
+		 * spent or are for some other reason no longer available. */
+		PREPARED_TRANSACTION_EXPIRED = 57,
+
+		/* The prepared transaction hash specified does not exist, either because
+		 * it never existed, or because the wallet was restarted and the prepared
+		 * transaction state was lost */
+		PREPARED_TRANSACTION_NOT_FOUND = 58,
 };
 
 class Error
