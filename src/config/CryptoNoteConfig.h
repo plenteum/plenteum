@@ -303,6 +303,6 @@ const std::unordered_map<
 		"four.seed.plenteum.com:44015",
 		"pool.plenteum.com:44015",		
 		"ple.optimusblue.com:44015",
-		"5.9.65.105:44015" //CapEtn
+		"144.76.5.24:44015" //Pluto
 	};
 } // CryptoNote
